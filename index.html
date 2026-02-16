@@ -173,32 +173,31 @@
         </div>
 
         <footer class="ujian-footer">
-            
-            <button class="btn-nav desktop-nav prev" onclick="app.prevSoal()">
-                <i class="fa-solid fa-chevron-left"></i> <span>Sebelumnya</span>
-            </button>
-            <button class="btn-mobile-icon prev" onclick="app.prevSoal()">
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
+    <div class="footer-side">
+        <button class="btn-nav desktop-nav prev" onclick="app.prevSoal()">
+            <i class="fa-solid fa-chevron-left"></i> <span>Sebelumnya</span>
+        </button>
+        <button class="btn-mobile-icon prev" onclick="app.prevSoal()">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+    </div>
 
+    <div class="footer-center">
+        <div class="ragu-checkbox">
+            <input type="checkbox" id="check-ragu" onchange="app.setRagu()">
+            <label for="check-ragu">Ragu-ragu</label>
+        </div>
+    </div>
 
-            <div class="footer-center">
-                <div class="ragu-checkbox">
-                    <input type="checkbox" id="check-ragu" onchange="app.setRagu()">
-                    <label for="check-ragu">Ragu-ragu</label>
-                </div>
-            </div>
-
-            <button class="btn-nav desktop-nav next" id="btn-next-desktop" onclick="app.nextSoal()">
-                <span id="desk-next-text">Selanjutnya</span> 
-                <i class="fa-solid fa-chevron-right" id="desk-next-icon"></i>
-            </button>
-            
-            <button class="btn-mobile-icon next" id="btn-next-mobile" onclick="app.nextSoal()">
-                <i class="fa-solid fa-chevron-right" id="mob-next-icon"></i>
-            </button>
-
-        </footer>
+    <div class="footer-side" style="justify-content: flex-end;">
+        <button class="btn-nav desktop-nav next" id="btn-next-desktop" onclick="app.nextSoal()">
+            <span>Selanjutnya</span> <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <button class="btn-mobile-icon next" id="btn-next-mobile" onclick="app.nextSoal()">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+</footer>
     </section>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
