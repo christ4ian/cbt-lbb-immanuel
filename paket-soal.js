@@ -8,6 +8,19 @@ const PAKET_SOAL = [
         judul: "Ujian Sekolah - Saintek & Literasi",
         mapel: "Matematika & Fisika",
         waktu: 120, // Durasi 120 menit
+        petunjuk: [
+            "Berdoalah sebelum mengerjakan ujian.",
+            "Pastikan koneksi internet stabil selama ujian.",
+            "Dilarang membuka tab lain atau aplikasi lain.",
+            "Waktu akan terus berjalan meski aplikasi ditutup.",
+            "Gunakan kertas corat-coret untuk perhitungan.",
+            "Klik tombol 'Ragu-ragu' jika belum yakin dengan jawaban.",
+            "Periksa kembali semua jawaban sebelum klik 'Selesai'.",
+            "Jawaban akan tersimpan secara otomatis setiap kali Anda memilih opsi.",
+            "Jika terjadi kendala teknis, segera hubungi pengawas.",
+            "Sistem akan mengunci otomatis jika waktu habis.",
+            "Ujian ini terdiri dari soal Pilihan Ganda dan Kompleks."
+        ],
         soal: [
             // --- SOAL 1: PG ---
             {
