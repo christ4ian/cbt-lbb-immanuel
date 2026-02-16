@@ -95,8 +95,9 @@ const app = {
     // 1. LOGIN
     // =========================================
     gotoData: function() {
-        const idx = document.getElementById('input-paket').value;
-        const email = document.getElementById('input-password').value.trim().toLowerCase();
+    const idx = document.getElementById('input-paket').value;
+    // GANTI ID dari 'input-password' ke 'input-email'
+    const email = document.getElementById('input-email').value.trim().toLowerCase();
 
         if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
         if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
@@ -152,11 +153,17 @@ const app = {
                 }
                 
                 if (isResume) {
-                    this.restoreSession(data);
-                } else {
-                    Swal.fire({ title: 'Lanjutkan?', text: 'Melanjutkan sesi...', icon: 'info', timer: 1500, showConfirmButton: false })
-                        .then(() => this.restoreSession(data));
-                }
+    // Beritahu Firebase bahwa sekarang Device ini yang aktif
+    db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId });
+    this.restoreSession(data);
+} else {
+    Swal.fire({ title: 'Lanjutkan?', text: 'Melanjutkan sesi...', icon: 'info', timer: 1500, showConfirmButton: false })
+        .then(() => {
+            // Update ID perangkat sebelum restore agar tidak menendang diri sendiri
+            db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId });
+            this.restoreSession(data);
+        });
+}
             } else {
                 if(isResume) { localStorage.removeItem('cbt_active_session'); location.reload(); return; }
                 this.gotoConfirmPage();
@@ -165,17 +172,36 @@ const app = {
     },
 
     gotoConfirmPage: function() {
-        document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
-        document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
-        document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
+    // 1. Tampilkan Info Mapel, Waktu, dan Jumlah Soal
+    document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
+    document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
+    document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
+    
+    // 2. LOGIKA BARU: Tampilkan Petunjuk sebagai Daftar List (Nomor)
+    const petunjukList = document.getElementById('info-petunjuk-list');
+    if(petunjukList) {
+        petunjukList.innerHTML = ""; // Bersihkan list lama supaya tidak double
+        const daftarPetunjuk = this.currentPaket.petunjuk || ["Ikuti instruksi pengawas."];
         
-        const inpNama = document.getElementById('data-nama');
-        const inpSekolah = document.getElementById('data-sekolah');
-        if(inpNama) { inpNama.value = this.userData.nama; inpNama.disabled = true; }
-        if(inpSekolah) { inpSekolah.value = this.userData.sekolah; inpSekolah.disabled = true; }
+        // Loop setiap baris petunjuk dan buat jadi <li>
+        daftarPetunjuk.forEach(teks => {
+            const li = document.createElement('li');
+            li.innerText = teks;
+            petunjukList.appendChild(li);
+        });
+    }
 
-        this.switchView('view-data');
-    },
+    // 3. Isi Form Data Peserta (Nama, Kelas, Sekolah)
+    const inpNama = document.getElementById('data-nama');
+    const inpKelas = document.getElementById('data-kelas');
+    const inpSekolah = document.getElementById('data-sekolah');
+    
+    if(inpNama) inpNama.value = this.userData.nama;
+    if(inpKelas) inpKelas.value = this.userData.kelas;
+    if(inpSekolah) inpSekolah.value = this.userData.sekolah;
+
+    this.switchView('view-data');
+},
 
     // =========================================
     // 2. START
