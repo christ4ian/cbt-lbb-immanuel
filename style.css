@@ -299,20 +299,20 @@ body.swal2-shown {
     font-family: var(--font-heading);
 }
 
+/* --- TAMPILAN DESKTOP (Sampingan) --- */
 .container-data {
     flex: 1;
     padding: 30px;
     display: flex;
     gap: 25px;
-    align-items: flex-start;
-    justify-content: center;
     background-color: #eef2f5;
     
-    /* FIX SCROLL: Properti ini wajib untuk Android/iOS agar licin */
-    overflow-y: auto;
+    /* FIX SCROLL ANDROID */
+    overflow-y: auto !important; 
     -webkit-overflow-scrolling: touch; 
+    align-items: flex-start; /* WAJIB: Konten nempel di atas agar tidak kepotong */
+    justify-content: center;
     width: 100%;
-    padding-bottom: 80px; /* Spacer bawah agar tidak terpotong */
 }
 
 .card-info, .card-input {
@@ -321,17 +321,54 @@ body.swal2-shown {
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
     width: 100%;
+    flex-shrink: 0; /* Mencegah kartu gepeng */
 }
 
 .card-info { 
-    flex: 1; 
-    max-width: 350px; 
-    border-top: 4px solid var(--secondary); 
+    flex: 0 1 350px; /* Ukuran tetap di desktop */
+    border-top: 5px solid var(--secondary); 
 }
+
 .card-input { 
-    flex: 1.5; 
-    max-width: 500px; 
-    border-top: 4px solid var(--primary); 
+    flex: 0 1 500px; /* Ukuran tetap di desktop */
+    border-top: 5px solid var(--primary); 
+}
+
+/* --- TAMPILAN MOBILE (Tumpuk Atas-Bawah) --- */
+@media (max-width: 768px) {
+    .container-data {
+        flex-direction: column; /* PAKSA TUMPUK */
+        align-items: center; 
+        justify-content: flex-start; /* Pastikan mulai dari paling atas */
+        padding: 15px;
+        padding-bottom: 100px; /* Jarak aman di bawah */
+    }
+
+    .card-info, .card-input {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .top-bar {
+        justify-content: center; /* Judul di tengah di HP */
+    }
+}
+
+/* Styling tambahan agar input readonly tidak buram */
+input[readonly] {
+    background-color: #f8f9fa !important;
+    color: #333 !important;
+    border: 1px solid #ddd !important;
+    cursor: default;
+}
+
+/* Kotak Petunjuk */
+.info-row-petunjuk {
+    display: flex;
+    flex-direction: column;
+    margin-top: 15px;
 }
 
 h4 {
@@ -1224,3 +1261,30 @@ h4 {
     .ujian-wrapper { flex-direction: column; padding: 0; }
     .panel-kiri.active { height: 30vh; flex: none; border-bottom: 2px solid #ddd; }
 }
+/* Styling Kotak Petunjuk */
+.petunjuk-box {
+    width: 100%;
+    max-height: 180px; /* Batasi tingginya agar tidak makan tempat */
+    overflow-y: auto;  /* Biar bisa di-scroll kalau kepanjangan */
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 15px;
+    -webkit-overflow-scrolling: touch;
+}
+
+#info-petunjuk-list {
+    margin: 0;
+    padding-left: 20px; /* Biar angka nomor tidak kepotong */
+}
+
+#info-petunjuk-list li {
+    font-size: 0.85rem;
+    color: #444;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+/* Custom scrollbar biar keren di HP */
+.petunjuk-box::-webkit-scrollbar { width: 5px; }
+.petunjuk-box::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
