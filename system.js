@@ -1,12 +1,11 @@
 /* ===========================================================
-   CBT SYSTEM V10 - BUG FIX EDITION
-   Fitur: 
-   1. Cloud Timer & Single Device (V8 Logic)
-   2. UI Buttons Restore (V5 Logic) - nextSoal/prevSoal is back
-   3. Sidebar Toggle Fixed
+   CBT SYSTEM FINAL STABLE - REVISED (FIXED ANDROID)
+   - Fixed: Navigasi Kanan/Kiri Mobile & Desktop
+   - Fixed: Scroll Halaman Data
+   - Fixed: Logika Tombol Selesai
    =========================================================== */
 
-// 1. KONFIGURASI FIREBASE
+// 1. CONFIG
 const firebaseConfig = {
     apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
     authDomain: "cbt-lbb-immanuel.firebaseapp.com",
@@ -17,7 +16,7 @@ const firebaseConfig = {
     appId: "1:79589552415:web:20fb83aa055ec156cfc02a"
 };
 
-// 2. URL GOOGLE SCRIPT (DEPLOYMENT TERBARU)
+// URL SCRIPT GOOGLE
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec"; 
 
 // Init Firebase
@@ -43,8 +42,9 @@ const app = {
 
     // --- INIT ---
     init: function() {
-        console.log("System V10 Ready: Fixed Navigation");
+        console.log("System Ready (Fixed Version).");
         
+        // Setup Device ID
         let did = localStorage.getItem('cbt_device_id');
         if (!did) {
             did = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -54,6 +54,14 @@ const app = {
 
         this.loadDaftarPaket();
         this.checkResume();
+
+        // --- FIX TAMBAHAN: AUTO PATCH CSS VIA JS (Agar bisa scroll di Android) ---
+        const styleFix = document.createElement('style');
+        styleFix.innerHTML = `
+            .container-data { overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
+            .active-view { height: 100vh; height: 100dvh; overflow: hidden; }
+        `;
+        document.head.appendChild(styleFix);
     },
 
     checkResume: function() {
@@ -66,7 +74,7 @@ const app = {
             const paket = PAKET_SOAL.find(p => p.id === saved.paketId);
             if(paket) {
                 this.currentPaket = paket;
-                this.syncWithCloud(true); 
+                this.syncWithCloud(true); // True = Resume Mode
             }
         }
     },
@@ -88,8 +96,7 @@ const app = {
     // =========================================
     gotoData: function() {
         const idx = document.getElementById('input-paket').value;
-        const emailInput = document.getElementById('input-password');
-        const email = emailInput ? emailInput.value.trim().toLowerCase() : "";
+        const email = document.getElementById('input-password').value.trim().toLowerCase();
 
         if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
         if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
@@ -114,9 +121,11 @@ const app = {
                     nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
                 };
                 this.sheetRowIndex = res.data.rowIndex;
+                
                 const safeEmail = email.replace(/\./g, '_');
                 this.sessionId = this.currentPaket.id + "_" + safeEmail;
-                this.syncWithCloud(false);
+                
+                this.syncWithCloud(false); // False = New Login
             } else {
                 Swal.fire('Gagal', 'Email tidak terdaftar.', 'error');
             }
@@ -141,8 +150,13 @@ const app = {
                 if (now - data.startTime > this.MAX_SESSION_TIME) {
                     return Swal.fire('Waktu Habis', 'Batas 3 jam habis.', 'error');
                 }
-                if (isResume) this.restoreSession(data);
-                else Swal.fire({ title: 'Lanjutkan?', text: 'Melanjutkan sesi...', icon: 'info', timer: 1500, showConfirmButton: false }).then(() => this.restoreSession(data));
+                
+                if (isResume) {
+                    this.restoreSession(data);
+                } else {
+                    Swal.fire({ title: 'Lanjutkan?', text: 'Melanjutkan sesi...', icon: 'info', timer: 1500, showConfirmButton: false })
+                        .then(() => this.restoreSession(data));
+                }
             } else {
                 if(isResume) { localStorage.removeItem('cbt_active_session'); location.reload(); return; }
                 this.gotoConfirmPage();
@@ -153,6 +167,7 @@ const app = {
     gotoConfirmPage: function() {
         document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
         document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
+        document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
         
         const inpNama = document.getElementById('data-nama');
         const inpSekolah = document.getElementById('data-sekolah');
@@ -163,7 +178,7 @@ const app = {
     },
 
     // =========================================
-    // 2. START & RESTORE
+    // 2. START
     // =========================================
     startUjian: function() {
         if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
@@ -199,6 +214,7 @@ const app = {
 
         this.monitorSingleDevice();
         this.calculateTimeRemaining();
+        
         if (this.sisaWaktu <= 0) {
             Swal.fire('Waktu Habis', 'Waktu ujian telah habis.', 'error').then(() => this.submitData(true));
             return;
@@ -220,13 +236,13 @@ const app = {
             if (activeId && activeId !== this.deviceId) {
                 deviceRef.off(); clearInterval(this.timerInterval);
                 localStorage.removeItem('cbt_active_session');
-                Swal.fire({ title: 'Login Terdeteksi di Perangkat Lain', text: 'Sesi dihentikan.', icon: 'error', allowOutsideClick: false, confirmButtonText: 'Keluar' }).then(() => location.reload());
+                Swal.fire({ title: 'Logout Otomatis', text: 'Akun login di perangkat lain.', icon: 'error', allowOutsideClick: false, confirmButtonText: 'Keluar' }).then(() => location.reload());
             }
         });
     },
 
     // =========================================
-    // 3. CORE UI & RENDER (FIX BUTTONS)
+    // 3. UI RENDER
     // =========================================
     renderSoal: function(index) {
         this.currentIndex = index;
@@ -288,33 +304,18 @@ const app = {
         this.updateNavButtons(index);
     },
 
-    // --- HANDLERS (SIMPLE & SAFE) ---
-    selectAnswer: function(val) {
-        this.answers[this.currentIndex] = val;
-        this.renderSoal(this.currentIndex);
-        this.saveRealtime();
-    },
-    toggleCheck: function(val) {
+    // HANDLERS
+    selectAnswer: function(val) { this.answers[this.currentIndex] = val; this.renderSoal(this.currentIndex); this.saveRealtime(); },
+    toggleCheck: function(val) { 
         let arr = this.answers[this.currentIndex] || [];
         if(!Array.isArray(arr)) arr = [];
         if(arr.includes(val)) arr = arr.filter(x=>x!==val); else arr.push(val);
-        this.answers[this.currentIndex] = arr;
-        this.renderSoal(this.currentIndex);
-        this.saveRealtime();
+        this.answers[this.currentIndex] = arr; this.renderSoal(this.currentIndex); this.saveRealtime(); 
     },
-    selectBS: function(row, val) {
-        let obj = this.answers[this.currentIndex] || {};
-        obj[row] = val;
-        this.answers[this.currentIndex] = obj;
-        this.updateGrid();
-        this.saveRealtime();
+    selectBS: function(r, v) { 
+        let obj = this.answers[this.currentIndex] || {}; obj[r] = v; this.answers[this.currentIndex] = obj; this.updateGrid(); this.saveRealtime(); 
     },
-    setRagu: function() {
-        this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked;
-        this.updateGrid();
-        this.saveRealtime();
-    },
-    
+    setRagu: function() { this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked; this.updateGrid(); this.saveRealtime(); },
     saveRealtime: function() {
         if(this.sessionId) {
             db.ref('sessions/' + this.sessionId).update({
@@ -325,56 +326,55 @@ const app = {
         }
     },
 
-    // --- NAVIGASI FIX (nextSoal IS BACK!) ---
-    // Saya kembalikan fungsi nextSoal dan prevSoal agar cocok dengan HTML
-    nextSoal: function() {
-        if (this.currentIndex === this.currentPaket.soal.length - 1) this.confirmSubmit();
-        else this.renderSoal(this.currentIndex + 1);
-    },
-    
-    prevSoal: function() {
-        if (this.currentIndex > 0) this.renderSoal(this.currentIndex - 1);
-    },
+    // --- PERBAIKAN NAVIGASI DI SINI ---
+    // Fungsi ini dipanggil oleh onclick di HTML (app.prevSoal & app.nextSoal)
+    prevSoal: function() { this.navigasi(-1); },
+    nextSoal: function() { this.navigasi(1); },
 
-    // Fungsi Navigasi Generik (Untuk tombol di footer jika pake ID baru)
     navigasi: function(step) {
         const next = this.currentIndex + step;
-        if (next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
+        if(next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
     },
 
     updateNavButtons: function(index) {
         const total = this.currentPaket.soal.length;
-        const isLast = index === total - 1;
         
-        // Handle Tombol ID Lama (btn-prev, btn-next)
-        const btnPrev = document.getElementById('btn-prev');
-        const btnNext = document.getElementById('btn-next');
-        const deskText = document.getElementById('desk-next-text'); 
-        const deskIcon = document.getElementById('desk-next-icon'); 
+        // Selector untuk tombol Desktop & Mobile (Sesuai ID di HTML)
+        const btnNextDesk = document.getElementById('btn-next-desktop');
+        const btnNextMob = document.getElementById('btn-next-mobile');
+        
+        // Selector untuk Prev (pakai Class karena ID-nya tidak spesifik di HTML lama)
+        const btnPrevDesk = document.querySelector('.btn-nav.prev');
+        const btnPrevMob = document.querySelector('.btn-mobile-icon.prev');
 
-        if (btnPrev) {
-            btnPrev.disabled = (index === 0);
-            // Paksa onclick ke fungsi yang benar
-            btnPrev.onclick = () => this.prevSoal();
-        }
+        // Logic Disable Prev (Jika soal pertama)
+        const isFirst = (index === 0);
+        if(btnPrevDesk) btnPrevDesk.disabled = isFirst;
+        if(btnPrevMob) btnPrevMob.disabled = isFirst;
 
-        if (btnNext) {
+        // Logic Tombol Next / Selesai
+        const isLast = (index === total - 1);
+
+        // Helper untuk update tampilan tombol Next
+        const updateBtnStyle = (btn, isMobile) => {
+            if(!btn) return;
+            // Reset state
+            btn.classList.remove('btn-finish', 'btn-selesai');
+            
             if (isLast) {
                 // Mode SELESAI
-                btnNext.innerHTML = 'SELESAI <i class="fa-solid fa-check"></i>';
-                btnNext.classList.add('btn-finish');
-                btnNext.onclick = () => this.confirmSubmit();
-                if(deskText) deskText.innerText = "Selesai";
-                if(deskIcon) deskIcon.className = "fa-solid fa-check";
+                btn.innerHTML = isMobile ? '<i class="fa-solid fa-check"></i>' : 'SELESAI <i class="fa-solid fa-check"></i>';
+                btn.classList.add('btn-selesai'); 
+                btn.onclick = function() { app.confirmSubmit(); }; // Override jadi submit
             } else {
-                // Mode SELANJUTNYA
-                btnNext.innerHTML = 'SELANJUTNYA <i class="fa-solid fa-chevron-right"></i>';
-                btnNext.classList.remove('btn-finish');
-                btnNext.onclick = () => this.nextSoal();
-                if(deskText) deskText.innerText = "Selanjutnya";
-                if(deskIcon) deskIcon.className = "fa-solid fa-chevron-right";
+                // Mode LANJUT
+                btn.innerHTML = isMobile ? '<i class="fa-solid fa-chevron-right"></i>' : 'Selanjutnya <i class="fa-solid fa-chevron-right"></i>';
+                btn.onclick = function() { app.nextSoal(); }; // Kembali ke next soal
             }
-        }
+        };
+
+        updateBtnStyle(btnNextDesk, false);
+        updateBtnStyle(btnNextMob, true);
     },
 
     updateGrid: function() {
@@ -393,7 +393,7 @@ const app = {
         c.innerHTML = h;
     },
 
-    // --- TIMER ---
+    // TIMER
     calculateTimeRemaining: function() {
         if (!this.serverStartTime) return;
         const now = Date.now();
@@ -409,25 +409,22 @@ const app = {
 
         this.timerInterval = setInterval(() => {
             this.calculateTimeRemaining();
-            
             if(this.sisaWaktu <= 0) {
                 this.sisaWaktu = 0;
                 clearInterval(this.timerInterval);
                 this.submitData(true);
                 return;
             }
-
             const h = Math.floor(this.sisaWaktu / 3600);
             const m = Math.floor((this.sisaWaktu % 3600) / 60);
             const s = Math.floor(this.sisaWaktu % 60);
             const text = `${h<10?'0'+h:h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
-
             if(display) display.innerText = text;
             if(displayMob) displayMob.innerText = text;
         }, 1000);
     },
 
-    // --- SUBMIT ---
+    // SUBMIT
     confirmSubmit: function() {
         Swal.fire({
             title: 'Konfirmasi',
@@ -476,7 +473,6 @@ const app = {
 
     submitData: function(force) {
         if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet.', 'error');
-        
         Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const result = this.calculateResult();
 
@@ -526,7 +522,7 @@ const app = {
     logout: function() { this.confirmSubmit(); }
 };
 
-// --- FUNGSI GLOBAL TOGGLE SIDEBAR (YANG TADI HILANG) ---
+// GLOBAL FUNCTION
 function toggleSidebar() {
     const sb = document.getElementById('sidebar-list');
     const ov = document.getElementById('overlay');
