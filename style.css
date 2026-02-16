@@ -1185,4 +1185,45 @@ h4 {
     .custom-radio-container { width: 26px; height: 26px; }
     .radio-style { width: 26px; height: 26px; }
     .custom-radio-container .radio-style:after { width: 8px; height: 8px; }
+
+}
+/* --- FIX SCROLLING ANDROID & LAYOUT --- */
+html, body {
+    height: 100%;
+    overflow: hidden; /* Body tidak scroll */
+}
+
+/* Pastikan View Ujian mengambil 100% tinggi */
+#view-ujian {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Wrapper harus flex dan membatasi area scroll */
+.ujian-wrapper {
+    flex: 1;
+    overflow: hidden; /* Wrapper diam */
+    position: relative;
+    height: 100%; 
+}
+
+/* Panel Kanan (Soal) harus punya scroll sendiri */
+.panel-kanan {
+    flex: 1;
+    height: 100%;
+    overflow-y: auto; /* INI KUNCINYA */
+    -webkit-overflow-scrolling: touch; /* Smooth scroll iOS/Android */
+    padding-bottom: 100px !important; /* Ruang lebih untuk footer */
+}
+
+/* Panel Kiri (Stimulus) di Mobile */
+@media (max-width: 768px) {
+    .panel-kiri {
+        flex: none;
+        height: 30vh; /* Tinggi fix untuk stimulus */
+        overflow-y: auto;
+    }
+    /* Pastikan tombol navigasi mobile selalu di atas layer lain */
+    .ujian-footer { z-index: 9999; position: relative; }
 }
