@@ -2,7 +2,7 @@
 /* DATABASE PAKET SOAL (DENGAN KUNCI)        */
 /* ========================================= */
 
-const PAKET_SOAL = [
+var PAKET_SOAL = [
     {
         id: "ujian-sekolah-saintek",
         judul: "Ujian Sekolah - Saintek & Literasi",
@@ -121,3 +121,4 @@ const PAKET_SOAL = [
         ]
     }
 ];
+
