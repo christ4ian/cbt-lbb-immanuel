@@ -1,13 +1,12 @@
 /* ===========================================================
-   CBT SYSTEM V8 - STABLE PRODUCTION
+   CBT SYSTEM V10 - BUG FIX EDITION
    Fitur: 
-   1. Single Device Enforcement (Auto Logout device lama)
-   2. Auto Resume saat Refresh (Tidak keluar paket)
-   3. Absolute Server Timestamp (Waktu Masuk)
-   4. Android Layout Safety
+   1. Cloud Timer & Single Device (V8 Logic)
+   2. UI Buttons Restore (V5 Logic) - nextSoal/prevSoal is back
+   3. Sidebar Toggle Fixed
    =========================================================== */
 
-// 1. CONFIG
+// 1. KONFIGURASI FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
     authDomain: "cbt-lbb-immanuel.firebaseapp.com",
@@ -18,7 +17,7 @@ const firebaseConfig = {
     appId: "1:79589552415:web:20fb83aa055ec156cfc02a"
 };
 
-// 2. URL GOOGLE SCRIPT (Pastikan Deployment sudah 'New Version')
+// 2. URL GOOGLE SCRIPT (DEPLOYMENT TERBARU)
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec"; 
 
 // Init Firebase
@@ -26,7 +25,7 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const app = {
-    // --- STATE ---
+    // STATE
     currentPaket: null,
     currentIndex: 0,
     answers: {},            
@@ -35,53 +34,38 @@ const app = {
     sisaWaktu: 0,
     userData: {},     
     sessionId: null,
-    deviceId: null,   // ID Unik Perangkat ini
+    deviceId: null,
     sheetRowIndex: null,
-    serverStartTime: null, // TIMESTAMP MASUK (ABSOLUT)
+    serverStartTime: 0, 
 
     // Config (3 Jam)
     MAX_SESSION_TIME: 3 * 60 * 60 * 1000, 
 
     // --- INIT ---
     init: function() {
-        console.log("System V8: Stable & Single Device");
+        console.log("System V10 Ready: Fixed Navigation");
         
-        // 1. Setup Device ID (Biar tau ini HP siapa)
-        this.setupDeviceId();
-        
-        // 2. Load Dropdown
-        this.loadDaftarPaket();
-
-        // 3. Cek apakah user habis refresh? (Auto Resume)
-        this.checkActiveSession();
-    },
-
-    setupDeviceId: function() {
         let did = localStorage.getItem('cbt_device_id');
         if (!did) {
             did = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             localStorage.setItem('cbt_device_id', did);
         }
         this.deviceId = did;
+
+        this.loadDaftarPaket();
+        this.checkResume();
     },
 
-    checkActiveSession: function() {
-        // Ambil data sesi terakhir dari LocalStorage
-        const savedSession = JSON.parse(localStorage.getItem('cbt_active_session'));
-        
-        if (savedSession && savedSession.sessionId) {
-            console.log("Sesi aktif ditemukan, mencoba resume...");
+    checkResume: function() {
+        const saved = JSON.parse(localStorage.getItem('cbt_active_session'));
+        if (saved && saved.sessionId) {
+            this.sessionId = saved.sessionId;
+            this.userData = saved.userData;
+            this.sheetRowIndex = saved.sheetRowIndex;
             
-            // Restore data penting ke Memory
-            this.sessionId = savedSession.sessionId;
-            this.userData = savedSession.userData;
-            this.sheetRowIndex = savedSession.sheetRowIndex;
-            
-            // Cari paket soal berdasarkan ID
-            const paket = PAKET_SOAL.find(p => p.id === savedSession.paketId);
-            if (paket) {
+            const paket = PAKET_SOAL.find(p => p.id === saved.paketId);
+            if(paket) {
                 this.currentPaket = paket;
-                // Langsung sync ke cloud tanpa login ulang
                 this.syncWithCloud(true); 
             }
         }
@@ -100,7 +84,7 @@ const app = {
     },
 
     // =========================================
-    // 1. LOGIN FLOW
+    // 1. LOGIN
     // =========================================
     gotoData: function() {
         const idx = document.getElementById('input-paket').value;
@@ -109,14 +93,11 @@ const app = {
 
         if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
         if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
-        
         if(!navigator.onLine) return Swal.fire('Offline', 'Wajib online untuk login.', 'error');
 
         this.currentPaket = PAKET_SOAL[idx];
-        
         Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
 
-        // Cek Sheet (Whitelist)
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST", body: JSON.stringify({
                 action: "check_user", paketId: this.currentPaket.id, email: email
@@ -129,19 +110,13 @@ const app = {
                     Swal.fire('Selesai', 'Anda sudah menyelesaikan ujian ini.', 'warning');
                     return;
                 }
-                
                 this.userData = { 
                     nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
                 };
                 this.sheetRowIndex = res.data.rowIndex;
-                
-                // Buat Session ID
                 const safeEmail = email.replace(/\./g, '_');
                 this.sessionId = this.currentPaket.id + "_" + safeEmail;
-
-                // Lanjut ke Sinkronisasi Cloud
                 this.syncWithCloud(false);
-
             } else {
                 Swal.fire('Gagal', 'Email tidak terdaftar.', 'error');
             }
@@ -158,41 +133,19 @@ const app = {
             Swal.close();
 
             if (data) {
-                // --- USER LAMA / PINDAH DEVICE ---
                 if (data.status === 'submitted') {
-                    localStorage.removeItem('cbt_active_session'); // Bersihkan sisa
-                    return Swal.fire('Selesai', 'Ujian telah dikumpulkan.', 'warning')
-                        .then(() => location.reload());
+                    localStorage.removeItem('cbt_active_session');
+                    return Swal.fire('Selesai', 'Ujian telah dikumpulkan.', 'warning').then(() => location.reload());
                 }
-
-                // Cek 3 Jam (Dari startTime server)
                 const now = Date.now();
                 if (now - data.startTime > this.MAX_SESSION_TIME) {
-                    return Swal.fire('Waktu Habis', 'Batas 3 jam sesi Anda sudah habis.', 'error');
+                    return Swal.fire('Waktu Habis', 'Batas 3 jam habis.', 'error');
                 }
-
-                // Jika Resume (Refresh) langsung masuk, jika Login baru tanya dulu
-                if (isResume) {
-                    this.restoreSession(data);
-                } else {
-                    Swal.fire({
-                        title: 'Lanjutkan?',
-                        text: 'Melanjutkan sesi dari server...',
-                        icon: 'info',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => this.restoreSession(data));
-                }
-
+                if (isResume) this.restoreSession(data);
+                else Swal.fire({ title: 'Lanjutkan?', text: 'Melanjutkan sesi...', icon: 'info', timer: 1500, showConfirmButton: false }).then(() => this.restoreSession(data));
             } else {
-                // --- USER BARU ---
-                if (isResume) {
-                    // Kasus aneh: di lokal ada tapi di server gak ada (mungkin database dihapus)
-                    localStorage.removeItem('cbt_active_session');
-                    location.reload();
-                } else {
-                    this.gotoConfirmPage();
-                }
+                if(isResume) { localStorage.removeItem('cbt_active_session'); location.reload(); return; }
+                this.gotoConfirmPage();
             }
         });
     },
@@ -210,20 +163,14 @@ const app = {
     },
 
     // =========================================
-    // 2. START & SINGLE DEVICE MONITORING
+    // 2. START & RESTORE
     // =========================================
     startUjian: function() {
         if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
-        
         Swal.fire({ title: 'Memulai...', didOpen: () => Swal.showLoading() });
 
-        // Data Awal - HANYA SET JIKA BELUM ADA
-        // Kita pakai update() supaya tidak menimpa startTime jika sudah ada (race condition prevention)
-        
         db.ref('sessions/' + this.sessionId).once('value').then(snap => {
             let updates = {};
-            
-            // Jika data belum ada, set StartTime (TIMESTAMP MASUK)
             if (!snap.exists()) {
                 updates.startTime = firebase.database.ServerValue.TIMESTAMP;
                 updates.paketId = this.currentPaket.id;
@@ -231,13 +178,9 @@ const app = {
                 updates.sheetRowIndex = this.sheetRowIndex;
                 updates.status = 'ongoing';
             }
-            
-            // Selalu update Device ID aktif (Kick device lama)
             updates.activeDeviceId = this.deviceId; 
-
             return db.ref('sessions/' + this.sessionId).update(updates);
         }).then(() => {
-            // Ambil data terbaru untuk sinkronisasi
             return db.ref('sessions/' + this.sessionId).once('value');
         }).then((snap) => {
             Swal.close();
@@ -246,30 +189,21 @@ const app = {
     },
 
     restoreSession: function(data) {
-        // 1. Simpan Session ke LocalStorage (Biar kalau refresh aman)
         localStorage.setItem('cbt_active_session', JSON.stringify({
-            sessionId: this.sessionId,
-            paketId: this.currentPaket.id,
-            userData: this.userData,
-            sheetRowIndex: this.sheetRowIndex
+            sessionId: this.sessionId, paketId: this.currentPaket.id, userData: this.userData, sheetRowIndex: this.sheetRowIndex
         }));
 
-        // 2. Load Data
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
-        this.serverStartTime = data.startTime; // WAKTU MASUK (ABSOLUT)
+        this.serverStartTime = data.startTime;
 
-        // 3. Monitor Single Device (Anti Joki)
         this.monitorSingleDevice();
-
-        // 4. Hitung Waktu
         this.calculateTimeRemaining();
         if (this.sisaWaktu <= 0) {
             Swal.fire('Waktu Habis', 'Waktu ujian telah habis.', 'error').then(() => this.submitData(true));
             return;
         }
 
-        // 5. Render UI
         document.getElementById('disp-nama').innerText = this.userData.nama;
         document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
         
@@ -280,110 +214,40 @@ const app = {
     },
 
     monitorSingleDevice: function() {
-        // Dengar perubahan di Firebase
         const deviceRef = db.ref('sessions/' + this.sessionId + '/activeDeviceId');
         deviceRef.on('value', (snapshot) => {
             const activeId = snapshot.val();
-            // Jika ID di server beda dengan ID browser ini -> Logout paksa
             if (activeId && activeId !== this.deviceId) {
-                // Matikan listener biar gak looping
-                deviceRef.off(); 
-                clearInterval(this.timerInterval);
+                deviceRef.off(); clearInterval(this.timerInterval);
                 localStorage.removeItem('cbt_active_session');
-                
-                Swal.fire({
-                    title: 'Login Terdeteksi di Perangkat Lain',
-                    text: 'Akun Anda telah login di perangkat lain. Sesi ini dihentikan.',
-                    icon: 'error',
-                    allowOutsideClick: false,
-                    confirmButtonText: 'Keluar'
-                }).then(() => {
-                    location.reload();
-                });
+                Swal.fire({ title: 'Login Terdeteksi di Perangkat Lain', text: 'Sesi dihentikan.', icon: 'error', allowOutsideClick: false, confirmButtonText: 'Keluar' }).then(() => location.reload());
             }
         });
     },
 
-    // --- TIMER & SYNC ---
-    calculateTimeRemaining: function() {
-        if (!this.serverStartTime) return;
-        const now = Date.now();
-        const durationMs = this.currentPaket.waktu * 60 * 1000;
-        const elapsedMs = now - this.serverStartTime;
-        this.sisaWaktu = Math.floor((durationMs - elapsedMs) / 1000);
-    },
-
-    startTimer: function() {
-        clearInterval(this.timerInterval);
-        const display = document.getElementById('time-val');
-        const displayMob = document.getElementById('timer-mobile');
-
-        this.timerInterval = setInterval(() => {
-            this.calculateTimeRemaining(); // Recalculate from server time
-            
-            if(this.sisaWaktu <= 0) {
-                this.sisaWaktu = 0;
-                clearInterval(this.timerInterval);
-                this.submitData(true);
-                return;
-            }
-
-            const h = Math.floor(this.sisaWaktu / 3600);
-            const m = Math.floor((this.sisaWaktu % 3600) / 60);
-            const s = Math.floor(this.sisaWaktu % 60);
-            const text = `${h<10?'0'+h:h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
-
-            if(display) display.innerText = text;
-            if(displayMob) displayMob.innerText = text;
-        }, 1000);
-    },
-
-    syncAnswer: function() {
-        if(navigator.onLine && this.sessionId) {
-            db.ref('sessions/' + this.sessionId).update({
-                answers: this.answers,
-                ragu: this.ragu,
-                lastUpdate: firebase.database.ServerValue.TIMESTAMP
-            });
-        }
-    },
-
     // =========================================
-    // 3. UI RENDERING & HANDLERS (BUG FIXES)
+    // 3. CORE UI & RENDER (FIX BUTTONS)
     // =========================================
-    switchView: function(viewId) {
-        document.querySelectorAll('section').forEach(el => {
-            el.classList.remove('active-view');
-            el.classList.add('hidden-view');
-        });
-        const target = document.getElementById(viewId);
-        if(target) { 
-            target.classList.remove('hidden-view'); 
-            target.classList.add('active-view'); 
-        }
-    },
-
     renderSoal: function(index) {
         this.currentIndex = index;
         const data = this.currentPaket.soal[index];
-        const numElem = document.getElementById('nomor-soal');
-        if(numElem) numElem.innerText = index + 1;
+
+        document.getElementById('nomor-soal').innerText = index + 1;
         
-        // Stimulus logic
         const pStim = document.getElementById('panel-stimulus');
-        if (pStim) {
-            if (data.stimulus && data.stimulus.tampil) {
+        if (data.stimulus && data.stimulus.tampil) {
+            if (this.lastStimulusContent !== data.stimulus.konten) {
                 pStim.innerHTML = data.stimulus.konten;
-                pStim.classList.add('active');
+                this.lastStimulusContent = data.stimulus.konten;
                 if(window.MathJax) MathJax.typesetPromise([pStim]);
-            } else {
-                pStim.classList.remove('active');
             }
+            pStim.classList.add('active');
+        } else {
+            pStim.classList.remove('active');
+            this.lastStimulusContent = null;
         }
 
         const pSoal = document.getElementById('panel-soal');
-        if(!pSoal) return;
-
         let html = `<div class="soal-text">${data.pertanyaan}</div>`;
         const jwb = this.answers[index];
 
@@ -418,34 +282,99 @@ const app = {
 
         pSoal.innerHTML = html;
         if(window.MathJax) MathJax.typesetPromise([pSoal]);
-        
-        const checkRagu = document.getElementById('check-ragu');
-        if(checkRagu) checkRagu.checked = this.ragu[index] || false;
-        
+
+        document.getElementById('check-ragu').checked = this.ragu[index] || false;
         this.updateGrid();
         this.updateNavButtons(index);
     },
 
-    // --- SAFE HANDLERS ---
-    selectAnswer: function(val) { this.answers[this.currentIndex] = val; this.renderSoal(this.currentIndex); this.syncAnswer(); },
-    toggleCheck: function(val) { 
+    // --- HANDLERS (SIMPLE & SAFE) ---
+    selectAnswer: function(val) {
+        this.answers[this.currentIndex] = val;
+        this.renderSoal(this.currentIndex);
+        this.saveRealtime();
+    },
+    toggleCheck: function(val) {
         let arr = this.answers[this.currentIndex] || [];
         if(!Array.isArray(arr)) arr = [];
         if(arr.includes(val)) arr = arr.filter(x=>x!==val); else arr.push(val);
-        this.answers[this.currentIndex] = arr; this.renderSoal(this.currentIndex); this.syncAnswer(); 
+        this.answers[this.currentIndex] = arr;
+        this.renderSoal(this.currentIndex);
+        this.saveRealtime();
     },
-    selectBS: function(r, v) { 
-        let obj = this.answers[this.currentIndex] || {}; obj[r] = v; this.answers[this.currentIndex] = obj; this.updateGrid(); this.syncAnswer(); 
+    selectBS: function(row, val) {
+        let obj = this.answers[this.currentIndex] || {};
+        obj[row] = val;
+        this.answers[this.currentIndex] = obj;
+        this.updateGrid();
+        this.saveRealtime();
     },
-    setRagu: function() { 
-        const chk = document.getElementById('check-ragu');
-        if(chk) { this.ragu[this.currentIndex] = chk.checked; this.updateGrid(); this.syncAnswer(); }
+    setRagu: function() {
+        this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked;
+        this.updateGrid();
+        this.saveRealtime();
     },
     
-    // Navigasi
+    saveRealtime: function() {
+        if(this.sessionId) {
+            db.ref('sessions/' + this.sessionId).update({
+                answers: this.answers,
+                ragu: this.ragu,
+                lastUpdate: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+    },
+
+    // --- NAVIGASI FIX (nextSoal IS BACK!) ---
+    // Saya kembalikan fungsi nextSoal dan prevSoal agar cocok dengan HTML
+    nextSoal: function() {
+        if (this.currentIndex === this.currentPaket.soal.length - 1) this.confirmSubmit();
+        else this.renderSoal(this.currentIndex + 1);
+    },
+    
+    prevSoal: function() {
+        if (this.currentIndex > 0) this.renderSoal(this.currentIndex - 1);
+    },
+
+    // Fungsi Navigasi Generik (Untuk tombol di footer jika pake ID baru)
     navigasi: function(step) {
         const next = this.currentIndex + step;
-        if(next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
+        if (next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
+    },
+
+    updateNavButtons: function(index) {
+        const total = this.currentPaket.soal.length;
+        const isLast = index === total - 1;
+        
+        // Handle Tombol ID Lama (btn-prev, btn-next)
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const deskText = document.getElementById('desk-next-text'); 
+        const deskIcon = document.getElementById('desk-next-icon'); 
+
+        if (btnPrev) {
+            btnPrev.disabled = (index === 0);
+            // Paksa onclick ke fungsi yang benar
+            btnPrev.onclick = () => this.prevSoal();
+        }
+
+        if (btnNext) {
+            if (isLast) {
+                // Mode SELESAI
+                btnNext.innerHTML = 'SELESAI <i class="fa-solid fa-check"></i>';
+                btnNext.classList.add('btn-finish');
+                btnNext.onclick = () => this.confirmSubmit();
+                if(deskText) deskText.innerText = "Selesai";
+                if(deskIcon) deskIcon.className = "fa-solid fa-check";
+            } else {
+                // Mode SELANJUTNYA
+                btnNext.innerHTML = 'SELANJUTNYA <i class="fa-solid fa-chevron-right"></i>';
+                btnNext.classList.remove('btn-finish');
+                btnNext.onclick = () => this.nextSoal();
+                if(deskText) deskText.innerText = "Selanjutnya";
+                if(deskIcon) deskIcon.className = "fa-solid fa-chevron-right";
+            }
+        }
     },
 
     updateGrid: function() {
@@ -464,47 +393,54 @@ const app = {
         c.innerHTML = h;
     },
 
-    // SAFETY UPDATE NAV BUTTONS
-    updateNavButtons: function(index) {
-        const total = this.currentPaket.soal.length;
-        const isLast = index === total - 1;
-        
-        // Prev Button
-        const btnPrev = document.getElementById('btn-prev');
-        if(btnPrev) {
-            btnPrev.disabled = (index === 0);
-            // Pastikan event listener jalan
-            btnPrev.onclick = () => this.navigasi(-1);
-        }
+    // --- TIMER ---
+    calculateTimeRemaining: function() {
+        if (!this.serverStartTime) return;
+        const now = Date.now();
+        const durationMs = this.currentPaket.waktu * 60 * 1000;
+        const elapsedMs = now - this.serverStartTime;
+        this.sisaWaktu = Math.floor((durationMs - elapsedMs) / 1000);
+    },
 
-        // Next Button (Desktop/Mobile Shared ID Logic or Class)
-        const btnNext = document.getElementById('btn-next');
-        const deskText = document.getElementById('desk-next-text'); // Text di desktop
-        const deskIcon = document.getElementById('desk-next-icon'); // Icon di desktop
+    startTimer: function() {
+        clearInterval(this.timerInterval);
+        const display = document.getElementById('time-val');
+        const displayMob = document.getElementById('timer-mobile');
 
-        if (btnNext) {
-            if (isLast) {
-                // Ubah jadi Selesai
-                btnNext.innerHTML = 'SELESAI <i class="fa-solid fa-check"></i>';
-                btnNext.classList.add('btn-finish');
-                btnNext.onclick = () => this.confirmSubmit();
-            } else {
-                // Ubah jadi Selanjutnya
-                btnNext.innerHTML = 'SELANJUTNYA <i class="fa-solid fa-chevron-right"></i>';
-                btnNext.classList.remove('btn-finish');
-                btnNext.onclick = () => this.navigasi(1);
+        this.timerInterval = setInterval(() => {
+            this.calculateTimeRemaining();
+            
+            if(this.sisaWaktu <= 0) {
+                this.sisaWaktu = 0;
+                clearInterval(this.timerInterval);
+                this.submitData(true);
+                return;
             }
-        }
+
+            const h = Math.floor(this.sisaWaktu / 3600);
+            const m = Math.floor((this.sisaWaktu % 3600) / 60);
+            const s = Math.floor(this.sisaWaktu % 60);
+            const text = `${h<10?'0'+h:h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
+
+            if(display) display.innerText = text;
+            if(displayMob) displayMob.innerText = text;
+        }, 1000);
     },
 
-    setFont: function(size) {
-        const s = ['14px', '16px', '20px'];
-        document.documentElement.style.setProperty('--base-size', s[size-1]);
+    // --- SUBMIT ---
+    confirmSubmit: function() {
+        Swal.fire({
+            title: 'Konfirmasi',
+            text: "Yakin ingin mengakhiri ujian?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: 'Ya, Kumpulkan'
+        }).then((res) => {
+            if (res.isConfirmed) this.submitData(false);
+        });
     },
 
-    // =========================================
-    // 4. SCORING & SUBMIT
-    // =========================================
     calculateResult: function() {
         let detail = [];
         let benarCount = 0;
@@ -538,33 +474,18 @@ const app = {
         return { skor: skorAkhir.toFixed(2), detail: detail };
     },
 
-    confirmSubmit: function() {
-        Swal.fire({
-            title: 'Konfirmasi',
-            text: "Yakin ingin mengakhiri ujian?",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#28a745',
-            confirmButtonText: 'Ya, Kumpulkan'
-        }).then((res) => {
-            if (res.isConfirmed) this.submitData(false);
-        });
-    },
-
     submitData: function(force) {
         if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet.', 'error');
         
         Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const result = this.calculateResult();
 
-        // 1. Firebase Finish
         db.ref('sessions/' + this.sessionId).update({
             status: 'submitted',
             finalScore: result.skor,
             finishTime: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // 2. Kirim ke Sheet
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST", body: JSON.stringify({
                 action: "submit_score",
@@ -577,7 +498,7 @@ const app = {
         })
         .then(res => res.json())
         .then(res => {
-            localStorage.removeItem('cbt_active_session'); // Bersihkan sesi lokal
+            localStorage.removeItem('cbt_active_session');
             Swal.fire({ title: 'Sukses!', text: `Nilai: ${result.skor}`, icon: 'success' })
                 .then(() => location.reload());
         })
@@ -588,7 +509,31 @@ const app = {
         });
     },
 
+    // Utils
+    switchView: function(viewId) {
+        document.querySelectorAll('section').forEach(el => {
+            el.classList.remove('active-view');
+            el.classList.add('hidden-view');
+        });
+        const target = document.getElementById(viewId);
+        if(target) { target.classList.remove('hidden-view'); target.classList.add('active-view'); }
+    },
+    setFont: function(size) {
+        const s = ['14px', '16px', '20px'];
+        document.documentElement.style.setProperty('--base-size', s[size-1]);
+        document.querySelectorAll('.font-resizer span').forEach((el, i) => { i === size-1 ? el.classList.add('active') : el.classList.remove('active'); });
+    },
     logout: function() { this.confirmSubmit(); }
 };
+
+// --- FUNGSI GLOBAL TOGGLE SIDEBAR (YANG TADI HILANG) ---
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar-list');
+    const ov = document.getElementById('overlay');
+    if(sb && ov) {
+        sb.classList.toggle('active');
+        ov.classList.toggle('active');
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => { app.init(); });
