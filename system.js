@@ -331,6 +331,9 @@ const app = {
     prevSoal: function() { this.navigasi(-1); },
     nextSoal: function() { this.navigasi(1); },
 
+    prevSoal: function() { this.navigasi(-1); },
+    nextSoal: function() { this.navigasi(1); },
+
     navigasi: function(step) {
         const next = this.currentIndex + step;
         if(next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
@@ -338,44 +341,35 @@ const app = {
 
     updateNavButtons: function(index) {
         const total = this.currentPaket.soal.length;
-        
-        // Selector untuk tombol Desktop & Mobile (Sesuai ID di HTML)
+        const isLast = (index === total - 1);
+        const isFirst = (index === 0);
+
         const btnNextDesk = document.getElementById('btn-next-desktop');
         const btnNextMob = document.getElementById('btn-next-mobile');
-        
-        // Selector untuk Prev (pakai Class karena ID-nya tidak spesifik di HTML lama)
         const btnPrevDesk = document.querySelector('.btn-nav.prev');
         const btnPrevMob = document.querySelector('.btn-mobile-icon.prev');
 
-        // Logic Disable Prev (Jika soal pertama)
-        const isFirst = (index === 0);
+        // Update Button Prev
         if(btnPrevDesk) btnPrevDesk.disabled = isFirst;
         if(btnPrevMob) btnPrevMob.disabled = isFirst;
 
-        // Logic Tombol Next / Selesai
-        const isLast = (index === total - 1);
-
-        // Helper untuk update tampilan tombol Next
-        const updateBtnStyle = (btn, isMobile) => {
+        // Update Button Next / Selesai
+        const updateStyle = (btn, isMob) => {
             if(!btn) return;
-            // Reset state
-            btn.classList.remove('btn-finish', 'btn-selesai');
-            
+            btn.classList.remove('btn-selesai');
             if (isLast) {
-                // Mode SELESAI
-                btn.innerHTML = isMobile ? '<i class="fa-solid fa-check"></i>' : 'SELESAI <i class="fa-solid fa-check"></i>';
-                btn.classList.add('btn-selesai'); 
-                btn.onclick = function() { app.confirmSubmit(); }; // Override jadi submit
+                btn.innerHTML = isMob ? '<i class="fa-solid fa-check"></i>' : 'SELESAI <i class="fa-solid fa-check"></i>';
+                btn.classList.add('btn-selesai');
+                btn.onclick = () => app.confirmSubmit();
             } else {
-                // Mode LANJUT
-                btn.innerHTML = isMobile ? '<i class="fa-solid fa-chevron-right"></i>' : 'Selanjutnya <i class="fa-solid fa-chevron-right"></i>';
-                btn.onclick = function() { app.nextSoal(); }; // Kembali ke next soal
+                btn.innerHTML = isMob ? '<i class="fa-solid fa-chevron-right"></i>' : 'SELANJUTNYA <i class="fa-solid fa-chevron-right"></i>';
+                btn.onclick = () => app.nextSoal();
             }
         };
 
-        updateBtnStyle(btnNextDesk, false);
-        updateBtnStyle(btnNextMob, true);
-    },
+        updateStyle(btnNextDesk, false);
+        updateStyle(btnNextMob, true);
+    }, // Baris 249 yang benar berakhir di sini
 
     updateGrid: function() {
         const c = document.getElementById('grid-container');
