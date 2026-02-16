@@ -1,13 +1,13 @@
 /* ===========================================================
-   CBT SYSTEM V7 - PRODUCTION READY (FULL FEATURES)
+   CBT SYSTEM V8 - STABLE PRODUCTION
    Fitur: 
-   1. Cloud Timer (Anti-Reset & Device Sync)
-   2. Offline Detection (Notifikasi Realtime)
-   3. Auto Grading (Kunci Jawaban PG, PGK, Teks)
-   4. Hybrid Sync (LocalStorage + Firebase)
+   1. Single Device Enforcement (Auto Logout device lama)
+   2. Auto Resume saat Refresh (Tidak keluar paket)
+   3. Absolute Server Timestamp (Waktu Masuk)
+   4. Android Layout Safety
    =========================================================== */
 
-// 1. KONFIGURASI FIREBASE
+// 1. CONFIG
 const firebaseConfig = {
     apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
     authDomain: "cbt-lbb-immanuel.firebaseapp.com",
@@ -18,7 +18,7 @@ const firebaseConfig = {
     appId: "1:79589552415:web:20fb83aa055ec156cfc02a"
 };
 
-// 2. URL GOOGLE SCRIPT (Pastikan sudah Deploy New Version)
+// 2. URL GOOGLE SCRIPT (Pastikan Deployment sudah 'New Version')
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec"; 
 
 // Init Firebase
@@ -33,61 +33,58 @@ const app = {
     ragu: {},               
     timerInterval: null,
     sisaWaktu: 0,
-    serverStartTime: 0, // Waktu mulai absolut dari server
     userData: {},     
-    sessionId: null,  
+    sessionId: null,
+    deviceId: null,   // ID Unik Perangkat ini
     sheetRowIndex: null,
-    isOffline: false, // Status koneksi
+    serverStartTime: null, // TIMESTAMP MASUK (ABSOLUT)
 
     // Config (3 Jam)
     MAX_SESSION_TIME: 3 * 60 * 60 * 1000, 
 
     // --- INIT ---
     init: function() {
-        console.log("System V7 Online: Connectivity Aware");
+        console.log("System V8: Stable & Single Device");
+        
+        // 1. Setup Device ID (Biar tau ini HP siapa)
+        this.setupDeviceId();
+        
+        // 2. Load Dropdown
         this.loadDaftarPaket();
-        this.monitorConnection(); // Aktifkan pemantau internet
 
-        // Restore jawaban lokal jika ada sisa (untuk case refresh pas offline)
-        const localData = localStorage.getItem('cbt_backup_answers');
-        if(localData) {
-            this.answers = JSON.parse(localData);
+        // 3. Cek apakah user habis refresh? (Auto Resume)
+        this.checkActiveSession();
+    },
+
+    setupDeviceId: function() {
+        let did = localStorage.getItem('cbt_device_id');
+        if (!did) {
+            did = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('cbt_device_id', did);
         }
+        this.deviceId = did;
     },
 
-    // =========================================
-    // 0. FITUR KONEKSI (OFFLINE/ONLINE)
-    // =========================================
-    monitorConnection: function() {
-        // Cek status awal
-        if (!navigator.onLine) this.showOfflineStatus();
-
-        // Event Listener: Internet Putus
-        window.addEventListener('offline', () => {
-            this.isOffline = true;
-            this.showOfflineStatus();
-        });
-
-        // Event Listener: Internet Nyambung
-        window.addEventListener('online', () => {
-            this.isOffline = false;
-            Swal.fire({
-                toast: true, position: 'top-end', icon: 'success', 
-                title: 'Koneksi Kembali Stabil', showConfirmButton: false, timer: 3000
-            });
-            // Sync data yang tertunda saat offline
-            if(this.sessionId) this.syncAnswer();
-        });
-    },
-
-    showOfflineStatus: function() {
-        Swal.fire({
-            toast: true, position: 'top-end', icon: 'warning',
-            title: 'Koneksi Terputus!',
-            text: 'Jawaban disimpan di perangkat sementara.',
-            showConfirmButton: false, timer: 5000,
-            background: '#fff3cd', color: '#856404'
-        });
+    checkActiveSession: function() {
+        // Ambil data sesi terakhir dari LocalStorage
+        const savedSession = JSON.parse(localStorage.getItem('cbt_active_session'));
+        
+        if (savedSession && savedSession.sessionId) {
+            console.log("Sesi aktif ditemukan, mencoba resume...");
+            
+            // Restore data penting ke Memory
+            this.sessionId = savedSession.sessionId;
+            this.userData = savedSession.userData;
+            this.sheetRowIndex = savedSession.sheetRowIndex;
+            
+            // Cari paket soal berdasarkan ID
+            const paket = PAKET_SOAL.find(p => p.id === savedSession.paketId);
+            if (paket) {
+                this.currentPaket = paket;
+                // Langsung sync ke cloud tanpa login ulang
+                this.syncWithCloud(true); 
+            }
+        }
     },
 
     loadDaftarPaket: function() {
@@ -103,7 +100,7 @@ const app = {
     },
 
     // =========================================
-    // 1. LOGIN & RESTORE
+    // 1. LOGIN FLOW
     // =========================================
     gotoData: function() {
         const idx = document.getElementById('input-paket').value;
@@ -113,13 +110,13 @@ const app = {
         if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
         if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
         
-        if(!navigator.onLine) return Swal.fire('Offline', 'Anda harus online untuk login awal.', 'error');
+        if(!navigator.onLine) return Swal.fire('Offline', 'Wajib online untuk login.', 'error');
 
         this.currentPaket = PAKET_SOAL[idx];
         
         Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
 
-        // Step 1: Cek Sheet
+        // Cek Sheet (Whitelist)
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST", body: JSON.stringify({
                 action: "check_user", paketId: this.currentPaket.id, email: email
@@ -129,16 +126,22 @@ const app = {
         .then(res => {
             if (res.status === "found") {
                 if (res.data.statusSheet === "SUDAH") {
-                    Swal.fire('Selesai', 'Anda sudah mengerjakan ujian ini.', 'warning');
+                    Swal.fire('Selesai', 'Anda sudah menyelesaikan ujian ini.', 'warning');
                     return;
                 }
+                
                 this.userData = { 
                     nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
                 };
                 this.sheetRowIndex = res.data.rowIndex;
                 
-                // Step 2: Cek Firebase (Pindah Device)
-                this.syncWithCloud(email);
+                // Buat Session ID
+                const safeEmail = email.replace(/\./g, '_');
+                this.sessionId = this.currentPaket.id + "_" + safeEmail;
+
+                // Lanjut ke Sinkronisasi Cloud
+                this.syncWithCloud(false);
+
             } else {
                 Swal.fire('Gagal', 'Email tidak terdaftar.', 'error');
             }
@@ -149,37 +152,47 @@ const app = {
         });
     },
 
-    syncWithCloud: function(email) {
-        const safeEmail = email.replace(/\./g, '_');
-        this.sessionId = this.currentPaket.id + "_" + safeEmail;
-
+    syncWithCloud: function(isResume) {
         db.ref('sessions/' + this.sessionId).once('value').then((snapshot) => {
             const data = snapshot.val();
             Swal.close();
 
             if (data) {
-                // --- ADA SESI LAMA ---
+                // --- USER LAMA / PINDAH DEVICE ---
                 if (data.status === 'submitted') {
-                    return Swal.fire('Selesai', 'Anda sudah mengumpulkan ujian ini.', 'warning');
+                    localStorage.removeItem('cbt_active_session'); // Bersihkan sisa
+                    return Swal.fire('Selesai', 'Ujian telah dikumpulkan.', 'warning')
+                        .then(() => location.reload());
                 }
 
-                // Cek Timer Server (3 Jam)
+                // Cek 3 Jam (Dari startTime server)
                 const now = Date.now();
                 if (now - data.startTime > this.MAX_SESSION_TIME) {
                     return Swal.fire('Waktu Habis', 'Batas 3 jam sesi Anda sudah habis.', 'error');
                 }
 
-                Swal.fire({
-                    title: 'Lanjutkan Sesi?',
-                    text: 'Melanjutkan progres dari perangkat sebelumnya.',
-                    icon: 'info',
-                    confirmButtonText: 'Lanjut'
-                }).then(() => {
+                // Jika Resume (Refresh) langsung masuk, jika Login baru tanya dulu
+                if (isResume) {
                     this.restoreSession(data);
-                });
+                } else {
+                    Swal.fire({
+                        title: 'Lanjutkan?',
+                        text: 'Melanjutkan sesi dari server...',
+                        icon: 'info',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => this.restoreSession(data));
+                }
+
             } else {
-                // --- BARU MULAI ---
-                this.gotoConfirmPage();
+                // --- USER BARU ---
+                if (isResume) {
+                    // Kasus aneh: di lokal ada tapi di server gak ada (mungkin database dihapus)
+                    localStorage.removeItem('cbt_active_session');
+                    location.reload();
+                } else {
+                    this.gotoConfirmPage();
+                }
             }
         });
     },
@@ -187,33 +200,44 @@ const app = {
     gotoConfirmPage: function() {
         document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
         document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
-        document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
         
-        document.getElementById('data-nama').value = this.userData.nama;
-        document.getElementById('data-nama').disabled = true;
-        document.getElementById('data-sekolah').value = this.userData.sekolah;
-        document.getElementById('data-sekolah').disabled = true;
+        const inpNama = document.getElementById('data-nama');
+        const inpSekolah = document.getElementById('data-sekolah');
+        if(inpNama) { inpNama.value = this.userData.nama; inpNama.disabled = true; }
+        if(inpSekolah) { inpSekolah.value = this.userData.sekolah; inpSekolah.disabled = true; }
 
         this.switchView('view-data');
     },
 
     // =========================================
-    // 2. CORE: START & TIMER (ABSOLUTE SYNC)
+    // 2. START & SINGLE DEVICE MONITORING
     // =========================================
     startUjian: function() {
-        if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan untuk memulai.', 'warning');
+        if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
         
         Swal.fire({ title: 'Memulai...', didOpen: () => Swal.showLoading() });
 
-        const startData = {
-            startTime: firebase.database.ServerValue.TIMESTAMP, 
-            status: 'ongoing',
-            userData: this.userData,
-            sheetRowIndex: this.sheetRowIndex,
-            paketId: this.currentPaket.id
-        };
+        // Data Awal - HANYA SET JIKA BELUM ADA
+        // Kita pakai update() supaya tidak menimpa startTime jika sudah ada (race condition prevention)
+        
+        db.ref('sessions/' + this.sessionId).once('value').then(snap => {
+            let updates = {};
+            
+            // Jika data belum ada, set StartTime (TIMESTAMP MASUK)
+            if (!snap.exists()) {
+                updates.startTime = firebase.database.ServerValue.TIMESTAMP;
+                updates.paketId = this.currentPaket.id;
+                updates.userData = this.userData;
+                updates.sheetRowIndex = this.sheetRowIndex;
+                updates.status = 'ongoing';
+            }
+            
+            // Selalu update Device ID aktif (Kick device lama)
+            updates.activeDeviceId = this.deviceId; 
 
-        db.ref('sessions/' + this.sessionId).set(startData).then(() => {
+            return db.ref('sessions/' + this.sessionId).update(updates);
+        }).then(() => {
+            // Ambil data terbaru untuk sinkronisasi
             return db.ref('sessions/' + this.sessionId).once('value');
         }).then((snap) => {
             Swal.close();
@@ -222,40 +246,71 @@ const app = {
     },
 
     restoreSession: function(data) {
-        // 1. Ambil data penting
+        // 1. Simpan Session ke LocalStorage (Biar kalau refresh aman)
+        localStorage.setItem('cbt_active_session', JSON.stringify({
+            sessionId: this.sessionId,
+            paketId: this.currentPaket.id,
+            userData: this.userData,
+            sheetRowIndex: this.sheetRowIndex
+        }));
+
+        // 2. Load Data
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
-        this.sheetRowIndex = data.sheetRowIndex;
-        this.serverStartTime = data.startTime; // INI KUNCINYA (Waktu server)
+        this.serverStartTime = data.startTime; // WAKTU MASUK (ABSOLUT)
 
-        // Backup lokal
-        localStorage.setItem('cbt_backup_answers', JSON.stringify(this.answers));
+        // 3. Monitor Single Device (Anti Joki)
+        this.monitorSingleDevice();
 
-        // 2. Tampilkan Info
-        document.getElementById('disp-nama').innerText = this.userData.nama;
-        document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
-
-        // 3. Cek Sisa Waktu (Hitungan Absolut)
+        // 4. Hitung Waktu
         this.calculateTimeRemaining();
         if (this.sisaWaktu <= 0) {
             Swal.fire('Waktu Habis', 'Waktu ujian telah habis.', 'error').then(() => this.submitData(true));
             return;
         }
 
-        // 4. Masuk Ujian
+        // 5. Render UI
+        document.getElementById('disp-nama').innerText = this.userData.nama;
+        document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
+        
         this.switchView('view-ujian');
         this.startTimer();
         this.renderSoal(0);
         this.setFont(2);
     },
 
-    // --- FUNGSI TIMER PINTAR (DEVICE SYNC) ---
+    monitorSingleDevice: function() {
+        // Dengar perubahan di Firebase
+        const deviceRef = db.ref('sessions/' + this.sessionId + '/activeDeviceId');
+        deviceRef.on('value', (snapshot) => {
+            const activeId = snapshot.val();
+            // Jika ID di server beda dengan ID browser ini -> Logout paksa
+            if (activeId && activeId !== this.deviceId) {
+                // Matikan listener biar gak looping
+                deviceRef.off(); 
+                clearInterval(this.timerInterval);
+                localStorage.removeItem('cbt_active_session');
+                
+                Swal.fire({
+                    title: 'Login Terdeteksi di Perangkat Lain',
+                    text: 'Akun Anda telah login di perangkat lain. Sesi ini dihentikan.',
+                    icon: 'error',
+                    allowOutsideClick: false,
+                    confirmButtonText: 'Keluar'
+                }).then(() => {
+                    location.reload();
+                });
+            }
+        });
+    },
+
+    // --- TIMER & SYNC ---
     calculateTimeRemaining: function() {
+        if (!this.serverStartTime) return;
         const now = Date.now();
         const durationMs = this.currentPaket.waktu * 60 * 1000;
-        const elapsedMs = now - this.serverStartTime; // Selisih Waktu Sekarang vs Waktu Mulai Server
-        
-        this.sisaWaktu = Math.floor((durationMs - elapsedMs) / 1000); // Konversi ke detik
+        const elapsedMs = now - this.serverStartTime;
+        this.sisaWaktu = Math.floor((durationMs - elapsedMs) / 1000);
     },
 
     startTimer: function() {
@@ -264,8 +319,7 @@ const app = {
         const displayMob = document.getElementById('timer-mobile');
 
         this.timerInterval = setInterval(() => {
-            // Hitung ulang setiap detik berdasarkan waktu server (Bukan sekedar --)
-            this.calculateTimeRemaining();
+            this.calculateTimeRemaining(); // Recalculate from server time
             
             if(this.sisaWaktu <= 0) {
                 this.sisaWaktu = 0;
@@ -281,21 +335,11 @@ const app = {
 
             if(display) display.innerText = text;
             if(displayMob) displayMob.innerText = text;
-            
-            // Peringatan visual jika < 5 menit
-            if(this.sisaWaktu < 300) {
-                if(display) display.style.color = 'red';
-            }
         }, 1000);
     },
 
-    // --- SYNC JAWABAN (Hybrid: Local + Cloud) ---
     syncAnswer: function() {
-        // 1. Simpan Lokal (Selalu berhasil meski offline)
-        localStorage.setItem('cbt_backup_answers', JSON.stringify(this.answers));
-        
-        // 2. Simpan Cloud (Jika Online)
-        if(navigator.onLine) {
+        if(navigator.onLine && this.sessionId) {
             db.ref('sessions/' + this.sessionId).update({
                 answers: this.answers,
                 ragu: this.ragu,
@@ -305,142 +349,41 @@ const app = {
     },
 
     // =========================================
-    // 3. SCORING (AUTO GRADING)
+    // 3. UI RENDERING & HANDLERS (BUG FIXES)
     // =========================================
-    calculateResult: function() {
-        let detail = [];
-        let benarCount = 0;
-        const totalSoal = this.currentPaket.soal.length;
-
-        this.currentPaket.soal.forEach((soal, i) => {
-            const jwb = this.answers[i];
-            const kunci = soal.kunci;
-            let status = "SALAH";
-
-            if (!jwb) {
-                detail.push("KOSONG");
-                return;
-            }
-
-            // A. Logika PG (Huruf)
-            if (soal.tipe === 'pg') {
-                if (jwb === kunci) status = "BENAR";
-            }
-            // B. Logika PGK (Array Checkbox)
-            else if (soal.tipe === 'pgk') {
-                // Urutkan array agar perbandingan akurat (['0','1'] == ['1','0'])
-                const jwbSorted = JSON.stringify(jwb.sort());
-                const kunciSorted = JSON.stringify(kunci.sort());
-                if (jwbSorted === kunciSorted) status = "BENAR";
-            }
-            // C. Logika Kategori (Object Benar/Salah)
-            else if (soal.tipe === 'pgk-kategori') {
-                let isPerfect = true;
-                const rows = Object.keys(kunci);
-                for (let r of rows) {
-                    if (jwb[r] !== kunci[r]) { isPerfect = false; break; }
-                }
-                if (isPerfect) status = "BENAR";
-            }
-
-            if (status === "BENAR") benarCount++;
-            detail.push(status);
-        });
-
-        const skorAkhir = (benarCount / totalSoal) * 100;
-        return { skor: skorAkhir.toFixed(2), detail: detail };
-    },
-
-    // =========================================
-    // 4. SUBMIT & RENDER
-    // =========================================
-    confirmSubmit: function() {
-        const total = this.currentPaket.soal.length;
-        const isi = Object.keys(this.answers).length;
-        const kosong = total - isi;
-        
-        let msg = "Yakin ingin mengumpulkan?";
-        if(kosong > 0) msg = `Masih ada ${kosong} soal belum diisi! Yakin?`;
-
-        Swal.fire({
-            title: 'Konfirmasi', text: msg, icon: 'warning',
-            showCancelButton: true, confirmButtonColor: '#28a745', confirmButtonText: 'Ya, Kumpulkan'
-        }).then((res) => {
-            if (res.isConfirmed) this.submitData(false);
-        });
-    },
-
-    submitData: function(force) {
-        if(!navigator.onLine) {
-            return Swal.fire('Gagal', 'Koneksi internet terputus. Mohon cari sinyal untuk mengumpulkan.', 'error');
-        }
-
-        Swal.fire({ title: 'Mengkoreksi...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-        const result = this.calculateResult();
-
-        // 1. Update Firebase (Finish)
-        db.ref('sessions/' + this.sessionId).update({
-            status: 'submitted',
-            finalScore: result.skor,
-            finishTime: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        // 2. Kirim ke Sheet
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST", body: JSON.stringify({
-                action: "submit_score",
-                paketId: this.currentPaket.id,
-                email: this.userData.email,
-                rowIndex: this.sheetRowIndex,
-                skor: result.skor,
-                detailJawaban: result.detail
-            })
-        })
-        .then(res => res.json())
-        .then(res => {
-            localStorage.removeItem('cbt_backup_answers'); // Bersihkan lokal setelah sukses
-            Swal.fire({
-                title: 'Ujian Selesai!',
-                html: `Nilai Kamu: <b>${result.skor}</b><br>Tersimpan di database.`,
-                icon: 'success'
-            }).then(() => location.reload());
-        })
-        .catch(err => {
-            console.error(err);
-            Swal.fire('Tersimpan', `Nilai: ${result.skor}. (Backup Server)`, 'success').then(() => location.reload());
-        });
-    },
-
-    // --- UI UTILS ---
     switchView: function(viewId) {
         document.querySelectorAll('section').forEach(el => {
             el.classList.remove('active-view');
             el.classList.add('hidden-view');
         });
         const target = document.getElementById(viewId);
-        if(target) { target.classList.remove('hidden-view'); target.classList.add('active-view'); }
+        if(target) { 
+            target.classList.remove('hidden-view'); 
+            target.classList.add('active-view'); 
+        }
     },
-    
+
     renderSoal: function(index) {
         this.currentIndex = index;
         const data = this.currentPaket.soal[index];
-        document.getElementById('nomor-soal').innerText = index + 1;
+        const numElem = document.getElementById('nomor-soal');
+        if(numElem) numElem.innerText = index + 1;
         
+        // Stimulus logic
         const pStim = document.getElementById('panel-stimulus');
-        if (data.stimulus && data.stimulus.tampil) {
-            if (this.lastStimulusContent !== data.stimulus.konten) {
+        if (pStim) {
+            if (data.stimulus && data.stimulus.tampil) {
                 pStim.innerHTML = data.stimulus.konten;
-                this.lastStimulusContent = data.stimulus.konten;
+                pStim.classList.add('active');
                 if(window.MathJax) MathJax.typesetPromise([pStim]);
+            } else {
+                pStim.classList.remove('active');
             }
-            pStim.classList.add('active');
-        } else {
-            pStim.classList.remove('active');
-            this.lastStimulusContent = null;
         }
 
         const pSoal = document.getElementById('panel-soal');
+        if(!pSoal) return;
+
         let html = `<div class="soal-text">${data.pertanyaan}</div>`;
         const jwb = this.answers[index];
 
@@ -463,7 +406,7 @@ const app = {
             html += `</div>`;
         } else if (data.tipe === 'pgk-kategori') {
             const obj = jwb || {};
-            html += `<table class="table-bs"><thead><tr><th>Pernyataan</th><th width="80">BENAR</th><th width="80">SALAH</th></tr></thead><tbody>`;
+            html += `<table class="table-bs"><thead><tr><th>Pernyataan</th><th width="50">B</th><th width="50">S</th></tr></thead><tbody>`;
             data.opsi.forEach((row, i) => {
                 const val = i.toString();
                 const b = obj[val] === 'B' ? 'checked' : '';
@@ -472,15 +415,18 @@ const app = {
             });
             html += `</tbody></table>`;
         }
+
         pSoal.innerHTML = html;
         if(window.MathJax) MathJax.typesetPromise([pSoal]);
         
-        document.getElementById('check-ragu').checked = this.ragu[index] || false;
+        const checkRagu = document.getElementById('check-ragu');
+        if(checkRagu) checkRagu.checked = this.ragu[index] || false;
+        
         this.updateGrid();
         this.updateNavButtons(index);
     },
 
-    // Handlers (Trigger Sync)
+    // --- SAFE HANDLERS ---
     selectAnswer: function(val) { this.answers[this.currentIndex] = val; this.renderSoal(this.currentIndex); this.syncAnswer(); },
     toggleCheck: function(val) { 
         let arr = this.answers[this.currentIndex] || [];
@@ -491,11 +437,20 @@ const app = {
     selectBS: function(r, v) { 
         let obj = this.answers[this.currentIndex] || {}; obj[r] = v; this.answers[this.currentIndex] = obj; this.updateGrid(); this.syncAnswer(); 
     },
-    setRagu: function() { this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked; this.updateGrid(); this.syncAnswer(); },
+    setRagu: function() { 
+        const chk = document.getElementById('check-ragu');
+        if(chk) { this.ragu[this.currentIndex] = chk.checked; this.updateGrid(); this.syncAnswer(); }
+    },
     
-    navigasi: function(step) { const next = this.currentIndex + step; if(next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next); },
+    // Navigasi
+    navigasi: function(step) {
+        const next = this.currentIndex + step;
+        if(next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
+    },
+
     updateGrid: function() {
         const c = document.getElementById('grid-container');
+        if(!c) return;
         let h = '';
         this.currentPaket.soal.forEach((_, i) => {
             let cls = '';
@@ -508,35 +463,131 @@ const app = {
         });
         c.innerHTML = h;
     },
+
+    // SAFETY UPDATE NAV BUTTONS
     updateNavButtons: function(index) {
         const total = this.currentPaket.soal.length;
         const isLast = index === total - 1;
-        document.querySelectorAll('.prev').forEach(btn => btn.disabled = (index === 0));
-
-        const deskText = document.getElementById('desk-next-text');
-        const deskIcon = document.getElementById('desk-next-icon');
-        const btnNext = document.getElementById('btn-next');
         
-        // Cek elemen ada atau tidak untuk menghindari error null
-        if(btnNext) {
-             if (isLast) {
+        // Prev Button
+        const btnPrev = document.getElementById('btn-prev');
+        if(btnPrev) {
+            btnPrev.disabled = (index === 0);
+            // Pastikan event listener jalan
+            btnPrev.onclick = () => this.navigasi(-1);
+        }
+
+        // Next Button (Desktop/Mobile Shared ID Logic or Class)
+        const btnNext = document.getElementById('btn-next');
+        const deskText = document.getElementById('desk-next-text'); // Text di desktop
+        const deskIcon = document.getElementById('desk-next-icon'); // Icon di desktop
+
+        if (btnNext) {
+            if (isLast) {
+                // Ubah jadi Selesai
                 btnNext.innerHTML = 'SELESAI <i class="fa-solid fa-check"></i>';
                 btnNext.classList.add('btn-finish');
                 btnNext.onclick = () => this.confirmSubmit();
-                if(deskText) deskText.innerText = "Selesai";
-             } else {
+            } else {
+                // Ubah jadi Selanjutnya
                 btnNext.innerHTML = 'SELANJUTNYA <i class="fa-solid fa-chevron-right"></i>';
                 btnNext.classList.remove('btn-finish');
                 btnNext.onclick = () => this.navigasi(1);
-                if(deskText) deskText.innerText = "Selanjutnya";
-             }
+            }
         }
     },
+
     setFont: function(size) {
         const s = ['14px', '16px', '20px'];
         document.documentElement.style.setProperty('--base-size', s[size-1]);
-        document.querySelectorAll('.font-resizer span').forEach((el, i) => { i === size-1 ? el.classList.add('active') : el.classList.remove('active'); });
     },
+
+    // =========================================
+    // 4. SCORING & SUBMIT
+    // =========================================
+    calculateResult: function() {
+        let detail = [];
+        let benarCount = 0;
+        const totalSoal = this.currentPaket.soal.length;
+
+        this.currentPaket.soal.forEach((soal, i) => {
+            const jwb = this.answers[i];
+            const kunci = soal.kunci;
+            let status = "SALAH";
+
+            if (!jwb) { detail.push("KOSONG"); return; }
+
+            if (soal.tipe === 'pg') {
+                if (jwb === kunci) status = "BENAR";
+            } else if (soal.tipe === 'pgk') {
+                const jwbSorted = JSON.stringify(jwb.sort());
+                const kunciSorted = JSON.stringify(kunci.sort());
+                if (jwbSorted === kunciSorted) status = "BENAR";
+            } else if (soal.tipe === 'pgk-kategori') {
+                let isPerfect = true;
+                const rows = Object.keys(kunci);
+                for (let r of rows) { if (jwb[r] !== kunci[r]) { isPerfect = false; break; } }
+                if (isPerfect) status = "BENAR";
+            }
+
+            if (status === "BENAR") benarCount++;
+            detail.push(status);
+        });
+
+        const skorAkhir = (benarCount / totalSoal) * 100;
+        return { skor: skorAkhir.toFixed(2), detail: detail };
+    },
+
+    confirmSubmit: function() {
+        Swal.fire({
+            title: 'Konfirmasi',
+            text: "Yakin ingin mengakhiri ujian?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: 'Ya, Kumpulkan'
+        }).then((res) => {
+            if (res.isConfirmed) this.submitData(false);
+        });
+    },
+
+    submitData: function(force) {
+        if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet.', 'error');
+        
+        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const result = this.calculateResult();
+
+        // 1. Firebase Finish
+        db.ref('sessions/' + this.sessionId).update({
+            status: 'submitted',
+            finalScore: result.skor,
+            finishTime: firebase.database.ServerValue.TIMESTAMP
+        });
+
+        // 2. Kirim ke Sheet
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST", body: JSON.stringify({
+                action: "submit_score",
+                paketId: this.currentPaket.id,
+                email: this.userData.email,
+                rowIndex: this.sheetRowIndex,
+                skor: result.skor,
+                detailJawaban: result.detail
+            })
+        })
+        .then(res => res.json())
+        .then(res => {
+            localStorage.removeItem('cbt_active_session'); // Bersihkan sesi lokal
+            Swal.fire({ title: 'Sukses!', text: `Nilai: ${result.skor}`, icon: 'success' })
+                .then(() => location.reload());
+        })
+        .catch(err => {
+            console.error(err);
+            localStorage.removeItem('cbt_active_session');
+            Swal.fire('Tersimpan', 'Data aman di server cadangan.', 'success').then(() => location.reload());
+        });
+    },
+
     logout: function() { this.confirmSubmit(); }
 };
 
