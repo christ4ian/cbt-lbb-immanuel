@@ -1,0 +1,1188 @@
+/* ========================================= */
+/* 1. SETUP GLOBAL, VARIABEL & RESET         */
+/* ========================================= */
+:root {
+    /* --- PALET WARNA (LBB IMMANUEL THEME) --- */
+    
+    /* Primary (Hijau - Identitas Brand) */
+    --primary: #28a745;
+    --primary-dark: #218838;
+    --primary-light: #d4edda;
+    --primary-gradient: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    
+    /* Secondary (Biru - Aksi/Navigasi) */
+    --secondary: #007bff;
+    --secondary-dark: #0069d9;
+    --secondary-gradient: linear-gradient(135deg, #007bff 0%, #0069d9 100%);
+    
+    /* UI States */
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --success: #198754;
+    
+    /* Netral / Background */
+    --bg-body: #f4f6f9;
+    --bg-card: #ffffff;
+    --text-main: #2c3e50;
+    --text-muted: #6c757d;
+    --border-color: #e9ecef;
+    
+    /* Dimensi Layout */
+    --header-height: 60px;
+    --toolbar-height: 50px;
+    --footer-height: 70px;
+    
+    /* Typography (Dinamis via JS Font Resizer) */
+    --base-size: 16px; 
+    --font-heading: 'Nunito', sans-serif;
+    --font-body: 'Open Sans', sans-serif;
+
+    /* Shadow Effect */
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 15px rgba(0,0,0,0.08);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+/* Reset Dasar */
+*, *::before, *::after {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+html {
+    font-size: var(--base-size);
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-body);
+    font-family: var(--font-body);
+    color: var(--text-main);
+    overflow: hidden; /* Mencegah scroll pada body utama */
+}
+
+/* FIX: Mencegah SweetAlert menggeser layout */
+body.swal2-shown {
+    height: 100vh !important;
+    overflow: hidden !important;
+    padding-right: 0 !important; 
+}
+
+/* Utility Visibility Classes */
+.hidden-view { display: none !important; }
+.active-view { display: flex; flex-direction: column; height: 100%; width: 100%; }
+
+/* Default Navigasi Visibility */
+.btn-mobile-icon { display: none; }
+.desktop-nav { display: flex; }
+
+
+/* ========================================= */
+/* 2. HALAMAN 1: LOGIN (Lengkap)             */
+/* ========================================= */
+#view-login {
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-body);
+}
+
+/* Background Decoration */
+.login-bg-wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: var(--primary-gradient);
+    border-bottom-left-radius: 50% 100px;
+    border-bottom-right-radius: 50% 100px;
+    z-index: 0;
+}
+
+.login-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+/* Header Login (Logo & Judul) */
+.login-header {
+    text-align: center;
+    margin-bottom: 25px;
+    color: white;
+}
+
+.logo-circle {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px auto;
+    font-size: 32px;
+    color: var(--primary);
+    box-shadow: var(--shadow-md);
+}
+
+.login-header h2 {
+    margin: 0;
+    font-weight: 800;
+    font-family: var(--font-heading);
+    letter-spacing: 1px;
+    font-size: 1.8rem;
+}
+
+.login-header p {
+    margin: 5px 0 0;
+    font-size: 0.95rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* Kotak Form Login */
+.login-form-box {
+    background: white;
+    padding: 35px 30px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+
+.login-form-box h3 {
+    margin: 0 0 5px;
+    font-family: var(--font-heading);
+    color: var(--text-main);
+    font-size: 1.4rem;
+}
+
+.subtitle {
+    margin: 0 0 30px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Input Fields & Dropdowns */
+.input-group {
+    position: relative;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.input-group input, 
+.input-group select {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--text-main);
+    background-color: #f9fafb;
+    transition: all 0.3s ease;
+    appearance: none; /* Hilangkan panah default select di browser tertentu */
+    -webkit-appearance: none;
+}
+
+.input-group select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23999%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px top 50%;
+    background-size: 12px auto;
+}
+
+.input-group input:focus, 
+.input-group select:focus {
+    border-color: var(--secondary);
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    pointer-events: none;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 5px;
+}
+
+/* Button Login */
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background: var(--secondary-gradient);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+}
+
+.btn-login:active {
+    transform: translateY(0);
+}
+
+/* Footer Copyright Login */
+.login-footer-text {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    font-size: 0.75rem;
+    color: #999;
+    font-family: var(--font-body);
+}
+
+
+/* ========================================= */
+/* 3. HALAMAN 2: DATA PESERTA                */
+/* ========================================= */
+.top-bar {
+    background: var(--primary-gradient);
+    padding: 0 20px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+}
+.top-bar .brand { 
+    font-weight: 800; 
+    font-size: 1.2rem; 
+    letter-spacing: 0.5px; 
+    font-family: var(--font-heading);
+}
+
+.container-data {
+    flex: 1;
+    padding: 30px;
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+    justify-content: center;
+    background-color: #eef2f5;
+    overflow-y: auto;
+}
+
+.card-info, .card-input {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    width: 100%;
+}
+
+.card-info { 
+    flex: 1; 
+    max-width: 350px; 
+    border-top: 4px solid var(--secondary); 
+}
+.card-input { 
+    flex: 1.5; 
+    max-width: 500px; 
+    border-top: 4px solid var(--primary); 
+}
+
+h4 {
+    margin: 0 0 25px;
+    font-size: 1.1rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-heading);
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
+/* Tabel Info Row */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #ddd;
+    padding: 12px 0;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row .label { color: var(--text-muted); font-weight: 600; }
+.info-row .value { font-weight: bold; color: var(--text-main); }
+
+/* Form Data */
+.form-group { margin-bottom: 20px; }
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: 0.3s;
+}
+.form-group input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+/* Tombol Mulai */
+.btn-start {
+    width: 100%;
+    background: var(--primary);
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: 0.3s;
+    box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2);
+}
+.btn-start:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+
+/* ========================================= */
+/* 4. HALAMAN 3: UJIAN (Header & Toolbar)    */
+/* ========================================= */
+.ujian-header {
+    height: var(--header-height);
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    color: white;
+    flex-shrink: 0;
+    z-index: 20;
+    box-shadow: var(--shadow-sm);
+}
+
+.header-left { display: flex; align-items: center; gap: 15px; }
+.logo-small {
+    font-weight: 800;
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    background: rgba(255,255,255,0.2);
+    padding: 5px 10px;
+    border-radius: 6px;
+    letter-spacing: 1px;
+}
+.siswa-info { display: flex; flex-direction: column; line-height: 1.2; }
+.siswa-info span { font-weight: 700; font-size: 0.95rem; }
+.siswa-info small { font-size: 0.75rem; opacity: 0.9; }
+
+.btn-logout {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+}
+.btn-logout:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+/* Toolbar Ujian */
+.ujian-toolbar {
+    height: var(--toolbar-height);
+    background: white;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+}
+
+.tool-left { display: flex; align-items: center; }
+.badge-nomor {
+    background: #343a40;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tool-right { display: flex; align-items: center; gap: 12px; }
+
+.timer-badge {
+    background: #fff3cd;
+    color: #856404;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-family: 'Nunito', monospace;
+    font-size: 0.95rem;
+    border: 1px solid #ffeeba;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.font-resizer {
+    display: flex;
+    background: #f0f2f5;
+    padding: 4px;
+    border-radius: 8px;
+    gap: 4px;
+    border: 1px solid #ddd;
+}
+.font-resizer span {
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: flex-end; /* Supaya text A rata bawah */
+    justify-content: center;
+    line-height: 1;
+    color: #aaa;
+    border-radius: 4px;
+    transition: 0.2s;
+}
+.font-resizer span:hover { background: #e2e6ea; }
+.font-resizer span.active {
+    background: white;
+    color: var(--secondary);
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.btn-list-icon {
+    background: white;
+    border: 1px solid #ddd;
+    color: var(--text-main);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: 0.2s;
+}
+.btn-list-icon:hover { background: #f8f9fa; border-color: #ccc; }
+
+
+/* ========================================= */
+/* 5. HALAMAN 3: LAYOUT WRAPPER & PANEL      */
+/* ========================================= */
+.ujian-wrapper {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    background: #f0f2f5;
+    padding: 15px;
+    gap: 15px;
+}
+
+.panel {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid white;
+}
+
+/* Panel Kiri (Stimulus) */
+.panel-kiri {
+    flex: 4;
+    border-right: 1px solid #eee;
+    display: none; /* Default hide */
+}
+.panel-kiri.active { display: block; }
+.panel-kiri h3 { margin-top: 0; color: var(--primary); }
+
+/* Panel Kanan (Soal) */
+.panel-kanan { flex: 5; }
+
+/* Custom Scrollbar */
+.panel::-webkit-scrollbar, 
+.container-data::-webkit-scrollbar,
+.sidebar-body::-webkit-scrollbar {
+    width: 8px;
+}
+.panel::-webkit-scrollbar-track,
+.container-data::-webkit-scrollbar-track,
+.sidebar-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+.panel::-webkit-scrollbar-thumb,
+.container-data::-webkit-scrollbar-thumb,
+.sidebar-body::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+.panel::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+
+/* ========================================= */
+/* 6. KONTEN SOAL & OPSI JAWABAN             */
+/* ========================================= */
+.soal-text {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin-bottom: 25px;
+    color: #212529;
+}
+.soal-text img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    margin: 10px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.soal-text p { margin-top: 0; }
+
+/* Pilihan Jawaban Wrapper */
+.pilihan-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Item Opsi (PG & Checkbox) */
+.opsi-item {
+    display: flex;
+    align-items: flex-start; /* Supaya marker tetap di atas jika teks panjang */
+    gap: 15px;
+    padding: 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: white;
+    position: relative;
+}
+
+.opsi-item:hover {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    transform: translateX(2px);
+}
+
+/* Active State (Terpilih) */
+.opsi-item.active {
+    border-color: var(--primary);
+    background-color: var(--primary-light);
+    box-shadow: 0 0 0 1px var(--primary); /* Extra border effect */
+}
+
+/* Marker Huruf (A, B, C...) */
+.marker {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #adb5bd;
+    flex-shrink: 0; /* Jangan gepeng */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #6c757d;
+    border-radius: 50%;
+    transition: 0.2s;
+    background: white;
+    margin-top: 2px; /* Alignment optik */
+}
+
+/* Jika Checkbox (PGK), marker jadi kotak radius dikit */
+.opsi-item input[type="checkbox"] ~ .marker,
+.opsi-item .marker i { /* Icon centang di PGK */
+    border-radius: 6px; 
+}
+
+/* Marker State Active */
+.opsi-item.active .marker {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+.opsi-item.active .text {
+    font-weight: 600;
+    color: #000;
+}
+
+
+/* ========================================= */
+/* 7. TABEL BENAR - SALAH (PGK KATEGORI)     */
+/* ========================================= */
+.table-bs {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden; /* Biar border radius tabel kelihatan */
+}
+
+.table-bs th {
+    background-color: #f8f9fa;
+    padding: 12px;
+    text-align: center;
+    font-weight: 700;
+    border-bottom: 2px solid #dee2e6;
+    color: var(--text-main);
+}
+.table-bs th:first-child { text-align: left; padding-left: 15px; }
+
+.table-bs td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+.table-bs tr:last-child td { border-bottom: none; }
+.table-bs tr:hover td { background-color: #fcfcfc; }
+
+/* Custom Radio Button di dalam Tabel */
+.custom-radio {
+    position: relative;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+.custom-radio:hover { background-color: #f0f0f0; }
+
+.custom-radio input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* Desain Checkmark (Huruf B / S) */
+.checkmark {
+    height: 32px;
+    width: 32px;
+    background-color: white;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #ccc;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+/* State Checked */
+.custom-radio input:checked ~ .checkmark {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
+}
+
+.text-center { text-align: center; }
+
+
+/* ========================================= */
+/* 8. FOOTER NAVIGASI (KONSISTENSI UI)       */
+/* ========================================= */
+.ujian-footer {
+    height: var(--footer-height);
+    background: white;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+    z-index: 30;
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.02);
+}
+
+.footer-center {
+    display: flex;
+    justify-content: center;
+    flex: 1; /* Spacer tengah */
+}
+
+/* --- TOMBOL DESKTOP --- */
+.btn-nav {
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 8px; /* Konsisten radius */
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+/* Tombol "Sebelumnya" (Desktop) - Outline Style */
+.btn-nav.prev {
+    background: white;
+    border-color: #ced4da;
+    color: var(--text-muted);
+}
+.btn-nav.prev:hover:not(:disabled) {
+    background-color: #f1f3f5;
+    color: #333;
+    border-color: #adb5bd;
+}
+.btn-nav.prev:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f8f9fa;
+}
+
+/* Tombol "Selanjutnya" (Desktop) - Solid Style */
+.btn-nav.next {
+    background: var(--secondary);
+    color: white;
+    box-shadow: 0 4px 6px rgba(0,123,255,0.2);
+}
+.btn-nav.next:hover {
+    background: var(--secondary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(0,123,255,0.3);
+}
+
+/* --- TOMBOL MOBILE (KONSISTEN DENGAN DESKTOP) --- */
+.btn-mobile-icon {
+    width: 48px;  /* Sedikit lebih besar untuk touch target */
+    height: 48px;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: none; /* Default hidden */
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+/* Tombol Mobile "Prev" -> Style Outline (Sama kayak desktop) */
+.btn-mobile-icon.prev {
+    background: white;
+    border-color: #ced4da;
+    color: var(--text-muted);
+}
+.btn-mobile-icon.prev:active:not(:disabled) {
+    background-color: #e9ecef;
+}
+.btn-mobile-icon.prev:disabled {
+    opacity: 0.5;
+    background: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+/* Tombol Mobile "Next" -> Style Solid Biru (Sama kayak desktop) */
+.btn-mobile-icon.next {
+    background: var(--secondary);
+    color: white;
+    box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+}
+.btn-mobile-icon.next:active {
+    background: var(--secondary-dark);
+    transform: scale(0.95);
+}
+
+/* --- TOMBOL "SELESAI" (HIJAU UNTUK SEMUA) --- */
+/* Class ini ditambahkan via JS saat soal terakhir */
+.btn-selesai {
+    background: var(--success) !important;
+    color: white !important;
+    border-color: var(--success) !important;
+    box-shadow: 0 4px 6px rgba(25, 135, 84, 0.3) !important;
+}
+.btn-selesai:hover, 
+.btn-selesai:active {
+    background-color: #157347 !important;
+    transform: translateY(-1px);
+}
+
+/* Checkbox Ragu */
+.ragu-checkbox {
+    background: #fff3cd;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid #ffeeba;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.ragu-checkbox:hover { background: #ffe69c; }
+.ragu-checkbox input { cursor: pointer; width: 16px; height: 16px; accent-color: #ffc107; }
+.ragu-checkbox label { font-weight: bold; color: #856404; font-size: 0.9rem; cursor: pointer; user-select: none; }
+
+
+/* ========================================= */
+/* 9. SIDEBAR & OVERLAY                      */
+/* ========================================= */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: 300px;
+    height: 100%;
+    background: white;
+    z-index: 100;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -5px 0 25px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+}
+.sidebar.active { right: 0; }
+
+.sidebar-head {
+    padding: 20px;
+    background: var(--primary-gradient);
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.sidebar-head button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    transition: transform 0.2s;
+}
+.sidebar-head button:hover { transform: rotate(90deg); }
+
+.sidebar-body {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    align-content: start;
+    background: #f8f9fa;
+}
+
+.grid-item {
+    aspect-ratio: 1;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+    color: #6c757d;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.grid-item:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    transform: translateY(-2px);
+}
+
+.grid-item.current {
+    border: 2px solid var(--secondary);
+    background: #eef7ff;
+    color: var(--secondary);
+}
+
+.grid-item.answered {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.grid-item.ragu {
+    background: var(--warning);
+    color: #212529;
+    border-color: #ffc107;
+}
+
+/* Overlay Gelap */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 90;
+    display: none;
+    backdrop-filter: blur(3px);
+    transition: opacity 0.3s;
+}
+#overlay.active { display: block; }
+
+
+/* ========================================= */
+/* 10. RESPONSIVE MEDIA QUERIES              */
+/* ========================================= */
+@media (max-width: 768px) {
+    /* --- GENERAL MOBILE ADJUSTMENTS --- */
+    
+    /* Login Page Mobile */
+    .login-container { padding: 15px; }
+    .login-bg-wave { height: 40%; }
+    .login-header h2 { font-size: 1.5rem; }
+    
+    /* Data Page Mobile */
+    .container-data { flex-direction: column; padding: 15px; gap: 15px; }
+    .card-info, .card-input { width: 100%; max-width: none; border-radius: 10px; }
+    .top-bar { justify-content: center; } /* Judul tengah */
+
+    /* --- UJIAN VIEW MOBILE --- */
+    
+    /* Header & Toolbar Compact */
+    .ujian-header { height: 50px; padding: 0 15px; }
+    .logo-small { font-size: 0.9rem; }
+    .siswa-info span { font-size: 0.85rem; }
+    
+    .ujian-toolbar { height: 50px; padding: 0 10px; }
+    .badge-nomor { font-size: 0.8rem; padding: 4px 8px; }
+    .timer-badge { font-size: 0.85rem; padding: 4px 10px; }
+    
+    /* Navigasi Footer Mobile */
+    .ujian-footer { padding: 0 15px; height: 60px; }
+    .ragu-checkbox { 
+        padding: 6px 10px; 
+        font-size: 0.8rem; 
+        white-space: nowrap; /* Mencegah teks ragu turun baris */
+    } 
+    .ragu-checkbox label { font-size: 0.8rem; }
+
+    /* Tombol Switch Logic */
+    .desktop-nav { display: none !important; }
+    .btn-mobile-icon { display: flex !important; }
+    
+    /* Layout Soal Stack (Atas Bawah) */
+    .ujian-wrapper { 
+        flex-direction: column; 
+        padding: 0; 
+        gap: 0; 
+        overflow-y: hidden; /* Wrapper utama diam */
+    }
+
+    /* Panel Kiri (Stimulus) */
+    .panel-kiri {
+        flex: none; /* Jangan auto grow */
+        height: 35vh; /* Ambil 35% tinggi layar */
+        border-right: none; 
+        border-bottom: 2px solid #e9ecef;
+        padding: 15px; 
+        border-radius: 0;
+        resize: vertical; /* User bisa tarik tinggi */
+        box-shadow: none;
+    }
+
+    /* Panel Kanan (Soal) */
+    .panel-kanan {
+        flex: 1; /* Ambil sisa ruang */
+        padding: 15px;
+        border-radius: 0;
+        padding-bottom: 80px; /* Spacer bawah agar tidak tertutup footer */
+        box-shadow: none;
+    }
+    
+    /* Font Size Adjustment */
+    .soal-text { font-size: 1rem; }
+}
+/* ========================================= */
+/* 11. CUSTOM STYLE TABEL BENAR-SALAH (FINAL)*/
+/* ========================================= */
+
+.table-bs {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 20px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+/* Header */
+.table-bs thead th {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    padding: 16px 20px;
+    border-bottom: 2px solid #e9ecef;
+}
+.table-bs thead th:first-child { text-align: left; }
+.table-bs thead th:not(:first-child) { text-align: center; }
+
+/* Body */
+.table-bs tbody td {
+    padding: 16px 10px; /* Padding sedikit diperkecil agar muat di HP */
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+    font-size: 1rem;
+    color: #333;
+}
+.table-bs tbody tr:last-child td { border-bottom: none; }
+.table-bs tbody tr:hover { background-color: #f9fbfd; }
+
+
+/* --- LOGIKA CUSTOM RADIO BUTTON (METODE SPAN SIBLING) --- */
+
+/* 1. Container Utama */
+.custom-radio-container {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    width: 28px;  /* Lebar area tombol */
+    height: 28px; /* Tinggi area tombol */
+    user-select: none;
+    vertical-align: middle;
+}
+
+/* 2. Sembunyikan Input Asli (Tapi tetap ada agar bisa diklik) */
+.custom-radio-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+/* 3. Membuat Lingkaran Custom (Span) */
+.radio-style {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 28px;
+    width: 28px;
+    background-color: white;
+    border: 2px solid #ccc; /* Warna border default (abu-abu) */
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+/* Efek Hover */
+.custom-radio-container:hover input ~ .radio-style {
+    background-color: #f0f9ff;
+    border-color: var(--primary); /* Hijau saat hover */
+}
+
+/* 4. STATE CHECKED (SAAT DIPILIH) */
+.custom-radio-container input:checked ~ .radio-style {
+    background-color: var(--primary); /* Isi Hijau */
+    border-color: var(--primary);
+    transform: scale(1.1); /* Efek membesar sedikit */
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+}
+
+/* 5. TITIK PUTIH DI TENGAH (Pseudo Element) */
+.radio-style:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+/* Munculkan titik putih saat checked */
+.custom-radio-container input:checked ~ .radio-style:after {
+    display: block;
+}
+
+/* Styling Titik Putih */
+.custom-radio-container .radio-style:after {
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: white;
+    transform: translate(-50%, -50%);
+}
+
+/* --- RESPONSIVE MOBILE --- */
+@media (max-width: 768px) {
+    .table-bs thead th { font-size: 0.75rem; padding: 10px 5px; }
+    .table-bs tbody td { font-size: 0.9rem; padding: 12px 5px; }
+    
+    /* Tombol agak dikecilkan sedikit di mobile ekstrem, tapi standard 28px udah oke */
+    .custom-radio-container { width: 26px; height: 26px; }
+    .radio-style { width: 26px; height: 26px; }
+    .custom-radio-container .radio-style:after { width: 8px; height: 8px; }
+}

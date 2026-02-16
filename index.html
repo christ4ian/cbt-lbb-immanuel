@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CBT LBB Immanuel</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        MathJax = { 
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+            startup: { typeset: false } 
+        };
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+
+    <div id="overlay" onclick="toggleSidebar()"></div>
+
+    <section id="view-login" class="active-view">
+        <div class="login-bg-wave"></div>
+        <div class="login-container">
+            <div class="login-header">
+                <div class="logo-circle">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h2>LBB IMMANUEL</h2>
+                <p>Computer Based Test System</p>
+            </div>
+
+            <div class="login-form-box">
+                <h3>Selamat Datang</h3>
+                <p class="subtitle">Silakan login dengan paket soal yang tersedia</p>
+
+                <div class="input-group">
+                    <span class="input-icon"><i class="fa-solid fa-book"></i></span>
+                    <select id="input-paket">
+                        <option value="">-- Memuat Paket Soal --</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <span class="input-icon"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" id="input-password" placeholder="Kode Ujian">
+                    <span class="toggle-password"><i class="fa-solid fa-eye"></i></span>
+                </div>
+
+                <button class="btn-login" onclick="app.gotoData()">
+                    LOGIN CBT <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+                
+                <div class="login-footer-text">
+                    &copy; 2026 LBB Immanuel. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-data" class="hidden-view">
+        <header class="top-bar">
+            <div class="brand">DATA PESERTA</div>
+        </header>
+
+        <div class="container-data">
+            <div class="card-info">
+                <h4><i class="fa-solid fa-circle-info"></i> Informasi Ujian</h4>
+                <div class="info-row">
+                    <span class="label">Mata Uji :</span>
+                    <span class="value" id="info-mapel">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Waktu :</span>
+                    <span class="value" id="info-waktu">0 Menit</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Jumlah Soal :</span>
+                    <span class="value" id="info-jml-soal">0 Butir</span>
+                </div>
+            </div>
+
+            <div class="card-input">
+                <h4><i class="fa-solid fa-user-pen"></i> Identitas Peserta</h4>
+                
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="data-nama" placeholder="Ketik nama lengkap...">
+                </div>
+
+                <div class="form-group">
+                    <label>Asal Sekolah</label>
+                    <input type="text" id="data-sekolah" placeholder="Ketik asal sekolah...">
+                </div>
+
+                <div class="form-group">
+                    <label>Token Sesi</label>
+                    <input type="text" value="XJ-99-B T" disabled style="background: #eee; letter-spacing: 2px; font-weight: bold; text-align: center;">
+                </div>
+
+                <button class="btn-start" onclick="app.startUjian()">
+                    MULAI MENGERJAKAN <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-ujian" class="hidden-view">
+        
+        <header class="ujian-header">
+            <div class="header-left">
+                <div class="logo-small">CBT</div>
+                <div class="siswa-info">
+                    <span id="disp-nama">Nama Siswa</span>
+                    <small id="disp-mapel">Matematika</small>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn-logout" onclick="app.logout()">
+                    <i class="fa-solid fa-power-off"></i> <span class="desktop-only">Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="ujian-toolbar">
+            <div class="tool-left">
+                <div class="badge-nomor">NO. <span id="nomor-soal">1</span></div>
+            </div>
+
+            <div class="tool-right">
+                
+                <div class="timer-badge" id="timer-display">
+                    <i class="fa-regular fa-clock"></i> 
+                    <span id="time-val" style="margin-left: 5px;">00:00:00</span>
+                </div>
+
+                <div class="font-resizer">
+                    <span onclick="app.setFont(1)" style="font-size: 12px">A</span>
+                    <span onclick="app.setFont(2)" class="active" style="font-size: 15px">A</span>
+                    <span onclick="app.setFont(3)" style="font-size: 18px">A</span>
+                </div>
+                
+                <button class="btn-list-icon" onclick="toggleSidebar()">
+                    <i class="fa-solid fa-table-cells"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="ujian-wrapper">
+            
+            <div id="panel-stimulus" class="panel panel-kiri">
+                </div>
+
+            <div id="panel-soal" class="panel panel-kanan">
+                </div>
+
+            <div id="sidebar-list" class="sidebar">
+                <div class="sidebar-head">
+                    <span>Daftar Soal</span>
+                    <button onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="sidebar-body" id="grid-container">
+                    </div>
+            </div>
+
+        </div>
+
+        <footer class="ujian-footer">
+            
+            <button class="btn-nav desktop-nav prev" onclick="app.prevSoal()">
+                <i class="fa-solid fa-chevron-left"></i> <span>Sebelumnya</span>
+            </button>
+            <button class="btn-mobile-icon prev" onclick="app.prevSoal()">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+
+            <div class="footer-center">
+                <div class="ragu-checkbox">
+                    <input type="checkbox" id="check-ragu" onchange="app.setRagu()">
+                    <label for="check-ragu">Ragu-ragu</label>
+                </div>
+            </div>
+
+            <button class="btn-nav desktop-nav next" id="btn-next-desktop" onclick="app.nextSoal()">
+                <span id="desk-next-text">Selanjutnya</span> 
+                <i class="fa-solid fa-chevron-right" id="desk-next-icon"></i>
+            </button>
+            
+            <button class="btn-mobile-icon next" id="btn-next-mobile" onclick="app.nextSoal()">
+                <i class="fa-solid fa-chevron-right" id="mob-next-icon"></i>
+            </button>
+
+        </footer>
+    </section>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script src="system.js"></script> 
+    <script src="paket-soal.js"></script>
+
+</body>
+</html>
