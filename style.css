@@ -1194,10 +1194,33 @@ h4 {
 
 /* --- RESPONSIVE MOBILE --- */
 @media (max-width: 768px) {
-    .table-bs thead th { font-size: 0.75rem; padding: 10px 5px; }
-    .table-bs tbody td { font-size: 0.9rem; padding: 12px 5px; }
+    body { height: 100dvh; position: fixed; width: 100%; }
+    .active-view { height: 100dvh; }
+
+    /* Halaman Data & Soal harus bisa scroll */
+    .container-data, .panel-kanan {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 100px; /* Agar tidak tertutup footer */
+    }
+
+    .container-data { flex-direction: column; padding: 15px; }
+    .desktop-nav { display: none !important; }
+    .btn-mobile-icon { display: flex !important; }
+
+    /* Footer Layout HP */
+    .ujian-footer { padding: 0 10px; height: 70px; }
+    .footer-side { flex: 1; display: flex; }
+    .footer-center { flex: 1.5; }
     
-    .custom-radio-container { width: 26px; height: 26px; }
-    .radio-style { width: 26px; height: 26px; }
-    .custom-radio-container .radio-style:after { width: 8px; height: 8px; }
+    .btn-mobile-icon {
+        width: 46px; height: 46px;
+        border-radius: 50% !important;
+        background: #eee;
+    }
+    .btn-mobile-icon.next { background: var(--secondary); color: white; }
+    .btn-mobile-icon.btn-selesai { background: var(--success) !important; color: white !important; }
+
+    .ujian-wrapper { flex-direction: column; padding: 0; }
+    .panel-kiri.active { height: 30vh; flex: none; border-bottom: 2px solid #ddd; }
 }
