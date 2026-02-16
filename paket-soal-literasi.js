@@ -1,16 +1,13 @@
-const PAKET_SOAL_LITERASI_FULL = [
-    {
-        id: "akm-literasi-profesional",
-        judul: "Simulasi AKM Literasi - Paket Utama",
-        mapel: "Literasi Membaca",
-        waktu: 120,
-        petunjuk: [
-            "Berdoalah sebelum mengerjakan ujian.",
-            "Stimulus teks dalam ujian ini cukup panjang, bacalah dengan teknik 'scanning' untuk menemukan poin penting.",
-            "Terdapat tiga tipe soal: Pilihan Ganda (satu jawaban), Pilihan Ganda Kompleks (lebih dari satu), dan Menjodohkan/Kategori (Benar-Salah).",
-            "Gunakan waktu secara efisien, jangan terpaku terlalu lama pada satu teks.",
-            "Pastikan Anda mengklik tombol 'Selesai' di nomor terakhir untuk mengirim jawaban."
-        ],
+PAKET_SOAL.push({
+    id: "akm-literasi-profesional",
+    judul: "Simulasi AKM Literasi - Paket Utama",
+    mapel: "Literasi Membaca",
+    waktu: 120,
+    petunjuk: [
+        "Berdoalah sebelum mengerjakan ujian.",
+        "Stimulus teks dalam ujian ini cukup panjang...",
+        "Terdapat tiga tipe soal..."
+    ],
         soal: [
             // --- STIMULUS 1: TEKS INFORMASI (SAINS & LINGKUNGAN) - Soal 1-7 ---
             {
