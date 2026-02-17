@@ -561,88 +561,102 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     document.addEventListener('DOMContentLoaded', () => app.init());
 }
 /* ========================================================== */
-/* [ADD-ON] FITUR PROTEKSI SINYAL & AUTO-BACKUP              */
+/* ========================================================== */
+/* [ADD-ON] AUTO-BACKUP & NOTIFIKASI SWEETALERT (TOAST)      */
 /* Tempel kode ini di baris paling bawah system.js           */
 /* ========================================================== */
 
 (function() {
-    // 1. STATE & UI NOTIFIKASI
-    let isOffline = !navigator.onLine;
-
-    // Buat elemen Toast (Notifikasi)
-    const toast = document.createElement("div");
-    toast.id = "net-toast";
-    Object.assign(toast.style, {
-        position: "fixed", top: "-100px", left: "50%", transform: "translateX(-50%)",
-        padding: "10px 20px", borderRadius: "30px", color: "white", fontWeight: "bold",
-        zIndex: "10000", transition: "top 0.5s", boxShadow: "0 5px 15px rgba(0,0,0,0.2)",
-        fontSize: "14px", display: "flex", alignItems: "center", gap: "10px"
+    // 1. KONFIGURASI SWEETALERT TOAST (Notifikasi Melayang)
+    // Ini membuat alert kecil, tidak memblokir layar, dan hilang sendiri
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',       // Muncul di atas tengah (bisa ganti 'top-end' untuk pojok kanan)
+        showConfirmButton: false,
+        timer: 4000,           // Hilang otomatis setelah 4 detik
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer)
+            toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
     });
-    document.body.appendChild(toast);
 
-    function showToast(type) {
-        if (type === 'offline') {
-            toast.style.background = "#e74c3c"; // Merah
-            toast.innerHTML = '<i class="fa-solid fa-wifi-slash"></i> Koneksi Terputus! Jawaban disimpan di HP.';
-            toast.style.top = "20px";
-            isOffline = true;
+    // 2. DETEKSI STATUS KONEKSI
+    function handleConnectionChange() {
+        if (!navigator.onLine) {
+            // JIKA OFFLINE (Internet Mati)
+            Toast.fire({
+                icon: 'error',
+                title: 'Koneksi Terputus!',
+                text: 'Tenang, jawabanmu aman disimpan di HP ini.'
+            });
         } else {
-            toast.style.background = "#27ae60"; // Hijau
-            toast.innerHTML = '<i class="fa-solid fa-wifi"></i> Kembali Online. Mencoba sinkronisasi...';
-            toast.style.top = "20px";
-            isOffline = false;
-            
-            // Coba kirim ulang data ke Firebase saat online kembali
-            if(app && app.saveRealtime) app.saveRealtime();
+            // JIKA ONLINE (Internet Nyala Kembali)
+            Toast.fire({
+                icon: 'success',
+                title: 'Koneksi Kembali!',
+                text: 'Mencoba sinkronisasi data ke server...'
+            });
 
-            setTimeout(() => { toast.style.top = "-100px"; }, 3000);
+            // Coba kirim ulang data ke Firebase saat online kembali
+            if(typeof app !== 'undefined' && app.saveRealtime) {
+                app.saveRealtime();
+            }
         }
     }
 
-    // 2. EVENT LISTENER BROWSER
-    window.addEventListener('offline', () => showToast('offline'));
-    window.addEventListener('online', () => showToast('online'));
-    
-    // Cek saat loading pertama
-    if (!navigator.onLine) showToast('offline');
+    // Pasang Pendengar Sinyal
+    window.addEventListener('offline', handleConnectionChange);
+    window.addEventListener('online', handleConnectionChange);
 
-    // 3. AUTO-BACKUP JAWABAN KE MEMORI HP (LOCALSTORAGE)
-    // Kita "bajak" fungsi saveRealtime milik app supaya sekalian simpan ke HP
+    // Cek status saat pertama kali load (barangkali pas buka web udah mati)
+    if (!navigator.onLine) {
+        handleConnectionChange();
+    }
+
+    // 3. AUTO-BACKUP KE LOCALSTORAGE (FITUR ANTI-BADAL)
+    // Menyimpan jawaban ke memori HP setiap kali fungsi simpan dipanggil
     if (typeof app !== 'undefined') {
         const originalSave = app.saveRealtime; // Simpan fungsi asli
-        
-        app.saveRealtime = function() {
-            // 1. Jalankan fungsi asli (simpan ke Firebase)
-            originalSave.call(app); 
+        const originalRestore = app.restoreSession; // Simpan fungsi restore asli
 
-            // 2. Tambahan: Simpan ke LocalStorage HP (Aman meski internet mati)
+        // A. Bajak fungsi simpan untuk backup ke HP
+        app.saveRealtime = function() {
+            originalSave.call(app); // Jalankan fungsi asli
+
             if(app.sessionId) {
                 const backupData = {
                     answers: app.answers,
                     ragu: app.ragu,
-                    lastUpdate: Date.now()
+                    timestamp: Date.now()
                 };
                 localStorage.setItem('CBT_BACKUP_' + app.sessionId, JSON.stringify(backupData));
-                console.log("💾 Jawaban diamankan di memori HP.");
+                console.log("💾 Jawaban ter-backup di LocalStorage.");
             }
         };
 
-        // Tambahkan fitur Restore dari HP saat reload (jika Firebase gagal load)
-        const originalRestore = app.restoreSession;
+        // B. Bajak fungsi restore untuk ambil data dari HP jika server gagal/lambat
         app.restoreSession = function(data) {
-            // Cek apakah ada backup di HP yang lebih baru daripada data Firebase?
             const backupKey = 'CBT_BACKUP_' + app.sessionId;
             const localBackup = JSON.parse(localStorage.getItem(backupKey));
 
+            // Jika data di HP lebih lengkap/baru dibanding data server, pakai data HP
             if (localBackup && (!data.answers || Object.keys(localBackup.answers).length > Object.keys(data.answers || {}).length)) {
-                console.log("♻️ Menggunakan data backup dari HP (lebih lengkap).");
+                console.log("♻️ Mengembalikan jawaban dari backup HP.");
                 data.answers = localBackup.answers;
                 data.ragu = localBackup.ragu;
+                
+                // Beri tahu user kalau kita pakai data backup
+                Toast.fire({
+                    icon: 'info',
+                    title: 'Data Dipulihkan',
+                    text: 'Mengambil jawaban terakhir dari memori HP.'
+                });
             }
             
-            // Jalankan fungsi restore asli dengan data yang sudah digabung
             originalRestore.call(app, data);
         };
     }
-})();
+})();;
+
 
