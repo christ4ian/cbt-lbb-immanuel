@@ -212,10 +212,49 @@
     
      
     <script src="paket-soal.js"></script>
-    <script src="paket-soal-literasi.js"></script>
-    <script src="system.js"></script> 
+
+<script>
+    (function() {
+        const listFile = [
+            "paket-soal-literasi.js",
+            "tka-sd-mat-26.js",
+            "tka-sd-bin-26.js",
+            // Kalau ada file baru, tinggal tambah koma dan nama filenya di sini
+        ];
+
+        // --- JANGAN UBAH KODE DI BAWAH INI ---
+        const folderPath = "soal/"; // Nama foldernya
+        let loaded = 0;
+
+        function loadOne(filename) {
+            return new Promise((resolve) => {
+                const s = document.createElement('script');
+                s.src = folderPath + filename; // Gabung folder + nama file
+                s.onload = () => {
+                    console.log(`✅ Berhasil load: ${filename}`);
+                    resolve();
+                };
+                s.onerror = () => {
+                    console.error(`❌ Gagal load: ${filename} (Cek nama file!)`);
+                    resolve(); // Tetap lanjut meski error
+                };
+                document.body.appendChild(s);
+            });
+        }
+
+        // Load semua soal dulu, baru load system.js
+        Promise.all(listFile.map(f => loadOne(f)))
+            .then(() => {
+                console.log("Semua paket soal siap! Menjalankan sistem...");
+                const sys = document.createElement('script');
+                sys.src = "system.js";
+                document.body.appendChild(sys);
+            });
+    })();
+</script>
 
 </body>
 </html>
+
 
 
