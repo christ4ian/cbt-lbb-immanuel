@@ -305,46 +305,51 @@ const app = {
         }
 
         const pSoal = document.getElementById('panel-soal');
-        let html = `<div class="soal-text">${data.pertanyaan}</div>`;
-        const jwb = this.answers[index];
+let html = `<div class="soal-text">${data.pertanyaan}</div>`;
+const jwb = this.answers[index];
 
-        if (data.tipe === 'pg') {
-            html += `<div class="pilihan-wrapper">`;
-            data.opsi.forEach((opt, i) => {
-                const char = String.fromCharCode(65 + i);
-                const active = jwb === char ? 'active' : '';
-                html += `<div class="opsi-item ${active}" onclick="app.selectAnswer('${char}')"><div class="marker">${char}</div><div class="text">${opt}</div></div>`;
-            });
-            html += `</div>`;
-        } else if (data.tipe === 'pgk') {
-            html += `<div class="pilihan-wrapper">`;
-            const arr = Array.isArray(jwb) ? jwb : [];
-            data.opsi.forEach((opt, i) => {
-                const val = i.toString();
-                const active = arr.includes(val) ? 'active' : '';
-                html += `<div class="opsi-item ${active}" onclick="app.toggleCheck('${val}')"><div class="marker"><i class="fa-solid fa-check"></i></div><div class="text">${opt}</div></div>`;
-            });
-            html += `</div>`;
-        } } else if (data.tipe === 'pgk-kategori') {
+if (data.tipe === 'pg') {
+    // --- TIPE PILIHAN GANDA BIASA ---
+    html += `<div class="pilihan-wrapper">`;
+    data.opsi.forEach((opt, i) => {
+        const char = String.fromCharCode(65 + i);
+        const active = jwb === char ? 'active' : '';
+        html += `<div class="opsi-item ${active}" onclick="app.selectAnswer('${char}')"><div class="marker">${char}</div><div class="text">${opt}</div></div>`;
+    });
+    html += `</div>`;
+
+} else if (data.tipe === 'pgk') {
+    // --- TIPE PILIHAN GANDA KOMPLEKS (CHECKBOX) ---
+    html += `<div class="pilihan-wrapper">`;
+    const arr = Array.isArray(jwb) ? jwb : [];
+    data.opsi.forEach((opt, i) => {
+        const val = i.toString();
+        const active = arr.includes(val) ? 'active' : '';
+        html += `<div class="opsi-item ${active}" onclick="app.toggleCheck('${val}')"><div class="marker"><i class="fa-solid fa-check"></i></div><div class="text">${opt}</div></div>`;
+    });
+    html += `</div>`;
+
+} else if (data.tipe === 'pgk-kategori') {
+    // --- TIPE KATEGORI (CUSTOM LABELS: B/S, FAKTA/OPINI, DLL) ---
     const obj = jwb || {};
-    // AMBIL LABEL CUSTOM (Jika tidak ada, pakai default B & S)
-    const labelHadir = data.labelKategori || ["B", "S"]; 
+    // Ambil label dari soal, jika tidak ada gunakan default B & S
+    const label = data.labelKategori || ["B", "S"]; 
     
     html += `<table class="table-bs">
                 <thead>
                     <tr>
                         <th>Pernyataan</th>
-                        <th width="80">${labelHadir[0]}</th>
-                        <th width="80">${labelHadir[1]}</th>
+                        <th width="80">${label[0]}</th>
+                        <th width="80">${label[1]}</th>
                     </tr>
                 </thead>
                 <tbody>`;
                 
     data.opsi.forEach((row, i) => {
         const val = i.toString();
-        // Cek apakah sudah dijawab (menggunakan index 0 untuk pilihan kiri, index 1 untuk kanan)
-        const opt1 = obj[val] === 'L1' ? 'checked' : ''; // L1 = Label 1 (Kiri)
-        const opt2 = obj[val] === 'L2' ? 'checked' : ''; // L2 = Label 2 (Kanan)
+        // Cek jawaban menggunakan L1 (Label Kiri) dan L2 (Label Kanan)
+        const opt1 = obj[val] === 'L1' ? 'checked' : ''; 
+        const opt2 = obj[val] === 'L2' ? 'checked' : ''; 
         
         html += `<tr>
                     <td>${row}</td>
@@ -365,7 +370,7 @@ const app = {
     html += `</tbody></table>`;
 }
 
-        pSoal.innerHTML = html;
+pSoal.innerHTML = html;
         if(window.MathJax) MathJax.typesetPromise([pSoal]);
 
         document.getElementById('check-ragu').checked = this.ragu[index] || false;
@@ -708,6 +713,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
         };
     }
 })();;
+
 
 
 
