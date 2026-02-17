@@ -46,7 +46,7 @@ PAKET_SOAL.push({
     id: "tka-mtk-sd-2026",
     judul: "Try Out TKA Matematika SD 2026",
     mapel: "Matematika",
-    waktu: 60, // Sesuai dokumen sumber
+    waktu: 65, // Sesuai dokumen sumber
     petunjuk: [
         "Berdoalah sebelum mengerjakan soal.",
         "Kerjakan soal yang dianggap mudah terlebih dahulu.",
@@ -424,6 +424,7 @@ PAKET_SOAL.push({
                 tampil: true,
                 konten: `
                     <p>Sebuah truk pengangkut sembako membawa muatan awal sebesar 0,5 ton beras. Di pasar pertama, truk tersebut menurunkan beras sebanyak 1,5 kuintal. Kemudian, di pasar kedua, truk tersebut menambah muatan gula sebanyak 125 kg. </p>
+                    `
                     },
             pertanyaan: "Berat total muatan truk sekarang adalah...",
             opsi: [
