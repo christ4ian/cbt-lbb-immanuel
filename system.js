@@ -560,4 +560,89 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     // Jika belum siap (jarang terjadi di kasusmu), tunggu eventnya
     document.addEventListener('DOMContentLoaded', () => app.init());
 }
+/* ========================================================== */
+/* [ADD-ON] FITUR PROTEKSI SINYAL & AUTO-BACKUP              */
+/* Tempel kode ini di baris paling bawah system.js           */
+/* ========================================================== */
+
+(function() {
+    // 1. STATE & UI NOTIFIKASI
+    let isOffline = !navigator.onLine;
+
+    // Buat elemen Toast (Notifikasi)
+    const toast = document.createElement("div");
+    toast.id = "net-toast";
+    Object.assign(toast.style, {
+        position: "fixed", top: "-100px", left: "50%", transform: "translateX(-50%)",
+        padding: "10px 20px", borderRadius: "30px", color: "white", fontWeight: "bold",
+        zIndex: "10000", transition: "top 0.5s", boxShadow: "0 5px 15px rgba(0,0,0,0.2)",
+        fontSize: "14px", display: "flex", alignItems: "center", gap: "10px"
+    });
+    document.body.appendChild(toast);
+
+    function showToast(type) {
+        if (type === 'offline') {
+            toast.style.background = "#e74c3c"; // Merah
+            toast.innerHTML = '<i class="fa-solid fa-wifi-slash"></i> Koneksi Terputus! Jawaban disimpan di HP.';
+            toast.style.top = "20px";
+            isOffline = true;
+        } else {
+            toast.style.background = "#27ae60"; // Hijau
+            toast.innerHTML = '<i class="fa-solid fa-wifi"></i> Kembali Online. Mencoba sinkronisasi...';
+            toast.style.top = "20px";
+            isOffline = false;
+            
+            // Coba kirim ulang data ke Firebase saat online kembali
+            if(app && app.saveRealtime) app.saveRealtime();
+
+            setTimeout(() => { toast.style.top = "-100px"; }, 3000);
+        }
+    }
+
+    // 2. EVENT LISTENER BROWSER
+    window.addEventListener('offline', () => showToast('offline'));
+    window.addEventListener('online', () => showToast('online'));
+    
+    // Cek saat loading pertama
+    if (!navigator.onLine) showToast('offline');
+
+    // 3. AUTO-BACKUP JAWABAN KE MEMORI HP (LOCALSTORAGE)
+    // Kita "bajak" fungsi saveRealtime milik app supaya sekalian simpan ke HP
+    if (typeof app !== 'undefined') {
+        const originalSave = app.saveRealtime; // Simpan fungsi asli
+        
+        app.saveRealtime = function() {
+            // 1. Jalankan fungsi asli (simpan ke Firebase)
+            originalSave.call(app); 
+
+            // 2. Tambahan: Simpan ke LocalStorage HP (Aman meski internet mati)
+            if(app.sessionId) {
+                const backupData = {
+                    answers: app.answers,
+                    ragu: app.ragu,
+                    lastUpdate: Date.now()
+                };
+                localStorage.setItem('CBT_BACKUP_' + app.sessionId, JSON.stringify(backupData));
+                console.log("💾 Jawaban diamankan di memori HP.");
+            }
+        };
+
+        // Tambahkan fitur Restore dari HP saat reload (jika Firebase gagal load)
+        const originalRestore = app.restoreSession;
+        app.restoreSession = function(data) {
+            // Cek apakah ada backup di HP yang lebih baru daripada data Firebase?
+            const backupKey = 'CBT_BACKUP_' + app.sessionId;
+            const localBackup = JSON.parse(localStorage.getItem(backupKey));
+
+            if (localBackup && (!data.answers || Object.keys(localBackup.answers).length > Object.keys(data.answers || {}).length)) {
+                console.log("♻️ Menggunakan data backup dari HP (lebih lengkap).");
+                data.answers = localBackup.answers;
+                data.ragu = localBackup.ragu;
+            }
+            
+            // Jalankan fungsi restore asli dengan data yang sudah digabung
+            originalRestore.call(app, data);
+        };
+    }
+})();
 
