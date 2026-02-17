@@ -714,6 +714,24 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     }
 })();;
 
+// Fitur klik gambar untuk memperbesar
+document.addEventListener('click', function (e) {
+    // Jika yang diklik adalah gambar di dalam soal/stimulus
+    if (e.target.tagName === 'IMG' && !e.target.closest('.zoomed')) {
+        const fullOverlay = document.createElement('div');
+        fullOverlay.className = 'zoomed';
+        
+        const imgClone = e.target.cloneNode();
+        fullOverlay.appendChild(imgClone);
+        
+        document.body.appendChild(fullOverlay);
+        
+        // Klik lagi untuk menutup
+        fullOverlay.onclick = function() {
+            fullOverlay.remove();
+        };
+    }
+});
 
 
 
