@@ -28,7 +28,7 @@ const STIMULUS_RENOVASI = `
     <p>Pak Alvin sedang merenovasi ruang tamu di rumahnya. Gambaran ruang tamu Pak Alvin terdapat pada gambar berikut ini.</p>
     <p>Selain itu, ia bingung memilih tiga jenis keramik yang tersedia pada toko. Oleh karena itu, ia hendak membandingkan dan memutuskan keramik mana yang akan ia gunakan.</p>
     <div style="text-align:center; margin: 10px 0;">
-        <img src="assets/tka-sd-mtk-2026-stimulus12." style="width:100%; max-width:600px; border-radius:5px;">
+        <img src="assets/tka-sd-mtk-2026-stimulus12.png" style="width:100%; max-width:600px; border-radius:5px;">
     </div>
 `;
 
