@@ -206,38 +206,73 @@ PAKET_SOAL.push({
 
             // --- SOAL NON-STIMULUS: PENGETAHUAN UMUM LITERASI - Soal 21-25 ---
             {
-                id: 21, tipe: 'pg', stimulus: { tampil: false },
+                id: 21, 
+                tipe: 'pg', 
+                stimulus: { tampil: false },
                 pertanyaan: "Penulisan kalimat berikut yang memenuhi kaidah bahasa Indonesia yang benar adalah...",
-                opsi: ["Ayah membeli jeruk bali di pasar.", "Ayah membeli Jeruk Bali di pasar.", "Ayah membeli jeruk Bali di pasar.", "Ayah membeli Jeruk bali di pasar."],
-                kunci: 'A', ragu: false
+                opsi: [
+                    "Ayah membeli jeruk bali di pasar.", 
+                    "Ayah membeli Jeruk Bali di pasar.", 
+                    "Ayah membeli jeruk Bali di pasar.", 
+                    "Ayah membeli Jeruk bali di pasar."
+                ],
+                kunci: 'A', 
+                ragu: false
             },
             {
-                id: 22, tipe: 'pg', stimulus: { tampil: false },
+                id: 22, 
+                tipe: 'pg', 
+                stimulus: { tampil: false },
                 pertanyaan: "Makna istilah 'Inflasi' dalam bidang ekonomi secara sederhana adalah...",
-                opsi: ["Kenaikan harga barang secara umum", "Penurunan nilai mata uang asing", "Pertumbuhan jumlah penduduk", "Peningkatan ekspor barang"],
-                kunci: 'A', ragu: false
+                opsi: [
+                    "Kenaikan harga barang secara umum", 
+                    "Penurunan nilai mata uang asing", 
+                    "Pertumbuhan jumlah penduduk", 
+                    "Peningkatan ekspor barang"
+                ],
+                kunci: 'A', 
+                ragu: false
             },
             {
-                id: 23, tipe: 'pgk', stimulus: { tampil: false },
+                id: 23, 
+                tipe: 'pgk', 
+                stimulus: { tampil: false },
                 pertanyaan: "Manakah yang merupakan kelompok kata baku? (Pilih dua)",
-                opsi: ["Izin dan Nasihat", "Praktek dan Analisa", "Kualitas dan Jadwal", "Resiko dan Sistim"],
-                kunci: ['0', '2'], ragu: false
+                opsi: [
+                    "Izin dan Nasihat", 
+                    "Praktek dan Analisa", 
+                    "Kualitas dan Jadwal", 
+                    "Resiko dan Sistim"
+                ],
+                kunci: ['0', '2'], 
+                ragu: false
             },
             {
-                id: 24, tipe: 'pgk-kategori', stimulus: { tampil: false },
+                id: 24, 
+                tipe: 'pgk-kategori', 
+                stimulus: { tampil: false },
                 pertanyaan: "Tentukan kebenaran penggunaan tanda baca berikut!",
                 opsi: [
                     "Penggunaan tanda koma sebelum kata 'tetapi' adalah wajib.",
                     "Tanda titik dua digunakan setelah kata 'adalah'.",
                     "Nama gelar dipisahkan dari nama asli dengan tanda koma."
                 ],
-                kunci: { '0': 'B', '1': 'S', '2': 'B' }, ragu: false
+                kunci: { '0': 'B', '1': 'S', '2': 'B' }, 
+                ragu: false
             },
             {
-                id: 25, tipe: 'pg', stimulus: { tampil: false },
+                id: 25, 
+                tipe: 'pg', 
+                stimulus: { tampil: false },
                 pertanyaan: "Tujuan utama dari sebuah teks persuasif adalah untuk...",
-                opsi: ["Menceritakan pengalaman lucu", "Menggambarkan suatu benda secara detail", "Mempengaruhi pembaca agar melakukan sesuatu", "Menjelaskan langkah-langkah membuat makanan"],
-                kunci: 'C', ragu: false
+                opsi: [
+                    "Menceritakan pengalaman lucu", 
+                    "Menggambarkan suatu benda secara detail", 
+                    "Mempengaruhi pembaca agar melakukan sesuatu", 
+                    "Menjelaskan langkah-langkah membuat makanan"
+                ],
+                kunci: 'C', 
+                ragu: false
             }
-        ]
-});
+        ] // Tutup Array Soal
+}); // Tutup PAKET_SOAL.push;
