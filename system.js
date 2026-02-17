@@ -552,4 +552,12 @@ function toggleSidebar() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { app.init(); });
+// Cek status halaman dulu. Jika sudah siap, langsung jalankan.
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    // Gunakan setTimeout agar render UI tidak blocking
+    setTimeout(() => app.init(), 1);
+} else {
+    // Jika belum siap (jarang terjadi di kasusmu), tunggu eventnya
+    document.addEventListener('DOMContentLoaded', () => app.init());
+}
+
