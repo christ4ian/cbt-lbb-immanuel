@@ -28,7 +28,7 @@ const STIM_SEMUT = `
 const STIM_INFOGRAFIK = `
     <h3>Infografis: Bijak Bermedia Sosial</h3>
     <div style="text-align:center; margin: 10px 0;">
-        <img src="assets/tka-sd-bin-2026-stimulus11.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+        <img src="assets/tka-sd-bin-2026-stimulus11.png" style="width:100%; max-width:500px; border-radius:5px;">
     </div>
 `;
 
