@@ -310,17 +310,45 @@ const app = {
                 html += `<div class="opsi-item ${active}" onclick="app.toggleCheck('${val}')"><div class="marker"><i class="fa-solid fa-check"></i></div><div class="text">${opt}</div></div>`;
             });
             html += `</div>`;
-        } else if (data.tipe === 'pgk-kategori') {
-            const obj = jwb || {};
-            html += `<table class="table-bs"><thead><tr><th>Pernyataan</th><th width="50">B</th><th width="50">S</th></tr></thead><tbody>`;
-            data.opsi.forEach((row, i) => {
-                const val = i.toString();
-                const b = obj[val] === 'B' ? 'checked' : '';
-                const s = obj[val] === 'S' ? 'checked' : '';
-                html += `<tr><td>${row}</td><td class="text-center"><label class="custom-radio-container"><input type="radio" name="bs-${i}" ${b} onchange="app.selectBS('${val}','B')"><span class="radio-style"></span></label></td><td class="text-center"><label class="custom-radio-container"><input type="radio" name="bs-${i}" ${s} onchange="app.selectBS('${val}','S')"><span class="radio-style"></span></label></td></tr>`;
-            });
-            html += `</tbody></table>`;
-        }
+        } } else if (data.tipe === 'pgk-kategori') {
+    const obj = jwb || {};
+    // AMBIL LABEL CUSTOM (Jika tidak ada, pakai default B & S)
+    const labelHadir = data.labelKategori || ["B", "S"]; 
+    
+    html += `<table class="table-bs">
+                <thead>
+                    <tr>
+                        <th>Pernyataan</th>
+                        <th width="80">${labelHadir[0]}</th>
+                        <th width="80">${labelHadir[1]}</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+                
+    data.opsi.forEach((row, i) => {
+        const val = i.toString();
+        // Cek apakah sudah dijawab (menggunakan index 0 untuk pilihan kiri, index 1 untuk kanan)
+        const opt1 = obj[val] === 'L1' ? 'checked' : ''; // L1 = Label 1 (Kiri)
+        const opt2 = obj[val] === 'L2' ? 'checked' : ''; // L2 = Label 2 (Kanan)
+        
+        html += `<tr>
+                    <td>${row}</td>
+                    <td class="text-center">
+                        <label class="custom-radio-container">
+                            <input type="radio" name="bs-${i}" ${opt1} onchange="app.selectBS('${val}','L1')">
+                            <span class="radio-style"></span>
+                        </label>
+                    </td>
+                    <td class="text-center">
+                        <label class="custom-radio-container">
+                            <input type="radio" name="bs-${i}" ${opt2} onchange="app.selectBS('${val}','L2')">
+                            <span class="radio-style"></span>
+                        </label>
+                    </td>
+                </tr>`;
+    });
+    html += `</tbody></table>`;
+}
 
         pSoal.innerHTML = html;
         if(window.MathJax) MathJax.typesetPromise([pSoal]);
@@ -658,5 +686,6 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
         };
     }
 })();;
+
 
 
