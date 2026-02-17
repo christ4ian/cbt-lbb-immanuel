@@ -19,6 +19,8 @@ const firebaseConfig = {
 // URL SCRIPT GOOGLE
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec"; 
 
+const ADMIN_EMAIL = "admin@lbbimmanuel.com";
+
 // Init Firebase
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
@@ -96,15 +98,22 @@ const app = {
     // =========================================
     gotoData: function() {
     const idx = document.getElementById('input-paket').value;
-    // GANTI ID dari 'input-password' ke 'input-email'
     const email = document.getElementById('input-email').value.trim().toLowerCase();
 
-        if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
-        if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
-        if(!navigator.onLine) return Swal.fire('Offline', 'Wajib online untuk login.', 'error');
+    if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
+    if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
 
+    // --- LOGIKA ADMIN DIMULAI ---
+    if (email === ADMIN_EMAIL) {
         this.currentPaket = PAKET_SOAL[idx];
-        Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
+        this.userData = { 
+            nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL", 
+            email: email, isAdmin: true // Tandai sebagai admin
+        };
+        this.sessionId = "admin_mode_" + this.currentPaket.id;
+        this.gotoConfirmPage(); // Langsung ke halaman konfirmasi
+        return;
+    }
 
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST", body: JSON.stringify({
@@ -371,6 +380,7 @@ const app = {
     },
     setRagu: function() { this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked; this.updateGrid(); this.saveRealtime(); },
     saveRealtime: function() {
+        if(this.userData.isAdmin) return;
         if(this.sessionId) {
             db.ref('sessions/' + this.sessionId).update({
                 answers: this.answers,
@@ -520,6 +530,12 @@ const app = {
     },
 
     submitData: function(force) {
+       if(this.userData.isAdmin) {
+        const result = this.calculateResult();
+        localStorage.removeItem('cbt_active_session');
+        return Swal.fire('Admin Mode', `Simulasi selesai. Skor: ${result.skor}. (Data tidak disimpan)`, 'info')
+                   .then(() => location.reload());
+    }
         if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet.', 'error');
         Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const result = this.calculateResult();
@@ -686,6 +702,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
         };
     }
 })();;
+
 
 
 
