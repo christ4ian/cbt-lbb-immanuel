@@ -28,7 +28,7 @@ const STIMULUS_RENOVASI = `
     <p>Pak Alvin sedang merenovasi ruang tamu di rumahnya. Gambaran ruang tamu Pak Alvin terdapat pada gambar berikut ini.</p>
     <p>Selain itu, ia bingung memilih tiga jenis keramik yang tersedia pada toko. Oleh karena itu, ia hendak membandingkan dan memutuskan keramik mana yang akan ia gunakan.</p>
     <div style="text-align:center; margin: 10px 0;">
-        <img src="assets/tka-sd-mtk-2026-stimulus12.jpg" style="width:100%; max-width:600px; border-radius:5px;">
+        <img src="assets/tka-sd-mtk-2026-stimulus12." style="width:100%; max-width:600px; border-radius:5px;">
     </div>
 `;
 
@@ -37,7 +37,7 @@ const STIMULUS_DISPENSER = `
     <h3>Dispenser Minuman</h3>
     <p>Lily mengunjungi sebuah restoran cepat saji (<i>fast food</i>) dan melihat mesin dispenser soda seperti pada gambar di bawah ini.</p>
     <div style="text-align:center; margin: 10px 0;">
-        <img src="assets/tka-sd-mtk-2026-stimulus17.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+        <img src="assets/tka-sd-mtk-2026-stimulus17.png" style="width:100%; max-width:500px; border-radius:5px;">
     </div>
 `;
 
@@ -64,7 +64,7 @@ PAKET_SOAL.push({
                     <p>Tiga orang anak yakni Ana, Bima, dan Chatra memesan <i>delivery pizza</i> dengan ukuran yang sama tetapi memiliki varian rasa dan jumlah potongan yang berbeda.</p>
                     <p>Setelah selesai makan, masing-masing pizza mereka memiliki sisa yang digambarkan sebagai berikut.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal1.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal1.png" style="width:100%; max-width:500px; border-radius:5px;">
                     </div>
                 `
             },
@@ -254,16 +254,16 @@ PAKET_SOAL.push({
                 konten: `
                     <p>Seorang anak bermain menyusun kubus seperti pada gambar di bawah ini.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal9.jpg" style="width:100%; max-width:400px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal9.png" style="width:100%; max-width:400px; border-radius:5px;">
                     </div>
                 `
             },
             pertanyaan: "Apabila anak tersebut melihat susunan kubus dari atas, yang akan terlihat oleh anak tersebut adalah ....",
             opsi: [
-                "<img src='assets/tka-sd-mtk-2026-soal9a.jpg' style='max-width:100px;'>",
-                "<img src='assets/tka-sd-mtk-2026-soal9b.jpg' style='max-width:100px;'>",
-                "<img src='assets/tka-sd-mtk-2026-soal9c.jpg' style='max-width:100px;'>",
-                "<img src='assets/tka-sd-mtk-2026-soal9d.jpg' style='max-width:100px;'>"
+                "<img src='assets/tka-sd-mtk-2026-soal9a.png' style='max-width:100px;'>",
+                "<img src='assets/tka-sd-mtk-2026-soal9b.png' style='max-width:100px;'>",
+                "<img src='assets/tka-sd-mtk-2026-soal9c.png' style='max-width:100px;'>",
+                "<img src='assets/tka-sd-mtk-2026-soal9d.png' style='max-width:100px;'>"
             ],
             kunci: 'A',
             ragu: false
@@ -315,7 +315,7 @@ PAKET_SOAL.push({
                 konten: `
                     <p>Lika melihat dua buah teh kemasan pada minimarket.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal11.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal11.png" style="width:100%; max-width:500px; border-radius:5px;">
                     </div>
                     <p><b>Kemasan Q (Teh Immanuel):</b> 8 x 6 x 5 cm</p>
                     <p><b>Kemasan P (Teh Pasti Segar):</b> 4 x 4 x 10 cm</p>
@@ -340,7 +340,7 @@ PAKET_SOAL.push({
                 konten: `
                     <p>Perhatikan orang yang sedang mengangkat beban berikut ini!</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal12.jpg" style="width:100%; max-width:300px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal12.png" style="width:100%; max-width:300px; border-radius:5px;">
                     </div>
                 `
             },
@@ -401,7 +401,7 @@ PAKET_SOAL.push({
                 konten: `
                     <p>Perhatikan bangun berikut.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal15.jpg" style="width:100%; max-width:300px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal15.png" style="width:100%; max-width:300px; border-radius:5px;">
                     </div>
                 `
             },
@@ -478,7 +478,7 @@ PAKET_SOAL.push({
                 konten: `
                     <p>Perhatikan bangun berikut.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal19.jpg" style="width:100%; max-width:300px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal19.png" style="width:100%; max-width:300px; border-radius:5px;">
                     </div>
                 `
             },
@@ -504,7 +504,7 @@ PAKET_SOAL.push({
                     <p>Indonesia merupakan negara dengan jumlah penduduk terbanyak ke-4 di dunia dan memiliki keberagaman usia yang luar biasa. Pada tahun 2030, diprediksi akan muncul generasi baru yang disebut Gen Beta (anak-anak balita), sementara Gen Alpha akan memasuki usia remaja sekolah.</p>
                     <p>Pemerintah memproyeksikan total penduduk Indonesia saat itu mencapai angka bulat <b>300 Juta Jiwa</b>. Berikut adalah diagram prediksi persentase penduduk Indonesia pada tahun 2030:</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal20.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal20.png" style="width:100%; max-width:500px; border-radius:5px;">
                     </div>
                 `
             },
@@ -527,7 +527,7 @@ PAKET_SOAL.push({
                 konten: `
                     <p>Pak Yakub mendata pilihan SMP tujuan dari siswa kelas 6A dan 6B. Diketahui jumlah siswa di setiap kelas adalah 20 orang. Hasil pendataan tersebut disajikan dalam diagram batang berikut.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal21.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal21.png" style="width:100%; max-width:500px; border-radius:5px;">
                     </div>
                 `
             },
@@ -560,10 +560,10 @@ PAKET_SOAL.push({
             },
             pertanyaan: "Piktogram yang tepat untuk menyajikan data penjualan di atas adalah ....",
             opsi: [
-                "<img src='assets/tka-sd-mtk-2026-soal22a.jpg' style='max-width:100%;'>",
-                "<img src='assets/tka-sd-mtk-2026-soal22b.jpg' style='max-width:100%;'>",
-                "<img src='assets/tka-sd-mtk-2026-soal22c.jpg' style='max-width:100%;'>",
-                "<img src='assets/tka-sd-mtk-2026-soal22d.jpg' style='max-width:100%;'>"
+                "<img src='assets/tka-sd-mtk-2026-soal22a.png' style='max-width:100%;'>",
+                "<img src='assets/tka-sd-mtk-2026-soal22b.png' style='max-width:100%;'>",
+                "<img src='assets/tka-sd-mtk-2026-soal22c.png' style='max-width:100%;'>",
+                "<img src='assets/tka-sd-mtk-2026-soal22d.png' style='max-width:100%;'>"
             ],
             kunci: 'B',
             ragu: false
@@ -601,7 +601,7 @@ PAKET_SOAL.push({
                 konten: `
                     <p>Pak Dengklek mencatat hasil panen telur bebek di peternakannya selama 5 hari. Berikut adalah data penjualan bebek Pak Dengklek selama 1 minggu.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal24.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal24.png" style="width:100%; max-width:500px; border-radius:5px;">
                     </div>
                 `
             },
@@ -626,7 +626,7 @@ PAKET_SOAL.push({
                     <p>Sebelum berangkat, Edo membuka peta digital di tablet ayahnya untuk melihat rute perjalanan dari kota Yogyakarta menuju Magelang.</p>
                     <p>Pada pojok peta tersebut, tertulis informasi Skala 1 : 400.000. Edo penasaran dan mengambil penggaris untuk mengukur jarak kedua kota tersebut pada layar tablet. Ternyata, hasil ukurannya menunjukkan angka 8 cm.</p>
                     <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal25.jpg" style="width:100%; max-width:500px; border-radius:5px;">
+                        <img src="assets/tka-sd-mtk-2026-soal25.png" style="width:100%; max-width:500px; border-radius:5px;">
                     </div>
                 `
             },
