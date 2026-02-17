@@ -424,8 +424,8 @@ PAKET_SOAL.push({
                 tampil: true,
                 konten: `
                     <p>Sebuah truk pengangkut sembako membawa muatan awal sebesar 0,5 ton beras. Di pasar pertama, truk tersebut menurunkan beras sebanyak 1,5 kuintal. Kemudian, di pasar kedua, truk tersebut menambah muatan gula sebanyak 125 kg. </p>
-                    `
-                    },
+                ` // <--- NAH, INI DIA TANDA YANG HILANG!
+            },
             pertanyaan: "Berat total muatan truk sekarang adalah...",
             opsi: [
                 "475 kg",
