@@ -9,7 +9,6 @@ const STIM_BATIK = `
     <p>Laras memandang kain mori putih yang terbentang di gawangan kayu. Aroma lilin malam yang dipanaskan menyeruak memenuhi beranda belakang rumah Eyang Putri. Sudah seminggu liburan sekolah ini Laras habiskan untuk belajar membatik. Tangannya masih kaku memegang canting. Tetesan lilin panas sering meluber ke luar garis pola, membuat gambar bunga kawung terlihat <i>benjol</i>.</p>
     <p>"Jangan takut salah, <i>Nduk</i>. Batik itu seperti hidup. Kalau ada noda, kita bisa menutupnya dengan motif lain yang lebih indah," ujar Eyang Putri lembut sambil mengusap kepala Laras. Eyang tidak pernah marah, meski Laras sudah menghabiskan banyak kain untuk latihan. Bagi Eyang, kesabaran Laras jauh lebih berharga daripada kain mori itu.</p>
     <p>Laras kembali mencelupkan canting ke wajan kecil di atas anglo. Ia meniup ujung canting pelan-pelan agar lilin tidak terlalu panas. Kali ini, ia menarik garis dengan menahan napas. Hasilnya lebih rapi. Senyum merekah di bibirnya. Ia sadar, membatik bukan sekadar menggambar, melainkan melatih ketenangan hati.</p>
-    <small>Sumber: Cerpen Budaya (2025)</small>
 `;
 
 const STIM_PUTRI_MALU = `
@@ -17,7 +16,6 @@ const STIM_PUTRI_MALU = `
     <p>Tanaman putri malu (<i>Mimosa pudica</i>) memiliki pertahanan diri yang unik. Jika daunnya disentuh, ditiup, atau dipanaskan, ia akan segera menguncup. Gerakan ini disebut <i>seismonasti</i>. Hal ini terjadi karena adanya perubahan tekanan air pada bantal daun (pulvinus). Saat disentuh, air di bantal daun mengalir ke batang, sehingga daun menjadi layu seketika.</p>
     <p>Tujuan utama gerakan ini adalah untuk mengelabui pemangsa. Hewan herbivora yang hendak memakan daunnya akan mengira tanaman tersebut sudah layu atau mati, sehingga mereka enggan memakannya. Selain itu, dengan menguncup, putri malu memperlihatkan duri-duri tajam di batangnya untuk menakuti musuh.</p>
     <p>Putri malu juga menutup daunnya saat matahari terbenam dan membukanya kembali saat matahari terbit. Respons ini membantu tanaman menghemat air dan melindungi diri dari suhu malam yang dingin. Meskipun dianggap gulma atau tanaman pengganggu, akar putri malu ternyata bermanfaat untuk menyembuhkan luka dan meredakan demam.</p>
-    <small>Sumber: Ensiklopedia Flora (2025)</small>
 `;
 
 const STIM_SEMUT = `
@@ -25,7 +23,6 @@ const STIM_SEMUT = `
     <p>Di tepi sungai yang deras, seekor Semut Merah tergelincir saat hendak minum. Ia berteriak minta tolong, namun suaranya tenggelam oleh gemuruh air. Seekor Merpati yang bertengger di dahan pohon melihat kejadian itu. Tanpa berpikir panjang, Merpati memetik sehelai daun dan menjatuhkannya ke dekat Semut. Semut segera naik ke atas daun dan selamat sampai ke tepian.</p>
     <p>Beberapa hari kemudian, seorang pemburu burung mengendap-endap mendekati pohon tempat Merpati tinggal. Ia mengarahkan senapannya ke arah Merpati yang sedang tertidur. Semut Merah melihat bahaya itu. Ia teringat kebaikan Merpati. Dengan sekuat tenaga, Semut menggigit kaki pemburu itu.</p>
     <p>"Aduuuh!" teriak pemburu kaget sambil menjatuhkan senapannya. Suara itu membangunkan Merpati, yang langsung terbang menjauh. "Terima kasih, Semut sahabatku!" seru Merpati dari angkasa. Semut tersenyum puas. Ia belajar bahwa tubuh kecil bukan penghalang untuk melakukan hal besar.</p>
-    <small>Sumber: Fabel Klasik (2024)</small>
 `;
 
 const STIM_INFOGRAFIK = `
@@ -33,7 +30,6 @@ const STIM_INFOGRAFIK = `
     <div style="text-align:center; margin: 10px 0;">
         <img src="assets/tka-sd-bin-2026-stimulus11.jpg" style="width:100%; max-width:500px; border-radius:5px;">
     </div>
-    <small>Sumber: Kementerian Komunikasi dan Digital (2025)</small>
 `;
 
 const STIM_EARTHING = `
@@ -41,7 +37,6 @@ const STIM_EARTHING = `
     <p>Pernahkah kamu mencoba berjalan kaki tanpa alas di atas rumput atau tanah? Aktivitas ini dikenal dengan istilah <i>earthing</i> atau <i>grounding</i>. Meski terlihat sederhana dan kadang dianggap kotor, bersentuhan langsung dengan bumi ternyata memiliki manfaat kesehatan.</p>
     <p>Saat telapak kaki menyentuh tanah, tubuh menyerap elektron negatif dari bumi. Elektron ini berfungsi sebagai antioksidan alami yang menetralkan radikal bebas dalam tubuh. Hasilnya, peradangan atau inflamasi di dalam tubuh bisa berkurang. Ini sangat baik bagi mereka yang sering merasa nyeri sendi.</p>
     <p>Selain itu, <i>earthing</i> dapat memperbaiki kualitas tidur. Kontak dengan alam membantu menurunkan hormon stres (kortisol) dan menenangkan sistem saraf. Namun, kita tetap harus berhati-hati. Pastikan area tempat berjalan bersih dari pecahan kaca, paku, atau kotoran hewan agar kaki tidak terluka.</p>
-    <small>Sumber: Jurnal Kesehatan Holistik (2025)</small>
 `;
 
 const STIM_KOTAK_PENSIL = `
@@ -49,7 +44,6 @@ const STIM_KOTAK_PENSIL = `
     <p>"Pasti kamu yang mengambilnya, kan? Cuma kamu yang tadi duduk di mejaku!" tuduh Riko dengan wajah merah padam. Jari telunjuknya mengarah tepat ke wajah Dani. Dani menggeleng kuat, matanya mulai berkaca-kaca. "Sumpah, Rik. Aku tadi cuma numpang mengikat tali sepatu. Aku tidak melihat kotak pensilmu."</p>
     <p>Suasana kelas menjadi tegang. Teman-teman lain hanya diam, tidak berani melerai. Tiba-tiba, Bu Guru masuk kelas. "Ada apa ini ribut-ribut?" tanyanya tegas. Riko segera mengadu. Bu Guru meminta semua tenang, lalu memeriksa laci meja Riko. Kosong. Bu Guru lalu memeriksa tas Riko. Di kantong bagian depan yang jarang dibuka, benda itu terselip.</p>
     <p>"Ini apa, Riko?" tanya Bu Guru sambil mengangkat kotak pensil bergambar robot. Wajah Riko berubah pucat, lalu menunduk dalam-dalam. Ia malu sekali. Ternyata ia sendiri yang lupa menaruhnya tadi pagi karena terburu-buru. Dani menghela napas lega, namun ia tidak mengejek Riko. Ia justru menepuk bahu Riko pelan.</p>
-    <small>Sumber: Cerita Anak Sekolah (2024)</small>
 `;
 
 const STIM_FILTER = `
@@ -64,7 +58,6 @@ const STIM_FILTER = `
     5. <b>Ijuk/Spons:</b> Letakkan di paling atas untuk menyaring sampah kasar (daun/ranting).</p>
     <p><b>Uji Coba:</b> Tuangkan air keruh perlahan. Tampung air yang keluar dari tutup botol. Lakukan penyaringan 2-3 kali hingga air benar-benar jernih.</p>
     <p><i>Catatan: Air hasil saringan ini harus direbus hingga mendidih sebelum diminum untuk mematikan kuman.</i></p>
-    <small>Sumber: Proyek Sains SD (2025)</small>
 `;
 
 const STIM_DRAMA = `
@@ -77,7 +70,6 @@ const STIM_DRAMA = `
     <p><b>Adik:</b> (Cemberut, lalu membuka buku) "Ya sudah. Ini soal nomor 5. Kenapa rumusnya beda sama nomor 1?"</p>
     <p><b>Kakak:</b> "Nah, itu karena bentuk bangunnya beda. Lihat gambarnya teliti. Ini trapesium, bukan jajargenjang."</p>
     <p><b>Adik:</b> "Oh... iya ya. Wah, aku kurang teliti. Oke, aku coba hitung sekarang."</p>
-    <small>Sumber: Drama Keluarga (2025)</small>
 `;
 
 
