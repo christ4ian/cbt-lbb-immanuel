@@ -94,26 +94,34 @@ const app = {
     },
 
     // =========================================
-    // 1. LOGIN
+    // 1. LOGIN (WITH SUPER ADMIN BYPASS)
     // =========================================
     gotoData: function() {
-    const idx = document.getElementById('input-paket').value;
-    const email = document.getElementById('input-email').value.trim().toLowerCase();
+        const idx = document.getElementById('input-paket').value;
+        const email = document.getElementById('input-email').value.trim().toLowerCase();
+        const ADMIN_EMAIL = "admin@lbbimmanuel.com"; // Email Sakti
 
-    if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
-    if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
+        if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
+        if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
 
-    // --- LOGIKA ADMIN DIMULAI ---
-    if (email === ADMIN_EMAIL) {
+        // --- CEK SAKTI: JIKA ADMIN, LANGSUNG MASUK ---
+        if (email === ADMIN_EMAIL) {
+            this.currentPaket = PAKET_SOAL[idx];
+            this.userData = { 
+                nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL", 
+                email: email, isAdmin: true 
+            };
+            this.sessionId = "admin_mode_" + this.currentPaket.id;
+            
+            // Bypass fetch Google Script, langsung ke halaman data/konfirmasi
+            this.gotoConfirmPage(); 
+            return;
+        }
+
+        // --- LOGIKA SISWA BIASA (Tetap Pakai Fetch) ---
+        if(!navigator.onLine) return Swal.fire('Offline', 'Wajib online untuk login.', 'error');
         this.currentPaket = PAKET_SOAL[idx];
-        this.userData = { 
-            nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL", 
-            email: email, isAdmin: true // Tandai sebagai admin
-        };
-        this.sessionId = "admin_mode_" + this.currentPaket.id;
-        this.gotoConfirmPage(); // Langsung ke halaman konfirmasi
-        return;
-    }
+        Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
 
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST", body: JSON.stringify({
@@ -131,11 +139,9 @@ const app = {
                     nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
                 };
                 this.sheetRowIndex = res.data.rowIndex;
-                
                 const safeEmail = email.replace(/\./g, '_');
                 this.sessionId = this.currentPaket.id + "_" + safeEmail;
-                
-                this.syncWithCloud(false); // False = New Login
+                this.syncWithCloud(false);
             } else {
                 Swal.fire('Gagal', 'Email tidak terdaftar.', 'error');
             }
@@ -702,6 +708,7 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
         };
     }
 })();;
+
 
 
 
