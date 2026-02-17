@@ -240,5 +240,4 @@ PAKET_SOAL.push({
                 kunci: 'C', ragu: false
             }
         ]
-    }
 });
