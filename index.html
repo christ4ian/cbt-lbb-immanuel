@@ -229,7 +229,7 @@
         function loadOne(filename) {
             return new Promise((resolve) => {
                 const s = document.createElement('script');
-                s.src = folderPath + filename; // Gabung folder + nama file
+                s.src = folderPath + filename + "?v=" + new Date().getTime();
                 s.onload = () => {
                     console.log(`✅ Berhasil load: ${filename}`);
                     resolve();
@@ -255,6 +255,7 @@
 
 </body>
 </html>
+
 
 
 
