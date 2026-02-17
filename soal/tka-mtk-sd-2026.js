@@ -74,7 +74,7 @@ PAKET_SOAL.push({
                 "Bagian pizza yang dimakan Bima lebih sedikit daripada bagian pizza yang dimakan Ana.",
                 "Di antara ketiganya, Ana adalah orang yang memakan pizza paling sedikit."
             ],
-            kunci: ['0'], // Berdasarkan kunci jawaban: Hanya pernyataan a (0) yang Benar
+            kunci: ['0', '2'], // Berdasarkan kunci jawaban: Hanya pernyataan a (0) yang Benar
             ragu: false
         },
 
@@ -139,7 +139,7 @@ PAKET_SOAL.push({
             id: 4,
             tipe: 'pg',
             stimulus: { tampil: false },
-            pertanyaan: "Diberikan lima buah bilangan sebagai berikut:<br><br>0,7 ; 1,2 ; $\\frac{13}{10}$ ; 140% ; dan $1\\frac{1}{2}$<br><br>Urutan bilangan tersebut mulai dari yang terkecil ke yang terbesar adalah ....",
+            pertanyaan: "Diberikan lima buah bilangan sebagai berikut:<br><br>$\\frac{13}{10}$ ; 1,2 ; 0,7 ; $1\\frac{1}{2}$ ; dan 140%.<br><br>Urutan bilangan tersebut mulai dari yang terkecil ke yang terbesar adalah ....",
             opsi: [
                 "0,7 ; 1,2 ; $\\frac{13}{10}$ ; 140% ; $1\\frac{1}{2}$",
                 "0,7 ; 1,2 ; 140% ; $\\frac{13}{10}$ ; $1\\frac{1}{2}$",
@@ -420,8 +420,12 @@ PAKET_SOAL.push({
         {
             id: 16,
             tipe: 'pg',
-            stimulus: { tampil: false },
-            pertanyaan: "Sebuah truk pengangkut sembako membawa muatan awal sebesar 0,5 ton beras. Di pasar pertama, truk tersebut menurunkan beras sebanyak 1,5 kuintal. Kemudian, di pasar kedua, truk tersebut menambah muatan gula sebanyak 125 kg. Berat total muatan truk sekarang adalah...",
+            stimulus: {
+                tampil: true,
+                konten: `
+                    <p>Sebuah truk pengangkut sembako membawa muatan awal sebesar 0,5 ton beras. Di pasar pertama, truk tersebut menurunkan beras sebanyak 1,5 kuintal. Kemudian, di pasar kedua, truk tersebut menambah muatan gula sebanyak 125 kg. </p>
+                    },
+            pertanyaan: "Berat total muatan truk sekarang adalah...",
             opsi: [
                 "475 kg",
                 "425 kg",
