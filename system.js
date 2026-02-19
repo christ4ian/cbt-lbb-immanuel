@@ -3,6 +3,8 @@
    - Fixed: Navigasi Kanan/Kiri Mobile & Desktop
    - Fixed: Scroll Halaman Data
    - Fixed: Logika Tombol Selesai
+   - Fixed: MathJax Render Error
+   - Fixed: Timer Element ID Error
    =========================================================== */
 
 // 1. CONFIG
@@ -99,7 +101,6 @@ const app = {
     gotoData: function() {
         const idx = document.getElementById('input-paket').value;
         const email = document.getElementById('input-email').value.trim().toLowerCase();
-        const ADMIN_EMAIL = "admin@lbbimmanuel.com"; // Email Sakti
 
         if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
         if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
@@ -133,9 +134,7 @@ const app = {
             if (res.status === "found") {
                 // JIKA SISWA SUDAH MENGERJAKAN
                 if (res.data.statusSheet === "SUDAH") {
-                    // Ambil skor dari response (pastikan Apps Script mengirim data 'skor')
                     const nilai = res.data.skor !== undefined ? res.data.skor : "?";
-                    
                     Swal.fire({
                         title: 'Ujian Selesai',
                         html: `
@@ -286,13 +285,13 @@ const app = {
             return this.submitData(true);
         }
 
-        // 4. MENGISI HEADER (Fix Error 318)
+        // 4. MENGISI HEADER
         if(document.getElementById('disp-nama')) document.getElementById('disp-nama').innerText = this.userData.nama;
         if(document.getElementById('disp-mapel')) document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
         
         // 5. JALANKAN MESIN SOAL
         this.renderSoal(0);
-        this.updateGrid(); // FIX: Menggunakan updateGrid() agar tidak TypeError
+        this.updateGrid(); 
         this.startTimer(); 
         this.monitorSingleDevice(); 
         this.setFont(2);
@@ -347,7 +346,6 @@ const app = {
                         MathJax.Hub.Queue(["Typeset", MathJax.Hub, pStim]);
                     }
                 }
-                // -----------------------------------
             }
             pStim.classList.add('active');
         } else {
@@ -356,81 +354,76 @@ const app = {
         }
 
         const pSoal = document.getElementById('panel-soal');
-let html = `<div class="soal-text">${data.pertanyaan}</div>`;
-const jwb = this.answers[index];
+        let html = `<div class="soal-text">${data.pertanyaan}</div>`;
+        const jwb = this.answers[index];
 
-if (data.tipe === 'pg') {
-    // --- TIPE PILIHAN GANDA BIASA ---
-    html += `<div class="pilihan-wrapper">`;
-    data.opsi.forEach((opt, i) => {
-        const char = String.fromCharCode(65 + i);
-        const active = jwb === char ? 'active' : '';
-        html += `<div class="opsi-item ${active}" onclick="app.selectAnswer('${char}')"><div class="marker">${char}</div><div class="text">${opt}</div></div>`;
-    });
-    html += `</div>`;
+        if (data.tipe === 'pg') {
+            html += `<div class="pilihan-wrapper">`;
+            data.opsi.forEach((opt, i) => {
+                const char = String.fromCharCode(65 + i);
+                const active = jwb === char ? 'active' : '';
+                html += `<div class="opsi-item ${active}" onclick="app.selectAnswer('${char}')"><div class="marker">${char}</div><div class="text">${opt}</div></div>`;
+            });
+            html += `</div>`;
 
-} else if (data.tipe === 'pgk') {
-    // --- TIPE PILIHAN GANDA KOMPLEKS (CHECKBOX) ---
-    html += `<div class="pilihan-wrapper">`;
-    const arr = Array.isArray(jwb) ? jwb : [];
-    data.opsi.forEach((opt, i) => {
-        const val = i.toString();
-        const active = arr.includes(val) ? 'active' : '';
-        html += `<div class="opsi-item ${active}" onclick="app.toggleCheck('${val}')"><div class="marker"><i class="fa-solid fa-check"></i></div><div class="text">${opt}</div></div>`;
-    });
-    html += `</div>`;
+        } else if (data.tipe === 'pgk') {
+            html += `<div class="pilihan-wrapper">`;
+            const arr = Array.isArray(jwb) ? jwb : [];
+            data.opsi.forEach((opt, i) => {
+                const val = i.toString();
+                const active = arr.includes(val) ? 'active' : '';
+                html += `<div class="opsi-item ${active}" onclick="app.toggleCheck('${val}')"><div class="marker"><i class="fa-solid fa-check"></i></div><div class="text">${opt}</div></div>`;
+            });
+            html += `</div>`;
 
-} else if (data.tipe === 'pgk-kategori') {
-    // --- TIPE KATEGORI (CUSTOM LABELS: B/S, FAKTA/OPINI, DLL) ---
-    const obj = jwb || {};
-    // Ambil label dari soal, jika tidak ada gunakan default B & S
-    const label = data.labelKategori || ["B", "S"]; 
-    
-    html += `<table class="table-bs">
-                <thead>
-                    <tr>
-                        <th>Pernyataan</th>
-                        <th width="80">${label[0]}</th>
-                        <th width="80">${label[1]}</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+        } else if (data.tipe === 'pgk-kategori') {
+            const obj = jwb || {};
+            const label = data.labelKategori || ["B", "S"]; 
+            
+            html += `<table class="table-bs">
+                        <thead>
+                            <tr>
+                                <th>Pernyataan</th>
+                                <th width="80">${label[0]}</th>
+                                <th width="80">${label[1]}</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                        
+            data.opsi.forEach((row, i) => {
+                const val = i.toString();
+                const opt1 = obj[val] === 'L1' ? 'checked' : ''; 
+                const opt2 = obj[val] === 'L2' ? 'checked' : ''; 
                 
-    data.opsi.forEach((row, i) => {
-        const val = i.toString();
-        // Cek jawaban menggunakan L1 (Label Kiri) dan L2 (Label Kanan)
-        const opt1 = obj[val] === 'L1' ? 'checked' : ''; 
-        const opt2 = obj[val] === 'L2' ? 'checked' : ''; 
-        
-        html += `<tr>
-                    <td>${row}</td>
-                    <td class="text-center">
-                        <label class="custom-radio-container">
-                            <input type="radio" name="bs-${i}" ${opt1} onchange="app.selectBS('${val}','L1')">
-                            <span class="radio-style"></span>
-                        </label>
-                    </td>
-                    <td class="text-center">
-                        <label class="custom-radio-container">
-                            <input type="radio" name="bs-${i}" ${opt2} onchange="app.selectBS('${val}','L2')">
-                            <span class="radio-style"></span>
-                        </label>
-                    </td>
-                </tr>`;
-    });
-    html += `</tbody></table>`;
-}
+                html += `<tr>
+                            <td>${row}</td>
+                            <td class="text-center">
+                                <label class="custom-radio-container">
+                                    <input type="radio" name="bs-${i}" ${opt1} onchange="app.selectBS('${val}','L1')">
+                                    <span class="radio-style"></span>
+                                </label>
+                            </td>
+                            <td class="text-center">
+                                <label class="custom-radio-container">
+                                    <input type="radio" name="bs-${i}" ${opt2} onchange="app.selectBS('${val}','L2')">
+                                    <span class="radio-style"></span>
+                                </label>
+                            </td>
+                        </tr>`;
+            });
+            html += `</tbody></table>`;
+        }
 
-pSoal.innerHTML = html;
+        pSoal.innerHTML = html;
+        
+        // --- FIX MATHJAX UNTUK SOAL ---
         if (window.MathJax) {
-    if (MathJax.typesetPromise) {
-        // Untuk MathJax V3
-        MathJax.typesetPromise([pSoal]).catch(err => console.error(err));
-    } else if (MathJax.Hub && MathJax.Hub.Queue) {
-        // Untuk MathJax V2
-        MathJax.Hub.Queue(["Typeset", MathJax.Hub, pSoal]);
-    }
-}
+            if (MathJax.typesetPromise) {
+                MathJax.typesetPromise([pSoal]).catch(err => console.error(err));
+            } else if (MathJax.Hub && MathJax.Hub.Queue) {
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, pSoal]);
+            }
+        }
 
         document.getElementById('check-ragu').checked = this.ragu[index] || false;
         this.updateGrid();
@@ -460,14 +453,9 @@ pSoal.innerHTML = html;
         }
     },
 
-    // --- PERBAIKAN NAVIGASI DI SINI ---
-    // Fungsi ini dipanggil oleh onclick di HTML (app.prevSoal & app.nextSoal)
+    // --- NAVIGASI ---
     prevSoal: function() { this.navigasi(-1); },
     nextSoal: function() { this.navigasi(1); },
-
-    prevSoal: function() { this.navigasi(-1); },
-    nextSoal: function() { this.navigasi(1); },
-
     navigasi: function(step) {
         const next = this.currentIndex + step;
         if(next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
@@ -483,11 +471,9 @@ pSoal.innerHTML = html;
         const btnPrevDesk = document.querySelector('.btn-nav.prev');
         const btnPrevMob = document.querySelector('.btn-mobile-icon.prev');
 
-        // Update Button Prev
         if(btnPrevDesk) btnPrevDesk.disabled = isFirst;
         if(btnPrevMob) btnPrevMob.disabled = isFirst;
 
-        // Update Button Next / Selesai
         const updateStyle = (btn, isMob) => {
             if(!btn) return;
             btn.classList.remove('btn-selesai');
@@ -503,7 +489,7 @@ pSoal.innerHTML = html;
 
         updateStyle(btnNextDesk, false);
         updateStyle(btnNextMob, true);
-    }, // Baris 249 yang benar berakhir di sini
+    },
 
     updateGrid: function() {
         const c = document.getElementById('grid-container');
@@ -521,22 +507,17 @@ pSoal.innerHTML = html;
         c.innerHTML = h;
     },
 
-    // TIMER
-    calculateTimeRemaining: function() {
-        if (!this.serverStartTime) return;
-        const now = Date.now();
-        const durationMs = this.currentPaket.waktu * 60 * 1000;
-        const elapsedMs = now - this.serverStartTime;
-        this.sisaWaktu = Math.floor((durationMs - elapsedMs) / 1000);
-    },
-
+    // --- TIMER FIXED ---
     startTimer: function() {
         if (this.timerInterval) clearInterval(this.timerInterval);
 
-        // FIX: Sesuaikan ID dengan yang ada di index.html
-        const timerDisplay = document.getElementById('time-val'); 
+        // FIX: ID-nya wajib pakai "time-val" karena di index.html pakai id="time-val"
+        const timerDisplay = document.getElementById('time-val');
         
         this.timerInterval = setInterval(() => {
+            // Pengaman tambahan agar jika gagal mendeteksi ID tidak langsung crash
+            if (!timerDisplay) return; 
+
             const sekarang = Date.now();
             const sisaDetik = Math.floor((this.deadline - sekarang) / 1000);
 
@@ -626,7 +607,7 @@ pSoal.innerHTML = html;
                 text: 'Data admin tidak disimpan di database.',
                 icon: 'success'
             }).then(() => {
-                location.reload(); // Kembali ke halaman login awal 
+                location.reload(); 
             });
         }
         if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet.', 'error');
@@ -689,28 +670,21 @@ function toggleSidebar() {
     }
 }
 
-// Cek status halaman dulu. Jika sudah siap, langsung jalankan.
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    // Gunakan setTimeout agar render UI tidak blocking
     setTimeout(() => app.init(), 1);
 } else {
-    // Jika belum siap (jarang terjadi di kasusmu), tunggu eventnya
     document.addEventListener('DOMContentLoaded', () => app.init());
 }
-/* ========================================================== */
+
 /* ========================================================== */
 /* [ADD-ON] AUTO-BACKUP & NOTIFIKASI SWEETALERT (TOAST)      */
-/* Tempel kode ini di baris paling bawah system.js           */
 /* ========================================================== */
-
 (function() {
-    // 1. KONFIGURASI SWEETALERT TOAST (Notifikasi Melayang)
-    // Ini membuat alert kecil, tidak memblokir layar, dan hilang sendiri
     const Toast = Swal.mixin({
         toast: true,
-        position: 'top-end',       // Muncul di atas tengah (bisa ganti 'top-end' untuk pojok kanan)
+        position: 'top-end',
         showConfirmButton: false,
-        timer: 4000,           // Hilang otomatis setelah 4 detik
+        timer: 4000,
         timerProgressBar: true,
         didOpen: (toast) => {
             toast.addEventListener('mouseenter', Swal.stopTimer)
@@ -718,48 +692,38 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
         }
     });
 
-    // 2. DETEKSI STATUS KONEKSI
     function handleConnectionChange() {
         if (!navigator.onLine) {
-            // JIKA OFFLINE (Internet Mati)
             Toast.fire({
                 icon: 'error',
                 title: 'Koneksi Terputus!',
                 text: 'Tenang, jawabanmu aman disimpan di HP ini.'
             });
         } else {
-            // JIKA ONLINE (Internet Nyala Kembali)
             Toast.fire({
                 icon: 'success',
                 title: 'Koneksi Kembali!',
                 text: 'Mencoba sinkronisasi data ke server...'
             });
-
-            // Coba kirim ulang data ke Firebase saat online kembali
             if(typeof app !== 'undefined' && app.saveRealtime) {
                 app.saveRealtime();
             }
         }
     }
 
-    // Pasang Pendengar Sinyal
     window.addEventListener('offline', handleConnectionChange);
     window.addEventListener('online', handleConnectionChange);
 
-    // Cek status saat pertama kali load (barangkali pas buka web udah mati)
     if (!navigator.onLine) {
         handleConnectionChange();
     }
 
-    // 3. AUTO-BACKUP KE LOCALSTORAGE (FITUR ANTI-BADAL)
-    // Menyimpan jawaban ke memori HP setiap kali fungsi simpan dipanggil
     if (typeof app !== 'undefined') {
-        const originalSave = app.saveRealtime; // Simpan fungsi asli
-        const originalRestore = app.restoreSession; // Simpan fungsi restore asli
+        const originalSave = app.saveRealtime; 
+        const originalRestore = app.restoreSession; 
 
-        // A. Bajak fungsi simpan untuk backup ke HP
         app.saveRealtime = function() {
-            originalSave.call(app); // Jalankan fungsi asli
+            originalSave.call(app); 
 
             if(app.sessionId) {
                 const backupData = {
@@ -772,18 +736,15 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             }
         };
 
-        // B. Bajak fungsi restore untuk ambil data dari HP jika server gagal/lambat
         app.restoreSession = function(data) {
             const backupKey = 'CBT_BACKUP_' + app.sessionId;
             const localBackup = JSON.parse(localStorage.getItem(backupKey));
 
-            // Jika data di HP lebih lengkap/baru dibanding data server, pakai data HP
             if (localBackup && (!data.answers || Object.keys(localBackup.answers).length > Object.keys(data.answers || {}).length)) {
                 console.log("♻️ Mengembalikan jawaban dari backup HP.");
                 data.answers = localBackup.answers;
                 data.ragu = localBackup.ragu;
                 
-                // Beri tahu user kalau kita pakai data backup
                 Toast.fire({
                     icon: 'info',
                     title: 'Data Dipulihkan',
@@ -794,11 +755,10 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             originalRestore.call(app, data);
         };
     }
-})();;
+})();
 
 // Fitur klik gambar untuk memperbesar
 document.addEventListener('click', function (e) {
-    // Jika yang diklik adalah gambar di dalam soal/stimulus
     if (e.target.tagName === 'IMG' && !e.target.closest('.zoomed')) {
         const fullOverlay = document.createElement('div');
         fullOverlay.className = 'zoomed';
@@ -808,22 +768,8 @@ document.addEventListener('click', function (e) {
         
         document.body.appendChild(fullOverlay);
         
-        // Klik lagi untuk menutup
         fullOverlay.onclick = function() {
             fullOverlay.remove();
         };
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
