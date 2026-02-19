@@ -131,10 +131,29 @@ const app = {
         .then(res => res.json())
         .then(res => {
             if (res.status === "found") {
+                // JIKA SISWA SUDAH MENGERJAKAN
                 if (res.data.statusSheet === "SUDAH") {
-                    Swal.fire('Selesai', 'Anda sudah menyelesaikan ujian ini.', 'warning');
+                    // Ambil skor dari response (pastikan Apps Script mengirim data 'skor')
+                    const nilai = res.data.skor !== undefined ? res.data.skor : "?";
+                    
+                    Swal.fire({
+                        title: 'Ujian Selesai',
+                        html: `
+                            <div class="text-center">
+                                <p>Anda sudah menyelesaikan ujian ini sebelumnya.</p>
+                                <div style="font-size: 2.5rem; font-weight: bold; color: #2ecc71; margin: 15px 0;">
+                                    ${nilai}
+                                </div>
+                                <p class="text-muted">Skor Anda telah tercatat di server.</p>
+                            </div>
+                        `,
+                        icon: 'success',
+                        confirmButtonText: 'Tutup'
+                    });
                     return;
                 }
+                
+                // Jika belum mengerjakan, lanjut masuk soal
                 this.userData = { 
                     nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
                 };
@@ -790,6 +809,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
