@@ -533,7 +533,8 @@ pSoal.innerHTML = html;
     startTimer: function() {
         if (this.timerInterval) clearInterval(this.timerInterval);
 
-        const timerDisplay = document.getElementById('timer');
+        // FIX: Sesuaikan ID dengan yang ada di index.html
+        const timerDisplay = document.getElementById('time-val'); 
         
         this.timerInterval = setInterval(() => {
             const sekarang = Date.now();
@@ -813,6 +814,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
