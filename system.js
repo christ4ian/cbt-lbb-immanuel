@@ -111,11 +111,11 @@ const app = {
                 nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL", 
                 email: email, isAdmin: true 
             };
-            this.sessionId = "admin_mode_" + this.currentPaket.id;
+            // Session ID unik agar setiap masuk dianggap sesi baru di browser
+            this.sessionId = "admin_" + this.currentPaket.id + "_" + Date.now();
             
-            // Bypass fetch Google Script, langsung ke halaman data/konfirmasi
             this.gotoConfirmPage(); 
-            return;
+            return; // Berhenti di sini, jangan lanjut ke fetch bawahnya 
         }
 
         // --- LOGIKA SISWA BIASA (Tetap Pakai Fetch) ---
@@ -222,15 +222,15 @@ const app = {
     // 2. START
     // =========================================
     startUjian: function() {
-       if (this.userData.isAdmin) {
+       if (this.userData && this.userData.isAdmin) {
             const dummyData = {
                 startTime: Date.now(),
-                answers: {},
+                answers: {}, // Mulai dengan jawaban kosong setiap kali masuk
                 ragu: {},
                 status: 'ongoing'
             };
-            this.restoreSession(dummyData);
-            return;
+            this.restoreSession(dummyData); // Langsung loncat ke soal 
+            return; 
         }
         if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
         Swal.fire({ title: 'Memulai...', didOpen: () => Swal.showLoading() });
@@ -255,21 +255,46 @@ const app = {
     },
 
     restoreSession: function(data) {
+        // 1. Simpan sesi ke LocalStorage agar jika refresh tidak terlempar ke login
         localStorage.setItem('cbt_active_session', JSON.stringify({
-            sessionId: this.sessionId, paketId: this.currentPaket.id, userData: this.userData, sheetRowIndex: this.sheetRowIndex
+            sessionId: this.sessionId, 
+            paketId: this.currentPaket.id, 
+            userData: this.userData, 
+            sheetRowIndex: this.sheetRowIndex
         }));
 
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
-        this.serverStartTime = data.startTime;
-
-        this.monitorSingleDevice();
-        this.calculateTimeRemaining();
         
-        if (this.sisaWaktu <= 0) {
-            Swal.fire('Waktu Habis', 'Waktu ujian telah habis.', 'error').then(() => this.submitData(true));
+        // 2. TENTUKAN DEADLINE (Waktu Mulai + Durasi)
+        // Khusus Admin, beri waktu 999 menit agar tidak bisa expired
+        const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
+        this.deadline = data.startTime + (durasiMenit * 60 * 1000);
+
+        // 3. CEK APAKAH WAKTU SUDAH HABIS?
+        const sekarang = Date.now();
+        if (sekarang >= this.deadline && !this.userData.isAdmin) {
+            Swal.fire({
+                title: 'Waktu Habis',
+                text: 'Sesi ujian Anda telah berakhir sesuai jadwal.',
+                icon: 'error',
+                confirmButtonText: 'Kirim Jawaban'
+            }).then(() => {
+                this.submitData(true); // Paksa kirim data
+            });
             return;
         }
+
+        // 4. JIKA MASIH ADA WAKTU, TAMPILKAN SOAL
+        this.renderSoal(0);
+        this.renderNavigasi();
+        this.startTimer(); // Menjalankan hitung mundur ke 'this.deadline'
+        this.monitorSingleDevice();
+
+        // Pindah halaman
+        document.getElementById('page-confirm').classList.add('hidden');
+        document.getElementById('page-test').classList.remove('hidden');
+    },
 
         document.getElementById('disp-nama').innerText = this.userData.nama;
         document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
@@ -483,24 +508,42 @@ pSoal.innerHTML = html;
     },
 
     startTimer: function() {
-        clearInterval(this.timerInterval);
-        const display = document.getElementById('time-val');
-        const displayMob = document.getElementById('timer-mobile');
+        if (this.timerInterval) clearInterval(this.timerInterval);
 
+        const timerDisplay = document.getElementById('timer');
+        
         this.timerInterval = setInterval(() => {
-            this.calculateTimeRemaining();
-            if(this.sisaWaktu <= 0) {
-                this.sisaWaktu = 0;
+            const sekarang = Date.now();
+            const sisaDetik = Math.floor((this.deadline - sekarang) / 1000);
+
+            if (sisaDetik <= 0) {
                 clearInterval(this.timerInterval);
-                this.submitData(true);
+                timerDisplay.innerText = "00:00:00";
+                if (!this.userData.isAdmin) {
+                    Swal.fire({
+                        title: 'Waktu Habis!',
+                        text: 'Jawaban Anda akan dikirim otomatis.',
+                        icon: 'warning',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        this.submitData(true); // Paksa submit
+                    });
+                }
                 return;
             }
-            const h = Math.floor(this.sisaWaktu / 3600);
-            const m = Math.floor((this.sisaWaktu % 3600) / 60);
-            const s = Math.floor(this.sisaWaktu % 60);
-            const text = `${h<10?'0'+h:h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
-            if(display) display.innerText = text;
-            if(displayMob) displayMob.innerText = text;
+
+            // Konversi sisaDetik ke format Jam:Menit:Detik
+            const h = Math.floor(sisaDetik / 3600).toString().padStart(2, '0');
+            const m = Math.floor((sisaDetik % 3600) / 60).toString().padStart(2, '0');
+            const s = (sisaDetik % 60).toString().padStart(2, '0');
+            timerDisplay.innerText = `${h}:${m}:${s}`;
+
+            // Warnai merah jika sisa 5 menit
+            if (sisaDetik < 300) {
+                timerDisplay.style.color = 'red';
+                timerDisplay.classList.add('blink');
+            }
         }, 1000);
     },
 
@@ -552,12 +595,16 @@ pSoal.innerHTML = html;
     },
 
     submitData: function(force) {
-       if(this.userData.isAdmin) {
-        const result = this.calculateResult();
-        localStorage.removeItem('cbt_active_session');
-        return Swal.fire('Admin Mode', `Simulasi selesai. Skor: ${result.skor}. (Data tidak disimpan)`, 'info')
-                   .then(() => location.reload());
-    }
+       if(this.userData && this.userData.isAdmin) {
+            localStorage.removeItem('cbt_active_session'); // Hapus jejak login 
+            return Swal.fire({
+                title: 'Simulasi Selesai',
+                text: 'Data admin tidak disimpan di database.',
+                icon: 'success'
+            }).then(() => {
+                location.reload(); // Kembali ke halaman login awal 
+            });
+        }
         if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet.', 'error');
         Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const result = this.calculateResult();
@@ -743,6 +790,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
