@@ -338,7 +338,16 @@ const app = {
             if (this.lastStimulusContent !== data.stimulus.konten) {
                 pStim.innerHTML = data.stimulus.konten;
                 this.lastStimulusContent = data.stimulus.konten;
-                if(window.MathJax) MathJax.typesetPromise([pStim]);
+                
+                // --- FIX MATHJAX UNTUK STIMULUS ---
+                if (window.MathJax) {
+                    if (MathJax.typesetPromise) {
+                        MathJax.typesetPromise([pStim]).catch(err => console.error(err));
+                    } else if (MathJax.Hub && MathJax.Hub.Queue) {
+                        MathJax.Hub.Queue(["Typeset", MathJax.Hub, pStim]);
+                    }
+                }
+                // -----------------------------------
             }
             pStim.classList.add('active');
         } else {
@@ -413,7 +422,15 @@ if (data.tipe === 'pg') {
 }
 
 pSoal.innerHTML = html;
-        if(window.MathJax) MathJax.typesetPromise([pSoal]);
+        if (window.MathJax) {
+    if (MathJax.typesetPromise) {
+        // Untuk MathJax V3
+        MathJax.typesetPromise([pSoal]).catch(err => console.error(err));
+    } else if (MathJax.Hub && MathJax.Hub.Queue) {
+        // Untuk MathJax V2
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, pSoal]);
+    }
+}
 
         document.getElementById('check-ragu').checked = this.ragu[index] || false;
         this.updateGrid();
@@ -796,6 +813,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
