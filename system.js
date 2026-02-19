@@ -171,6 +171,9 @@ const app = {
         });
     },
 
+    // =========================================
+    // 1. SINKRONISASI CLOUD
+    // =========================================
     syncWithCloud: function(isResume) {
         db.ref('sessions/' + this.sessionId).once('value').then((snapshot) => {
             const data = snapshot.val();
@@ -202,10 +205,9 @@ const app = {
         // 2. LOGIKA BARU: Tampilkan Petunjuk sebagai Daftar List (Nomor)
         const petunjukList = document.getElementById('info-petunjuk-list');
         if(petunjukList) {
-            petunjukList.innerHTML = ""; // Bersihkan list lama supaya tidak double
+            petunjukList.innerHTML = ""; 
             const daftarPetunjuk = this.currentPaket.petunjuk || ["Ikuti instruksi pengawas."];
             
-            // Loop setiap baris petunjuk dan buat jadi <li>
             daftarPetunjuk.forEach(teks => {
                 const li = document.createElement('li');
                 li.innerText = teks;
@@ -232,11 +234,11 @@ const app = {
         if (this.userData && this.userData.isAdmin) {
             const dummyData = {
                 startTime: Date.now(),
-                answers: {}, // Mulai dengan jawaban kosong setiap kali masuk
+                answers: {}, 
                 ragu: {},
                 status: 'ongoing'
             };
-            this.restoreSession(dummyData); // Langsung loncat ke soal 
+            this.restoreSession(dummyData); 
             return; 
         }
         
@@ -266,7 +268,7 @@ const app = {
     // 3. SESSION RESTORE & UI SETUP
     // =========================================
     restoreSession: function(data) {
-        // 1. Simpan Jejak di Browser (PENTING agar tidak login ulang saat refresh)
+        // 1. Simpan Jejak di Browser
         localStorage.setItem('cbt_active_session', JSON.stringify({
             sessionId: this.sessionId, paketId: this.currentPaket.id, 
             userData: this.userData, sheetRowIndex: this.sheetRowIndex
@@ -275,25 +277,24 @@ const app = {
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
         
-        // 2. LOGIKA DEADLINE TETAP (Baru & Anti-Curang)
-        // Durasi 999 menit khusus Admin agar tidak expired
+        // 2. LOGIKA DEADLINE TETAP (Fixed Deadline)
         const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
         this.deadline = data.startTime + (durasiMenit * 60 * 1000);
 
-        // 3. CEK EXPIRED (Langsung blokir jika sudah lewat jam selesai)
+        // 3. CEK EXPIRED
         if (Date.now() >= this.deadline && !this.userData.isAdmin) {
             return this.submitData(true);
         }
 
-        // 4. FIX ERROR 318: Mengisi Nama & Mapel di Header
+        // 4. MENGISI HEADER (Fix Error 318)
         if(document.getElementById('disp-nama')) document.getElementById('disp-nama').innerText = this.userData.nama;
         if(document.getElementById('disp-mapel')) document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
         
         // 5. JALANKAN MESIN SOAL
         this.renderSoal(0);
-        this.renderNavigasi();
-        this.startTimer(); // Hitung mundur otomatis ke deadline
-        this.monitorSingleDevice(); // Jalankan Anti-Nyontek
+        this.updateGrid(); // FIX: Menggunakan updateGrid() agar tidak TypeError
+        this.startTimer(); 
+        this.monitorSingleDevice(); 
         this.setFont(2);
 
         // 6. TAMPILKAN LAYAR UJIAN
@@ -795,6 +796,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
