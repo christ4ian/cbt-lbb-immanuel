@@ -40,7 +40,7 @@ const app = {
     serverStartTime: 0, 
 
     // Config (3 Jam)
-    MAX_SESSION_TIME: 3 * 60 * 60 * 1000, 
+    deadline: 0,
 
     // --- INIT ---
     init: function() {
@@ -177,27 +177,15 @@ const app = {
             Swal.close();
 
             if (data) {
+                // Cek jika sudah selesai
                 if (data.status === 'submitted') {
                     localStorage.removeItem('cbt_active_session');
                     return Swal.fire('Selesai', 'Ujian telah dikumpulkan.', 'warning').then(() => location.reload());
                 }
-                const now = Date.now();
-                if (now - data.startTime > this.MAX_SESSION_TIME) {
-                    return Swal.fire('Waktu Habis', 'Batas 3 jam habis.', 'error');
-                }
                 
-                if (isResume) {
-    // Beritahu Firebase bahwa sekarang Device ini yang aktif
-    db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId });
-    this.restoreSession(data);
-} else {
-    Swal.fire({ title: 'Lanjutkan?', text: 'Melanjutkan sesi...', icon: 'info', timer: 1500, showConfirmButton: false })
-        .then(() => {
-            // Update ID perangkat sebelum restore agar tidak menendang diri sendiri
-            db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId });
-            this.restoreSession(data);
-        });
-}
+                // Langsung update device dan masuk soal
+                db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId });
+                this.restoreSession(data);
             } else {
                 if(isResume) { localStorage.removeItem('cbt_active_session'); location.reload(); return; }
                 this.gotoConfirmPage();
@@ -278,52 +266,38 @@ const app = {
     // 3. SESSION RESTORE & UI SETUP
     // =========================================
     restoreSession: function(data) {
-        // 1. Simpan sesi ke LocalStorage agar jika refresh tidak terlempar ke login
+        // 1. Simpan Jejak di Browser (PENTING agar tidak login ulang saat refresh)
         localStorage.setItem('cbt_active_session', JSON.stringify({
-            sessionId: this.sessionId, 
-            paketId: this.currentPaket.id, 
-            userData: this.userData, 
-            sheetRowIndex: this.sheetRowIndex
+            sessionId: this.sessionId, paketId: this.currentPaket.id, 
+            userData: this.userData, sheetRowIndex: this.sheetRowIndex
         }));
 
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
         
-        // 2. TENTUKAN DEADLINE (Waktu Mulai + Durasi)
+        // 2. LOGIKA DEADLINE TETAP (Baru & Anti-Curang)
+        // Durasi 999 menit khusus Admin agar tidak expired
         const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
         this.deadline = data.startTime + (durasiMenit * 60 * 1000);
 
-        // 3. CEK APAKAH WAKTU SUDAH HABIS?
-        const sekarang = Date.now();
-        if (sekarang >= this.deadline && !this.userData.isAdmin) {
-            Swal.fire({
-                title: 'Waktu Habis',
-                text: 'Sesi ujian Anda telah berakhir sesuai jadwal.',
-                icon: 'error',
-                confirmButtonText: 'Kirim Jawaban'
-            }).then(() => {
-                this.submitData(true); // Paksa kirim data
-            });
-            return;
+        // 3. CEK EXPIRED (Langsung blokir jika sudah lewat jam selesai)
+        if (Date.now() >= this.deadline && !this.userData.isAdmin) {
+            return this.submitData(true);
         }
 
-        // 4. SETUP UI HEADER & TAMPILAN (Fix Error Line 318)
-        document.getElementById('disp-nama').innerText = this.userData.nama;
-        document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
+        // 4. FIX ERROR 318: Mengisi Nama & Mapel di Header
+        if(document.getElementById('disp-nama')) document.getElementById('disp-nama').innerText = this.userData.nama;
+        if(document.getElementById('disp-mapel')) document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
         
+        // 5. JALANKAN MESIN SOAL
         this.renderSoal(0);
         this.renderNavigasi();
-        this.startTimer(); 
-        this.monitorSingleDevice();
+        this.startTimer(); // Hitung mundur otomatis ke deadline
+        this.monitorSingleDevice(); // Jalankan Anti-Nyontek
         this.setFont(2);
 
-        // Pindah halaman ke tampilan ujian
-        if(typeof this.switchView === 'function') {
-            this.switchView('view-ujian');
-        } else {
-            document.getElementById('page-confirm').classList.add('hidden');
-            document.getElementById('page-test').classList.remove('hidden');
-        }
+        // 6. TAMPILKAN LAYAR UJIAN
+        this.switchView('view-ujian');
     },
 
     // =========================================
@@ -821,6 +795,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
