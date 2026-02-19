@@ -222,6 +222,16 @@ const app = {
     // 2. START
     // =========================================
     startUjian: function() {
+       if (this.userData.isAdmin) {
+            const dummyData = {
+                startTime: Date.now(),
+                answers: {},
+                ragu: {},
+                status: 'ongoing'
+            };
+            this.restoreSession(dummyData);
+            return;
+        }
         if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
         Swal.fire({ title: 'Memulai...', didOpen: () => Swal.showLoading() });
 
@@ -271,6 +281,7 @@ const app = {
     },
 
     monitorSingleDevice: function() {
+       if (this.userData.isAdmin) return;
         const deviceRef = db.ref('sessions/' + this.sessionId + '/activeDeviceId');
         deviceRef.on('value', (snapshot) => {
             const activeId = snapshot.val();
@@ -732,6 +743,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
