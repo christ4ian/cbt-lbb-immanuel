@@ -206,42 +206,42 @@ const app = {
     },
 
     gotoConfirmPage: function() {
-    // 1. Tampilkan Info Mapel, Waktu, dan Jumlah Soal
-    document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
-    document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
-    document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
-    
-    // 2. LOGIKA BARU: Tampilkan Petunjuk sebagai Daftar List (Nomor)
-    const petunjukList = document.getElementById('info-petunjuk-list');
-    if(petunjukList) {
-        petunjukList.innerHTML = ""; // Bersihkan list lama supaya tidak double
-        const daftarPetunjuk = this.currentPaket.petunjuk || ["Ikuti instruksi pengawas."];
+        // 1. Tampilkan Info Mapel, Waktu, dan Jumlah Soal
+        document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
+        document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
+        document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
         
-        // Loop setiap baris petunjuk dan buat jadi <li>
-        daftarPetunjuk.forEach(teks => {
-            const li = document.createElement('li');
-            li.innerText = teks;
-            petunjukList.appendChild(li);
-        });
-    }
+        // 2. LOGIKA BARU: Tampilkan Petunjuk sebagai Daftar List (Nomor)
+        const petunjukList = document.getElementById('info-petunjuk-list');
+        if(petunjukList) {
+            petunjukList.innerHTML = ""; // Bersihkan list lama supaya tidak double
+            const daftarPetunjuk = this.currentPaket.petunjuk || ["Ikuti instruksi pengawas."];
+            
+            // Loop setiap baris petunjuk dan buat jadi <li>
+            daftarPetunjuk.forEach(teks => {
+                const li = document.createElement('li');
+                li.innerText = teks;
+                petunjukList.appendChild(li);
+            });
+        }
 
-    // 3. Isi Form Data Peserta (Nama, Kelas, Sekolah)
-    const inpNama = document.getElementById('data-nama');
-    const inpKelas = document.getElementById('data-kelas');
-    const inpSekolah = document.getElementById('data-sekolah');
-    
-    if(inpNama) inpNama.value = this.userData.nama;
-    if(inpKelas) inpKelas.value = this.userData.kelas;
-    if(inpSekolah) inpSekolah.value = this.userData.sekolah;
+        // 3. Isi Form Data Peserta (Nama, Kelas, Sekolah)
+        const inpNama = document.getElementById('data-nama');
+        const inpKelas = document.getElementById('data-kelas');
+        const inpSekolah = document.getElementById('data-sekolah');
+        
+        if(inpNama) inpNama.value = this.userData.nama;
+        if(inpKelas) inpKelas.value = this.userData.kelas;
+        if(inpSekolah) inpSekolah.value = this.userData.sekolah;
 
-    this.switchView('view-data');
-},
+        this.switchView('view-data');
+    },
 
     // =========================================
-    // 2. START
+    // 2. START UJIAN
     // =========================================
     startUjian: function() {
-       if (this.userData && this.userData.isAdmin) {
+        if (this.userData && this.userData.isAdmin) {
             const dummyData = {
                 startTime: Date.now(),
                 answers: {}, // Mulai dengan jawaban kosong setiap kali masuk
@@ -251,6 +251,7 @@ const app = {
             this.restoreSession(dummyData); // Langsung loncat ke soal 
             return; 
         }
+        
         if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
         Swal.fire({ title: 'Memulai...', didOpen: () => Swal.showLoading() });
 
@@ -273,6 +274,9 @@ const app = {
         });
     },
 
+    // =========================================
+    // 3. SESSION RESTORE & UI SETUP
+    // =========================================
     restoreSession: function(data) {
         // 1. Simpan sesi ke LocalStorage agar jika refresh tidak terlempar ke login
         localStorage.setItem('cbt_active_session', JSON.stringify({
@@ -286,7 +290,6 @@ const app = {
         this.ragu = data.ragu || {};
         
         // 2. TENTUKAN DEADLINE (Waktu Mulai + Durasi)
-        // Khusus Admin, beri waktu 999 menit agar tidak bisa expired
         const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
         this.deadline = data.startTime + (durasiMenit * 60 * 1000);
 
@@ -304,35 +307,44 @@ const app = {
             return;
         }
 
-        // 4. JIKA MASIH ADA WAKTU, TAMPILKAN SOAL
-        this.renderSoal(0);
-        this.renderNavigasi();
-        this.startTimer(); // Menjalankan hitung mundur ke 'this.deadline'
-        this.monitorSingleDevice();
-
-        // Pindah halaman
-        document.getElementById('page-confirm').classList.add('hidden');
-        document.getElementById('page-test').classList.remove('hidden');
-    },
-
+        // 4. SETUP UI HEADER & TAMPILAN (Fix Error Line 318)
         document.getElementById('disp-nama').innerText = this.userData.nama;
         document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
         
-        this.switchView('view-ujian');
-        this.startTimer();
         this.renderSoal(0);
+        this.renderNavigasi();
+        this.startTimer(); 
+        this.monitorSingleDevice();
         this.setFont(2);
+
+        // Pindah halaman ke tampilan ujian
+        if(typeof this.switchView === 'function') {
+            this.switchView('view-ujian');
+        } else {
+            document.getElementById('page-confirm').classList.add('hidden');
+            document.getElementById('page-test').classList.remove('hidden');
+        }
     },
 
+    // =========================================
+    // 4. SECURITY MONITORING
+    // =========================================
     monitorSingleDevice: function() {
-       if (this.userData.isAdmin) return;
+        if (this.userData.isAdmin) return;
         const deviceRef = db.ref('sessions/' + this.sessionId + '/activeDeviceId');
         deviceRef.on('value', (snapshot) => {
             const activeId = snapshot.val();
             if (activeId && activeId !== this.deviceId) {
-                deviceRef.off(); clearInterval(this.timerInterval);
+                deviceRef.off(); 
+                if(this.timerInterval) clearInterval(this.timerInterval);
                 localStorage.removeItem('cbt_active_session');
-                Swal.fire({ title: 'Logout Otomatis', text: 'Akun login di perangkat lain.', icon: 'error', allowOutsideClick: false, confirmButtonText: 'Keluar' }).then(() => location.reload());
+                Swal.fire({ 
+                    title: 'Logout Otomatis', 
+                    text: 'Akun login di perangkat lain.', 
+                    icon: 'error', 
+                    allowOutsideClick: false, 
+                    confirmButtonText: 'Keluar' 
+                }).then(() => location.reload());
             }
         });
     },
@@ -809,6 +821,7 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
 
 
 
