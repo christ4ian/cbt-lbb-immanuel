@@ -74,7 +74,7 @@ PAKET_SOAL.push({
                 "Bagian pizza yang dimakan Bima lebih sedikit daripada bagian pizza yang dimakan Ana.",
                 "Di antara ketiganya, Ana adalah orang yang memakan pizza paling sedikit."
             ],
-            kunci: ['0', '2'], // Berdasarkan kunci jawaban: Hanya pernyataan a (0) yang Benar
+            kunci: ['0'], // UPDATE: Kunci jawaban diperbaiki (hanya indeks 0)
             ragu: false
         },
 
@@ -130,7 +130,7 @@ PAKET_SOAL.push({
                 "Untuk membeli 750 gram <i>kataifi</i>, Bu Ida cukup membayar sebesar Rp40.000.",
                 "Jika Bu Ida membayar total belanjaan ketiga bahan tersebut dengan selembar uang Rp500.000, maka ia akan menerima kembalian sebesar Rp65.000."
             ],
-            kunci: { '0': 'B', '1': 'S', '2': 'B' },
+            kunci: { '0': 'L1', '1': 'L2', '2': 'L1' }, // UPDATE: Menggunakan L1/L2
             ragu: false
         },
 
@@ -193,7 +193,7 @@ PAKET_SOAL.push({
                 "Pengecekan Kelembapan dan Pembersihan Rak akan dilakukan secara bersamaan untuk kedua kalinya pada tanggal 9 Februari 2026.",
                 "Ketiga tindakan perawatan tersebut akan dilakukan secara bersamaan untuk ketiga kalinya pada tanggal 9 Maret 2026."
             ],
-            kunci: { '0': 'B', '1': 'S', '2': 'B' },
+            kunci: { '0': 'L1', '1': 'L2', '2': 'L1' }, // UPDATE: Menggunakan L1/L2
             ragu: false
         },
 
@@ -302,7 +302,7 @@ PAKET_SOAL.push({
                 "Bangun datar yang dimaksud oleh Mimin adalah persegi panjang.",
                 "Bangun datar yang digambarkan oleh Jima adalah jajargenjang."
             ],
-            kunci: { '0': 'B', '1': 'S', '2': 'B' },
+            kunci: { '0': 'L1', '1': 'L2', '2': 'L1' }, // UPDATE: Menggunakan L1/L2
             ragu: false
         },
 
@@ -424,7 +424,7 @@ PAKET_SOAL.push({
                 tampil: true,
                 konten: `
                     <p>Sebuah truk pengangkut sembako membawa muatan awal sebesar 0,5 ton beras. Di pasar pertama, truk tersebut menurunkan beras sebanyak 1,5 kuintal. Kemudian, di pasar kedua, truk tersebut menambah muatan gula sebanyak 125 kg. </p>
-                ` // <--- NAH, INI DIA TANDA YANG HILANG!
+                `
             },
             pertanyaan: "Berat total muatan truk sekarang adalah...",
             opsi: [
@@ -470,7 +470,7 @@ PAKET_SOAL.push({
                 "Dispenser Sprite dapat mengisi 30 gelas.",
                 "Dispenser Fanta dapat mengisi 40 gelas."
             ],
-            kunci: { '0': 'B', '1': 'S', '2': 'B' },
+            kunci: { '0': 'L1', '1': 'L2', '2': 'L1' }, // UPDATE: Menggunakan L1/L2
             ragu: false
         },
 
@@ -542,7 +542,7 @@ PAKET_SOAL.push({
                 "Jumlah seluruh siswa gabungan kelas 6A dan 6B yang memilih SMP Negeri 01 adalah 7 siswa.",
                 "Peminat SMP Insan Mulia di kelas 6B lebih sedikit dibandingkan di kelas 6A."
             ],
-            kunci: { '0': 'B', '1': 'B', '2': 'S' },
+            kunci: { '0': 'L1', '1': 'L1', '2': 'L2' }, // UPDATE: Menggunakan L1/L2
             ragu: false
         },
 
@@ -616,7 +616,7 @@ PAKET_SOAL.push({
                 "Kenaikan hasil panen tertinggi terjadi dari hari Rabu ke hari Kamis.",
                 "Jika seluruh telur pada hari Kamis dijual dengan harga Rp2.500,00 per butir, maka uang yang diperoleh adalah Rp500.000,00."
             ],
-            kunci: { '0': 'B', '1': 'S', '2': 'B' },
+            kunci: { '0': 'L1', '1': 'L2', '2': 'L1' }, // UPDATE: Menggunakan L1/L2
             ragu: false
         },
 
@@ -625,17 +625,9 @@ PAKET_SOAL.push({
             id: 25,
             tipe: 'pg',
             stimulus: {
-                tampil: true,
-                konten: `
-                    <p>Pada musim liburan sekolah, Edo dan keluarganya berencana mengunjungi Candi Borobudur.</p>
-                    <p>Sebelum berangkat, Edo membuka peta digital di tablet ayahnya untuk melihat rute perjalanan dari kota Yogyakarta menuju Magelang.</p>
-                    <p>Pada pojok peta tersebut, tertulis informasi Skala 1 : 400.000. Edo penasaran dan mengambil penggaris untuk mengukur jarak kedua kota tersebut pada layar tablet. Ternyata, hasil ukurannya menunjukkan angka 8 cm.</p>
-                    <div style="text-align:center; margin: 10px 0;">
-                        <img src="assets/tka-sd-mtk-2026-soal25.png" style="width:100%; max-width:500px; border-radius:5px;">
-                    </div>
-                `
+                tampil: false
             },
-            pertanyaan: "Berdasarkan informasi di atas, jarak sebenarnya antara kota Yogyakarta dan Magelang adalah ....",
+            pertanyaan: "Sebuah peta digital memiliki skala 1 : 400.000. Jika jarak antara dua kota pada peta tersebut adalah 8 cm, berapakah jarak sebenarnya antara kedua kota tersebut?",
             opsi: [
                 "3,2 km",
                 "32 km",
