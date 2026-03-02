@@ -576,27 +576,61 @@ const app = {
             const kunci = soal.kunci;
             let status = "SALAH";
 
-            if (!jwb) { detail.push("KOSONG"); return; }
-
-            if (soal.tipe === 'pg') {
-                if (jwb === kunci) status = "BENAR";
-            } else if (soal.tipe === 'pgk') {
-                const jwbSorted = JSON.stringify(jwb.sort());
-                const kunciSorted = JSON.stringify(kunci.sort());
-                if (jwbSorted === kunciSorted) status = "BENAR";
-            } else if (soal.tipe === 'pgk-kategori') {
-                let isPerfect = true;
-                const rows = Object.keys(kunci);
-                for (let r of rows) { if (jwb[r] !== kunci[r]) { isPerfect = false; break; } }
-                if (isPerfect) status = "BENAR";
+            // 1. CEK DATA KOSONG (Kalau user belum jawab nomor ini sama sekali)
+            if (!jwb) { 
+                detail.push("KOSONG"); 
+                return; // Lanjut evaluasi soal berikutnya
             }
 
-            if (status === "BENAR") benarCount++;
+            // 2. LOGIKA PENILAIAN
+            if (soal.tipe === 'pg') {
+                // Tipe Pilihan Ganda Biasa
+                if (jwb === kunci) {
+                    status = "BENAR";
+                }
+            } else if (soal.tipe === 'pgk') {
+                // Tipe Pilihan Ganda Kompleks -> BUG URUTAN ARRAY FIXED
+                if (Array.isArray(jwb) && Array.isArray(kunci)) {
+                    // Pakai spread operator [...] biar gak ngerusak array aslinya
+                    const jwbSorted = JSON.stringify([...jwb].sort());
+                    const kunciSorted = JSON.stringify([...kunci].sort());
+                    
+                    if (jwbSorted === kunciSorted) {
+                        status = "BENAR";
+                    }
+                }
+            } else if (soal.tipe === 'pgk-kategori') {
+                // Tipe Benar Salah -> Bandingkan langsung karena data sudah seragam
+                let isPerfect = true;
+                const rows = Object.keys(kunci);
+                
+                for (let r of rows) {
+                    // Kalau di dalam pilihan ini user belum jawab, atau jawabannya beda
+                    if (!jwb[r] || jwb[r] !== kunci[r]) {
+                        isPerfect = false;
+                        break;
+                    }
+                }
+                
+                if (isPerfect) {
+                    status = "BENAR";
+                }
+            }
+
+            // 3. REKAP NILAI
+            if (status === "BENAR") {
+                benarCount++;
+            }
             detail.push(status);
         });
 
+        // 4. HITUNG SKOR AKHIR (Skala 100)
         const skorAkhir = (benarCount / totalSoal) * 100;
-        return { skor: skorAkhir.toFixed(2), detail: detail };
+        
+        return { 
+            skor: skorAkhir.toFixed(2), 
+            detail: detail 
+        };
     },
 
     submitData: function(force) {
@@ -773,3 +807,4 @@ document.addEventListener('click', function (e) {
         };
     }
 });
+
