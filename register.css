@@ -1,0 +1,110 @@
+/* ==========================================================
+   CSS KHUSUS FORM PENDAFTARAN LBB IMMANUEL
+   ========================================================== */
+
+/* Wrapper Utama agar form ada di tengah dan bisa di-scroll */
+.register-wrapper {
+    padding: 30px 15px;
+    display: flex;
+    justify-content: center;
+    overflow-y: auto;
+    height: 100vh;
+}
+
+/* Kartu Form Putih */
+.register-card {
+    width: 100%;
+    max-width: 600px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    border-top: 5px solid var(--secondary);
+    padding: 30px;
+    margin-bottom: 50px;
+}
+
+/* Grup Tombol Pilihan (Gratis/Berbayar) */
+.radio-group {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Desain Kartu Tombol Pilihan */
+.radio-card {
+    flex: 1;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.radio-card:hover { 
+    background: #f8f9fa; 
+    border-color: #ced4da; 
+}
+
+/* Desain Saat Tombol Pilihan Aktif/Diklik */
+.radio-card.active {
+    border-color: var(--secondary);
+    background: rgba(0, 123, 255, 0.05);
+    color: var(--secondary);
+}
+
+/* Animasi Muncul Form (Fade In) */
+.form-section { 
+    display: none; 
+    animation: fadeIn 0.4s ease; 
+}
+
+.form-section.active { 
+    display: block; 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* Kotak Info Petunjuk (Warna Biru/Kuning) */
+.alert-info {
+    background-color: #e2f3f5;
+    border-left: 4px solid #22a6b3;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.alert-info ol { 
+    margin: 10px 0 0; 
+    padding-left: 20px; 
+}
+
+/* Kotak Area Upload File */
+.file-upload-box {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    text-align: center;
+    border-radius: 8px;
+    background: #fafafa;
+    margin-top: 5px;
+}
+
+.file-upload-box input { 
+    width: 100%; 
+    margin-top: 10px; 
+}
+
+/* Teks Catatan Kecil Warna Merah */
+.small-note { 
+    display: block; 
+    font-size: 0.8rem; 
+    color: #e74c3c; 
+    margin-top: 5px; 
+    font-weight: 600; 
+}
