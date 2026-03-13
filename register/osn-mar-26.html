@@ -1,0 +1,240 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pendaftaran Try Out OSN-K | LBB Immanuel</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../register.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-body">
+
+    <header class="ujian-header" style="justify-content: center;">
+        <div class="header-left">
+            <div class="logo-small"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="siswa-info">
+                <span style="font-size: 1.1rem;">LBB IMMANUEL</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="register-wrapper">
+        <div class="register-card">
+            <h3 style="text-align: center; margin-top: 0; color: var(--text-main); font-family: var(--font-heading);">
+                Pendaftaran Try Out OSN-K
+            </h3>
+            <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;">
+
+            <div id="step-1">
+                <div class="alert-info">
+                    <strong>Petunjuk Umum Pendaftaran:</strong>
+                    <ol>
+                        <li>Try Out OSN terdiri atas 2 mata pelajaran, yaitu Matematika dan IPA (SD & SMP).</li>
+                        <li>Pengerjaan soal bersifat fleksibel dalam rentang 24 jam.</li>
+                        <li>Skor langsung muncul setelah selesai, pembahasan & ranking menyusul.</li>
+                    </ol>
+                </div>
+
+                <div class="form-group">
+                    <label>Pilih Jalur Pendaftaran <span style="color:red">*</span></label>
+                    <div class="radio-group">
+                        <div class="radio-card" id="btn-gratis" onclick="selectJalur('gratis')">
+                            <i class="fa-solid fa-gift" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i> Gratis
+                        </div>
+                        <div class="radio-card" id="btn-berbayar" onclick="selectJalur('berbayar')">
+                            <i class="fa-solid fa-wallet" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i> Berbayar
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="form-pendaftaran" class="form-section" onsubmit="kirimData(event)">
+                
+                <div id="info-jalur" class="alert-info" style="background-color: #fff3cd; border-color: #ffc107; color: #856404;"></div>
+
+                <div class="form-group">
+                    <label>Nama Siswa <span style="color:red">*</span></label>
+                    <input type="text" id="reg-nama" required placeholder="Masukkan nama lengkap">
+                    <span class="small-note" id="note-nama"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Kelas <span style="color:red">*</span></label>
+                    <input type="text" id="reg-kelas" required placeholder="Contoh: 5 SD / 8 SMP">
+                </div>
+
+                <div class="form-group">
+                    <label>Asal Sekolah <span style="color:red">*</span></label>
+                    <input type="text" id="reg-sekolah" required placeholder="Nama sekolah asal">
+                </div>
+
+                <div class="form-group">
+                    <label>E-mail <span style="color:red">*</span></label>
+                    <input type="email" id="reg-email" required placeholder="Pastikan email aktif">
+                    <span class="small-note" id="note-email"></span>
+                </div>
+
+                <div class="form-group">
+                    <label>Nomor Telepon / WhatsApp <span style="color:red">*</span></label>
+                    <input type="tel" id="reg-telp" required placeholder="Contoh: 08123456789">
+                </div>
+
+                <div class="form-group">
+                    <label>Mata Pelajaran <span style="color:red">*</span></label>
+                    <select id="reg-mapel" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem;">
+                        <option value="">-- Pilih Mata Pelajaran --</option>
+                        <option value="osn-mar-mtk-sd-26">SD Matematika</option>
+                        <option value="osn-mar-ipa-sd-26">SD IPA</option>
+                        <option value="osn-mar-mtk-smp-26">SMP Matematika</option>
+                        <option value="osn-mar-ipa-smp-26">SMP IPA</option>
+                    </select>
+                    <span class="small-note">Apabila mendaftar lebih dari 1 mapel, isi formulir 2 kali.</span>
+                </div>
+
+                <div class="form-group">
+                    <label id="label-upload">Bukti Persyaratan <span style="color:red">*</span></label>
+                    <div class="file-upload-box">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--secondary); margin-bottom: 10px;"></i>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;" id="desc-upload">Pilih file gambar</p>
+                        <input type="file" id="reg-foto" accept="image/*" multiple required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" style="margin-top: 30px; width: 100%;" id="btn-submit">
+                    KIRIM PENDAFTARAN <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        // MASUKKAN URL GOOGLE SCRIPT-MU DI SINI NANTI
+        const SCRIPT_URL = "ISI_DENGAN_URL_WEB_APP_GOOGLE_SCRIPT_KAMU_YANG_PANJANG_ITU";
+        
+        let jalurDipilih = "";
+
+        // Fungsi mengubah tampilan form sesuai jalur (Gratis/Berbayar)
+        function selectJalur(jalur) {
+            jalurDipilih = jalur;
+            
+            document.getElementById('btn-gratis').classList.remove('active');
+            document.getElementById('btn-berbayar').classList.remove('active');
+            document.getElementById(`btn-${jalur}`).classList.add('active');
+            document.getElementById('form-pendaftaran').classList.add('active');
+
+            const infoBox = document.getElementById('info-jalur');
+            const noteNama = document.getElementById('note-nama');
+            const noteEmail = document.getElementById('note-email');
+            const labelUpload = document.getElementById('label-upload');
+            const descUpload = document.getElementById('desc-upload');
+
+            if (jalur === 'gratis') {
+                infoBox.innerHTML = `<strong>Syarat Pendaftaran Gratis:</strong><br>1. Follow IG @lbbimmanuel.<br>2. Share poster ke status/grup.<br>3. Tag 3 teman di komentar IG.`;
+                noteNama.innerText = "Pendaftaran gratis maksimal 1 siswa saja!";
+                noteEmail.innerText = "1 email hanya bisa digunakan 1 anak.";
+                labelUpload.innerHTML = `Bukti Screenshot Follow, Tag, dan Share <span style="color:red">*</span>`;
+                descUpload.innerText = "Masukkan ketiga foto sekaligus!";
+            } else {
+                infoBox.innerHTML = `<strong>Pendaftaran Berbayar:</strong><br>Biaya Rp15.000/siswa/mapel. Pembayaran via QRIS A.n LBB Immanuel.`;
+                noteNama.innerText = "Kolektif > 5 siswa? Hubungi +62816551929";
+                noteEmail.innerText = "Lebih dari 1 siswa? Masukkan email sesuai jumlah siswa.";
+                labelUpload.innerHTML = `Bukti Pembayaran QRIS (15k/siswa) <span style="color:red">*</span>`;
+                descUpload.innerText = "Upload bukti transfer/QRIS yang sah.";
+            }
+        }
+
+        // Fungsi Konversi File ke Teks Base64 (Biar bisa dikirim ke Google Script)
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve({
+                name: file.name,
+                mimeType: file.type,
+                base64: reader.result.split(',')[1] // Ambil kode rahasianya aja
+            });
+            reader.onerror = error => reject(error);
+        });
+
+        // Fungsi Submit Utama
+        async function kirimData(e) {
+            e.preventDefault(); 
+            
+            if (!SCRIPT_URL.startsWith("http")) {
+                return Swal.fire("Error!", "URL Google Script belum diatur di dalam kode HTML.", "error");
+            }
+
+            const btnSubmit = document.getElementById('btn-submit');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = 'MENGIRIM... <i class="fa-solid fa-spinner fa-spin"></i>';
+
+            Swal.fire({
+                title: 'Sedang Mengirim...',
+                text: 'Mohon tunggu, jangan tutup halaman ini.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                // Kumpulkan file foto
+                const fileInput = document.getElementById('reg-foto');
+                const filePromises = Array.from(fileInput.files).map(file => toBase64(file));
+                const filesData = await Promise.all(filePromises);
+
+                // Susun paket data sesuai permintaan Backend-mu
+                const payload = {
+                    action: "register",
+                    paketId: document.getElementById('reg-mapel').value, // Ini mengirim 'osn-mar-mtk-sd-26'
+                    jalur: jalurDipilih,
+                    userData: {
+                        nama: document.getElementById('reg-nama').value,
+                        kelas: document.getElementById('reg-kelas').value,
+                        sekolah: document.getElementById('reg-sekolah').value,
+                        email: document.getElementById('reg-email').value,
+                        telp: document.getElementById('reg-telp').value
+                    },
+                    files: filesData
+                };
+
+                // Tembakkan ke Google Script
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+
+                if(result.status === "success") {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Pendaftaran Berhasil!',
+                        text: 'Wajib bergabung ke Grup WhatsApp untuk info Try Out selanjutnya.',
+                        allowOutsideClick: false, 
+                        confirmButtonText: '<i class="fa-brands fa-whatsapp"></i> GABUNG GRUP WA',
+                        confirmButtonColor: '#25D366'
+                    }).then((res) => {
+                        if (res.isConfirmed) {
+                            // GANTI DENGAN LINK WA GRUP ASLIMU
+                            window.location.href = "https://chat.whatsapp.com/GantiPakaiLinkGrupAslimu";
+                        }
+                    });
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                Swal.fire("Gagal Terkirim", error.message || "Terjadi kesalahan jaringan.", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = 'KIRIM PENDAFTARAN <i class="fa-solid fa-paper-plane"></i>';
+            }
+        }
+    </script>
+</body>
+</html>
