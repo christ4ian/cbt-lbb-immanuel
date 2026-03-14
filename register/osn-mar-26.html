@@ -14,6 +14,14 @@
     <link rel="stylesheet" href="../register.css">
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        .preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px; }
+        .preview-box { position: relative; width: 85px; height: 85px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 2px solid #e2e8f0; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-remove-foto { position: absolute; top: 4px; right: 4px; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-remove-foto:hover { background: #c0392b; transform: scale(1.1); }
+    </style>
 </head>
 <body class="bg-body">
 
@@ -103,11 +111,13 @@
 
                     <div class="form-group">
                         <label id="label-upload">Bukti Persyaratan <span style="color:red">*</span></label>
-                        <div class="file-upload-box">
-                            <i class="fa-solid fa-cloud-arrow-up"></i>
-                            <p style="margin: 0; font-size: 0.9rem; color: #666;" id="desc-upload">Pilih file gambar</p>
-                            <input type="file" id="reg-foto" accept="image/*" multiple required>
+                        <div class="file-upload-box" id="box-upload" onclick="document.getElementById('reg-foto').click()" style="cursor: pointer;">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: #007bff; margin-bottom: 15px; display: block;"></i>
+                            <p style="margin: 0; font-size: 0.95rem; color: #007bff; font-weight: bold;">Klik di sini untuk pilih foto</p>
+                            <p style="margin: 5px 0 0; font-size: 0.85rem; color: #666;" id="desc-upload">Bisa pilih lebih dari 1 foto sekaligus</p>
+                            <input type="file" id="reg-foto" accept="image/*" multiple style="display: none;">
                         </div>
+                        <div class="preview-container" id="tempat-preview"></div>
                     </div>
 
                     <button type="submit" class="btn-login" style="margin-top: 25px; width: 100%; padding: 14px; border-radius: 8px; font-size: 1.05rem; font-weight: bold;" id="btn-submit">
@@ -144,7 +154,7 @@
     </div>
 
     <script>
-        // CONFIGURASI LINK (Sudah dimasukkan otomatis)
+        // CONFIGURASI LINK
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec";
         const LINK_WA = "https://chat.whatsapp.com/FasZVaSShwtIN713ZtoxOA";
         
@@ -158,7 +168,7 @@
         function tampilkanLayarSukses() {
             document.getElementById('layar-form').style.display = 'none';
             document.getElementById('layar-sukses').style.display = 'block';
-            window.scrollTo(0, 0); // Balik ke atas biar rapi
+            window.scrollTo(0, 0); 
         }
 
         function daftarLagi() {
@@ -212,6 +222,46 @@
             }
         }
 
+        // ==========================================
+        // LOGIKA PREVIEW FOTO
+        // ==========================================
+        let fileYangDipilih = [];
+
+        document.getElementById('reg-foto').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    fileYangDipilih.push(file);
+                }
+            });
+            renderPreviewFoto();
+            this.value = ''; // Reset input agar bisa pilih foto yang sama kalau dihapus
+        });
+
+        function renderPreviewFoto() {
+            const wadah = document.getElementById('tempat-preview');
+            wadah.innerHTML = ''; 
+            
+            fileYangDipilih.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'preview-box';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button type="button" class="btn-remove-foto" onclick="hapusFoto(${index})"><i class="fa-solid fa-xmark"></i></button>
+                    `;
+                    wadah.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function hapusFoto(index) {
+            fileYangDipilih.splice(index, 1); 
+            renderPreviewFoto(); 
+        }
+
         const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -219,10 +269,20 @@
             reader.onerror = error => reject(error);
         });
 
+        // ==========================================
+        // LOGIKA PENGIRIMAN DATA
+        // ==========================================
         async function kirimData(e) {
             e.preventDefault(); 
             
             const btnSubmit = document.getElementById('btn-submit');
+
+            // Validasi apakah foto sudah dipilih
+            if(fileYangDipilih.length === 0) {
+                Swal.fire("Peringatan", "Mohon upload bukti persyaratan terlebih dahulu!", "warning");
+                return;
+            }
+
             btnSubmit.disabled = true;
             btnSubmit.innerHTML = 'MENGIRIM... <i class="fa-solid fa-spinner fa-spin"></i>';
 
@@ -234,8 +294,8 @@
             });
 
             try {
-                const fileInput = document.getElementById('reg-foto');
-                const filePromises = Array.from(fileInput.files).map(file => toBase64(file));
+                // Ambil data foto dari Array khusus preview
+                const filePromises = fileYangDipilih.map(file => toBase64(file));
                 const filesData = await Promise.all(filePromises);
 
                 const payload = {
@@ -256,20 +316,18 @@
                 const result = await response.json();
 
                 if(result.status === "success") {
-                    // Simpan status sukses di memori browser
                     localStorage.setItem('statusDaftar_OSN26', 'sukses');
                     
-                    // POPUP SUKSES OTOMATIS (Tanpa Tombol OK)
+                    // Transisi Mulus tanpa klik OK
                     Swal.fire({
                         icon: 'success',
                         title: 'Pendaftaran Berhasil!',
                         text: 'Mengarahkan ke halaman selanjutnya...',
                         showConfirmButton: false,
-                        timer: 1500, // Akan hilang sendiri dalam 1.5 detik
+                        timer: 1500,
                         timerProgressBar: true,
                         allowOutsideClick: false
                     }).then(() => {
-                        // Setelah 1.5 detik, langsung eksekusi ini:
                         tampilkanLayarSukses();
                         window.open(LINK_WA, '_blank');
                     });
