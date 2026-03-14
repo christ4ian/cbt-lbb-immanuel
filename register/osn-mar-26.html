@@ -144,7 +144,7 @@
     </div>
 
     <script>
-        // CONFIGURASI LINK
+        // CONFIGURASI LINK (Sudah dimasukkan otomatis)
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec";
         const LINK_WA = "https://chat.whatsapp.com/FasZVaSShwtIN713ZtoxOA";
         
@@ -158,11 +158,12 @@
         function tampilkanLayarSukses() {
             document.getElementById('layar-form').style.display = 'none';
             document.getElementById('layar-sukses').style.display = 'block';
+            window.scrollTo(0, 0); // Balik ke atas biar rapi
         }
 
         function daftarLagi() {
-            localStorage.removeItem('statusDaftar_OSN26'); // Hapus memori pendaftaran
-            window.location.reload(); // Refresh halaman
+            localStorage.removeItem('statusDaftar_OSN26'); 
+            window.location.reload(); 
         }
 
         function salinLinkWA() {
@@ -258,18 +259,21 @@
                     // Simpan status sukses di memori browser
                     localStorage.setItem('statusDaftar_OSN26', 'sukses');
                     
+                    // POPUP SUKSES OTOMATIS (Tanpa Tombol OK)
                     Swal.fire({
                         icon: 'success',
                         title: 'Pendaftaran Berhasil!',
-                        text: 'Silakan bergabung ke Grup WhatsApp.',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#007bff'
+                        text: 'Mengarahkan ke halaman selanjutnya...',
+                        showConfirmButton: false,
+                        timer: 1500, // Akan hilang sendiri dalam 1.5 detik
+                        timerProgressBar: true,
+                        allowOutsideClick: false
                     }).then(() => {
-                        // Ganti layar ke halaman Sukses
+                        // Setelah 1.5 detik, langsung eksekusi ini:
                         tampilkanLayarSukses();
-                        // Otomatis buka tab baru WA
                         window.open(LINK_WA, '_blank');
                     });
+
                 } else {
                     throw new Error(result.message);
                 }
