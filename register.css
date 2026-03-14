@@ -16,13 +16,16 @@
 /* 2. KARTU FORM (Kotak Putih) */
 .register-card {
     width: 100%;
-    max-width: 650px; /* Sedikit dilonggarkan biar lega */
+    max-width: 650px;
     background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Bayangan lebih soft & elegan */
-    border-top: 6px solid #007bff; /* Garis biru khas LBB Immanuel */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border-top: 6px solid #007bff;
     padding: 40px 35px;
-    height: max-content;
+    
+    /* INI KUNCI PERBAIKANNYA: Pakai auto biar dia selalu melar ngikutin form yang tiba-tiba muncul */
+    height: auto !important; 
+    
     margin-bottom: 40px;
     transition: all 0.3s ease;
 }
