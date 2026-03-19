@@ -569,14 +569,29 @@ const app = {
     calculateResult: function() {
         let detail = [];
         let benarCount = 0;
+        
+        // --- VARIABEL BARU UNTUK FITUR POIN ---
+        let totalPoinDiperoleh = 0;
+        let totalPoinMaksimal = 0; 
+        
         const totalSoal = this.currentPaket.soal.length;
+        
+        // Deteksi apakah paket ini pakai sistem poin atau persentase klasik
+        const isSistemPoin = this.currentPaket.sistem_poin === true; 
 
         this.currentPaket.soal.forEach((soal, i) => {
             const jwb = this.answers[i];
             const kunci = soal.kunci;
             let status = "SALAH";
 
-            // 1. CEK DATA KOSONG (Kalau user belum jawab nomor ini sama sekali)
+            // Set poin default 1 kalau pembuat soal lupa ngisi poin di soal tertentu
+            let poinMaksSoalIni = soal.poin !== undefined ? soal.poin : 1; 
+
+            if (isSistemPoin) {
+                totalPoinMaksimal += poinMaksSoalIni;
+            }
+
+            // 1. CEK DATA KOSONG
             if (!jwb) { 
                 detail.push("KOSONG"); 
                 return; // Lanjut evaluasi soal berikutnya
@@ -584,48 +599,47 @@ const app = {
 
             // 2. LOGIKA PENILAIAN
             if (soal.tipe === 'pg') {
-                // Tipe Pilihan Ganda Biasa
-                if (jwb === kunci) {
-                    status = "BENAR";
-                }
+                if (jwb === kunci) status = "BENAR";
+                
             } else if (soal.tipe === 'pgk') {
-                // Tipe Pilihan Ganda Kompleks -> BUG URUTAN ARRAY FIXED
                 if (Array.isArray(jwb) && Array.isArray(kunci)) {
-                    // Pakai spread operator [...] biar gak ngerusak array aslinya
                     const jwbSorted = JSON.stringify([...jwb].sort());
                     const kunciSorted = JSON.stringify([...kunci].sort());
-                    
-                    if (jwbSorted === kunciSorted) {
-                        status = "BENAR";
-                    }
+                    if (jwbSorted === kunciSorted) status = "BENAR";
                 }
+                
             } else if (soal.tipe === 'pgk-kategori') {
-                // Tipe Benar Salah -> Bandingkan langsung karena data sudah seragam
                 let isPerfect = true;
                 const rows = Object.keys(kunci);
-                
                 for (let r of rows) {
-                    // Kalau di dalam pilihan ini user belum jawab, atau jawabannya beda
                     if (!jwb[r] || jwb[r] !== kunci[r]) {
                         isPerfect = false;
                         break;
                     }
                 }
-                
-                if (isPerfect) {
-                    status = "BENAR";
-                }
+                if (isPerfect) status = "BENAR";
             }
 
-            // 3. REKAP NILAI
+            // 3. REKAP NILAI & POIN
             if (status === "BENAR") {
                 benarCount++;
+                if (isSistemPoin) totalPoinDiperoleh += poinMaksSoalIni;
             }
             detail.push(status);
         });
 
-        // 4. HITUNG SKOR AKHIR (Skala 100)
-        const skorAkhir = (benarCount / totalSoal) * 100;
+        // 4. HITUNG SKOR AKHIR
+        let skorAkhir = 0;
+        
+        if (isSistemPoin) {
+            // Jika ada "base_poin" di paket, pakai itu sebagai pembagi utama. 
+            // Jika tidak ada, pakai total poin semua soal.
+            let pembagi = this.currentPaket.base_poin || totalPoinMaksimal;
+            skorAkhir = (totalPoinDiperoleh / pembagi) * 100;
+        } else {
+            // KOMPABILITAS MUNDUR: Pakai persentase klasik
+            skorAkhir = (benarCount / totalSoal) * 100;
+        }
         
         return { 
             skor: skorAkhir.toFixed(2), 
@@ -807,4 +821,27 @@ document.addEventListener('click', function (e) {
         };
     }
 });
-
+/* ========================================================== */
+/* [ADD-ON] ANTI-CHEAT: DETEKSI PINDAH TAB / MINIMIZE BROWSER */
+/* ========================================================== */
+document.addEventListener("visibilitychange", function() {
+    // Kita cek dulu, apakah siswanya lagi di dalam halaman ujian?
+    const viewUjian = document.getElementById('view-ujian');
+    const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
+    
+    // Kalau layarnya disembunyikan/pindah tab pas lagi ujian
+    if (document.visibilityState === 'hidden' && isLagiUjian) {
+        
+        // Munculin notifikasi peringatan pakai SweetAlert
+        Swal.fire({
+            title: 'Hayo Ketahuan! 👀',
+            text: 'Kamu terdeteksi pindah tab atau keluar dari layar ujian. Jangan nyontek ya, kerjakan dengan jujur!',
+            icon: 'warning',
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Iya, janji jujur 🙏'
+        });
+        
+        // Opsional: Kalau kamu mau ngerekam berapa kali dia ketahuan pindah tab di console
+        console.warn("Siswa mencoba pindah tab/minimize pada: " + new Date().toLocaleTimeString());
+    }
+});
