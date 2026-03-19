@@ -10,7 +10,6 @@ PAKET_SOAL.push({
     
     // Konfigurasi fitur baru
     sistem_poin: true,
-    base_poin: 100,
     
     petunjuk: [
         "Perhatikan bahwa setiap soal memiliki bobot poin yang berbeda.",
