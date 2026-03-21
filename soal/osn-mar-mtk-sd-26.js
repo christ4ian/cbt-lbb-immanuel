@@ -12,8 +12,8 @@ PAKET_SOAL.push({
     sistem_poin: true,
     
     petunjuk: [
-        "Penilaian soal pilihan jamak mengikuti aturan sebagai berikut: i. Jika jawaban benar = poin + 1 ii. Jika jawaban salah atau tidak menjawab = poin 0",
-        "Penilaian OSN-K juga menggunakan pembobotan berdasarkan tingkat kesulitan soal. Tabel bobot tingkat kesulitan sebagai berikut: No. Jenis soal Jumlah Bobot 1. Mudah 8 soal 1,00 2. Sedang 14 soal 1,25 3. Sulit 8 soal 1,50",
+        "Penilaian soal pilihan jamak mengikuti aturan sebagai berikut:<br><span style='margin-left: 15px; display: inline-block;'>i. Jika jawaban benar = poin + 1</span><br><span style='margin-left: 15px; display: inline-block;'>ii. Jika jawaban salah atau tidak menjawab = poin 0</span>",
+        "Penilaian OSN-K juga menggunakan pembobotan berdasarkan tingkat kesulitan soal. Tabel bobot tingkat kesulitan sebagai berikut:<br><table><tr><th style='text-align:center;'>No.</th><th>Jenis Soal</th><th style='text-align:center;'>Jumlah</th><th style='text-align:center;'>Bobot</th></tr><tr><td style='text-align:center;'>1.</td><td>Mudah</td><td style='text-align:center;'>8 soal</td><td style='text-align:center;'>1,00</td></tr><tr><td style='text-align:center;'>2.</td><td>Sedang</td><td style='text-align:center;'>14 soal</td><td style='text-align:center;'>1,25</td></tr><tr><td style='text-align:center;'>3.</td><td>Sulit</td><td style='text-align:center;'>8 soal</td><td style='text-align:center;'>1,50</td></tr></table>",
         "Nilai akhir sama dengan jumlah dari jawaban benar tiap jenis soal dikali bobot. Nilai Akhir akan dijadikan dasar pemeringkatan untuk menentukan peserta yang akan lolos ke Tingkat Provinsi.",
         "Nilai akhir maksimum yang dapat diperoleh peserta adalah 37,5.",
         "Pemeringkatan didasarkan pada nilai akhir peserta.",
