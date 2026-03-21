@@ -308,37 +308,33 @@ body.swal2-shown {
     background-color: #eef2f5;
     overflow-y: auto !important; 
     -webkit-overflow-scrolling: touch; 
-    align-items: stretch; /* Biar tinggi kiri-kanan sejajar */
+    /* FIX 1: Ganti stretch jadi flex-start biar tinggi bebas menyesuaikan isi masing-masing */
+    align-items: flex-start; 
     justify-content: center;
     width: 100%;
 }
 
 /* KOTAK PUTIH UTAMA (PANEL KIRI) */
 .card-info-wide {
-    flex: 6; /* Mengambil porsi 60% layar */
-    background: white; /* INI YANG TADI ILANG wkwk */
+    flex: 6; 
+    background: white; 
     padding: 30px;
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
     border-top: 5px solid var(--secondary);
-    display: flex;
-    flex-direction: column;
+    /* FIX 2: Biar kotak putih melar ke bawah ngebungkus semua teks */
+    height: fit-content; 
 }
 
 .info-row-petunjuk {
     margin-top: 20px;
-    flex: 1; 
-    display: flex;
-    flex-direction: column;
 }
 
 /* KOTAK PETUNJUK (TANPA BUNGKUS ABU-ABU) */
 .petunjuk-box-wide {
-    background: transparent; /* Biar nyatu sama background putih card-info-wide */
-    border: none; /* Hilangkan garis kotak abu-abunya */
+    background: transparent; 
+    border: none; 
     padding: 10px 0; 
-    flex: 1; 
-    overflow-y: auto; 
 }
 
 .petunjuk-box-wide ul {
@@ -374,7 +370,7 @@ body.swal2-shown {
 
 /* KOTAK PUTIH UTAMA (PANEL KANAN) */
 .card-input {
-    flex: 4; /* Mengambil porsi 40% layar */
+    flex: 4; 
     background: white;
     padding: 30px;
     border-radius: 12px;
@@ -472,8 +468,6 @@ input[readonly] {
         margin-bottom: 15px;
     }
     
-    .petunjuk-box-wide { max-height: 400px; } 
-
     .top-bar {
         justify-content: center; 
     }
