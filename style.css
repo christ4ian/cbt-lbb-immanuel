@@ -1440,3 +1440,39 @@ h4 {
     box-shadow: 0 5px 25px rgba(0,0,0,0.5);
     border: 3px solid white;
 }
+/* ========================================= */
+/* FIX MATHJAX OVERFLOW (RUMUS KEPANJANGAN)  */
+/* ========================================= */
+
+.soal-text {
+    /* Biar teks biasa kalau ada kata yang kepanjangan tetep dipaksa turun */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+/* Ini tag khusus yang dibuat otomatis sama MathJax 3 */
+mjx-container {
+    max-width: 100% !important;
+    overflow-x: auto !important; /* Nyalain fitur scroll geser kiri-kanan */
+    overflow-y: hidden !important;
+    padding: 5px 0; /* Biar scrollbar-nya ga nabrak huruf */
+}
+
+/* Khusus untuk rumus yang bentuknya block (tengah-tengah) */
+mjx-container[display="true"] {
+    display: block !important;
+    margin: 10px 0;
+}
+
+/* Custom Scrollbar khusus buat area rumus di HP biar estetik */
+mjx-container::-webkit-scrollbar {
+    height: 5px;
+}
+mjx-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+mjx-container::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
