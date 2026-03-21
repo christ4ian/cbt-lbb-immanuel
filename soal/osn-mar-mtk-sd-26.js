@@ -10,21 +10,19 @@ PAKET_SOAL.push({
     
     // Konfigurasi fitur baru
     sistem_poin: true,
-    base_poin: 37.5,
     
     petunjuk: [
-        "Perhatikan bahwa setiap soal memiliki bobot poin yang berbeda.",
-        "a) Penilaian soal pilihan jamak mengikuti aturan sebagai berikut: i. Jika jawaban benar = poin + 1 ii. Jika jawaban salah atau tidak menjawab = poin 0",
-        "b) Penilaian OSN-K juga menggunakan pembobotan berdasarkan tingkat kesulitan soal. Tabel bobot tingkat kesulitan sebagai berikut: No. Jenis soal Jumlah Bobot 1. Mudah 8 soal 1,00 2. Sedang 14 soal 1,25 3. Sulit 8 soal 1,50",
-        "c) Nilai akhir sama dengan jumlah dari jawaban benar tiap jenis soal dikali bobot. Nilai Akhir akan dijadikan dasar pemeringkatan untuk menentukan peserta yang akan lolos ke Tingkat Provinsi.",
-        "d) Nilai akhir maksimum yang dapat diperoleh peserta adalah 37,5.",
-        "e) Pemeringkatan didasarkan pada nilai akhir peserta.",
-        "f) Jika pada poin e) masih terdapat nilai yang sama maka penentuan pemenang didasarkan pada jawaban benar untuk soal sulit paling banyak.",
-        "g) Jika pada poin f) masih terdapat nilai yang sama maka penentuan pemenang didasarkan pada jawaban benar untuk soal sedang paling banyak.",
-        "h) Jika pada poin g) masih terdapat nilai yang sama maka penentuan pemenang didasarkan pada jawaban benar untuk soal mudah paling banyak.",
-        "i) Jika dengan poin h) masih terdapat total nilai yang sama maka pemenang ditentukan berdasarkan kelas peserta yang paling rendah.",
-        "j) Jika dengan poin i) masih terdapat total nilai yang sama maka pemenang ditentukan berdasarkan umur peserta yang paling muda.",
-        "k) Keputusan juri bersifat mutlak dan tidak dapat diganggu gugat."
+        "Penilaian soal pilihan jamak mengikuti aturan sebagai berikut: i. Jika jawaban benar = poin + 1 ii. Jika jawaban salah atau tidak menjawab = poin 0",
+        "Penilaian OSN-K juga menggunakan pembobotan berdasarkan tingkat kesulitan soal. Tabel bobot tingkat kesulitan sebagai berikut: No. Jenis soal Jumlah Bobot 1. Mudah 8 soal 1,00 2. Sedang 14 soal 1,25 3. Sulit 8 soal 1,50",
+        "Nilai akhir sama dengan jumlah dari jawaban benar tiap jenis soal dikali bobot. Nilai Akhir akan dijadikan dasar pemeringkatan untuk menentukan peserta yang akan lolos ke Tingkat Provinsi.",
+        "Nilai akhir maksimum yang dapat diperoleh peserta adalah 37,5.",
+        "Pemeringkatan didasarkan pada nilai akhir peserta.",
+        "Jika pada tahap pemeringkatan masih terdapat nilai yang sama, maka penentuan pemenang didasarkan pada jawaban benar untuk soal sulit paling banyak.",
+        "Jika masih terdapat nilai yang sama, maka penentuan pemenang didasarkan pada jawaban benar untuk soal sedang paling banyak.",
+        "Jika masih terdapat nilai yang sama, maka penentuan pemenang didasarkan pada jawaban benar untuk soal mudah paling banyak.",
+        "Jika masih terdapat total nilai yang sama, maka pemenang ditentukan berdasarkan kelas peserta yang paling rendah.",
+        "Jika masih terdapat total nilai yang sama, maka pemenang ditentukan berdasarkan umur peserta yang paling muda.",
+        "Keputusan juri bersifat mutlak dan tidak dapat diganggu gugat."
     ],
 
     soal: [
