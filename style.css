@@ -581,6 +581,7 @@ h4 {
     background: #f0f2f5;
     padding: 15px;
     gap: 15px;
+    justify-content: center; /* [BARU] Biar panel soal ke tengah kalau sendirian */
 }
 
 .panel {
@@ -604,7 +605,11 @@ h4 {
 .panel-kiri h3 { margin-top: 0; color: var(--primary); }
 
 /* Panel Kanan (Soal) */
-.panel-kanan { flex: 5; }
+.panel-kanan { 
+    flex: 5; 
+    max-width: 900px; /* [BARU] Batas maksimal melar supaya teks ga over panjang */
+    width: 100%;      /* [BARU] Jaga-jaga biar tetap aman kalau layarnya dikecilin */
+}
 
 /* Custom Scrollbar */
 .panel::-webkit-scrollbar, 
@@ -1120,6 +1125,7 @@ h4 {
         overflow-y: auto; 
         padding-bottom: 80px; /* Spacer bawah agar tidak tertutup footer */
         box-shadow: none;
+        max-width: 100%; /* [BARU] Tambahin ini biar di HP tetap full layarnya */
     }
     
     .soal-text { font-size: 1rem; }
