@@ -212,6 +212,7 @@ const app = {
                 li.innerHTML = teks; 
                 petunjukList.appendChild(li);
             });
+        } 
 
         // 3. Isi Form Data Peserta (Nama, Kelas, Sekolah)
         const inpNama = document.getElementById('data-nama');
