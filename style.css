@@ -1323,3 +1323,110 @@ h4 {
     box-shadow: 0 5px 25px rgba(0,0,0,0.5);
     border: 3px solid white;
 }
+/* --- TAMPILAN DESKTOP (Kiri Lebar, Kanan Tetap) --- */
+.container-data {
+    flex: 1;
+    padding: 30px;
+    display: flex;
+    gap: 25px;
+    background-color: #eef2f5;
+    overflow-y: auto !important; 
+    -webkit-overflow-scrolling: touch; 
+    align-items: stretch; /* Biar tinggi kiri-kanan sejajar */
+    justify-content: center;
+    width: 100%;
+}
+
+/* Panel Kiri Dibikin Lebar */
+.card-info-wide {
+    flex: 6; /* Mengambil porsi 60% layar */
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    border-top: 5px solid var(--secondary);
+    display: flex;
+    flex-direction: column;
+}
+
+.info-row-petunjuk {
+    margin-top: 20px;
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+}
+
+.petunjuk-box-wide {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    flex: 1; 
+    overflow-y: auto; 
+}
+
+.petunjuk-box-wide ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #444;
+    line-height: 1.6;
+}
+
+.petunjuk-box-wide li {
+    margin-bottom: 10px;
+}
+
+.petunjuk-box-wide table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    background: white;
+}
+
+.petunjuk-box-wide table th, 
+.petunjuk-box-wide table td {
+    border: 1px solid #dee2e6;
+    padding: 10px;
+    text-align: left;
+}
+
+.petunjuk-box-wide table th {
+    background-color: #eef2f5;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Panel Kanan Porsinya Tetap */
+.card-input {
+    flex: 4; /* Mengambil porsi 40% layar */
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    border-top: 5px solid var(--primary);
+    height: fit-content; 
+}
+
+/* --- TAMPILAN MOBILE (Tumpuk Atas-Bawah) --- */
+@media (max-width: 768px) {
+    .container-data {
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: flex-start; 
+        padding: 15px;
+        padding-bottom: 100px; 
+    }
+
+    .card-info-wide, .card-input {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .petunjuk-box-wide { max-height: 400px; } 
+
+    .top-bar {
+        justify-content: center; 
+    }
+}
