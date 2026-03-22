@@ -10,7 +10,7 @@ PAKET_SOAL.push({
     
     // Konfigurasi fitur poin
     sistem_poin: true,
-    base_poin: 50,
+    base_poin: 100,
     
     petunjuk: [
         "Penilaian soal pilihan jamak menggunakan aturan sebagai berikut:<br><span style='margin-left: 15px; display: inline-block;'>i. Jika jawaban benar = poin + 1</span><br><span style='margin-left: 15px; display: inline-block;'>ii. Jika jawaban salah atau tidak menjawab = poin 0</span>",
