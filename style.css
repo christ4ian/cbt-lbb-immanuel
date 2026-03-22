@@ -1476,3 +1476,26 @@ mjx-container::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 4px;
 }
+/* ========================================= */
+/* TABEL OTOMATIS UNTUK KONTEN SOAL          */
+/* ========================================= */
+.soal-text table {
+    width: auto;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-family: inherit;
+    color: #212529;
+}
+
+.soal-text table th {
+    font-weight: 700;
+    text-align: left;
+    padding: 10px 40px 10px 0; /* Jarak antar kolom */
+    border: none;
+}
+
+.soal-text table td {
+    text-align: left;
+    padding: 10px 40px 10px 0;
+    border: none;
+}
