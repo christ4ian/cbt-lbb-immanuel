@@ -10,7 +10,7 @@ PAKET_SOAL.push({
     
     // Konfigurasi fitur poin
     sistem_poin: true,
-    base_poin: 160,
+    base_poin: 100,
     
     petunjuk: [
         "Bentuk soal OSN-K adalah pilihan jamak sebanyak 40 soal dengan empat opsi jawaban, nilai maksimum 160.",
