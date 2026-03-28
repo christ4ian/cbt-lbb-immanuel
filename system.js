@@ -8,6 +8,7 @@
    =========================================================== */
 
 // 1. CONFIG
+let cheatCount = 0;
 const firebaseConfig = {
     apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
     authDomain: "cbt-lbb-immanuel.firebaseapp.com",
@@ -764,7 +765,8 @@ const app = {
                 email: this.userData.email,
                 rowIndex: this.sheetRowIndex,
                 skor: result.skor,
-                detailJawaban: result.detail
+                detailJawaban: result.detail,
+               pelanggaran: cheatCount
             })
         })
         .then(res => res.json())
@@ -920,7 +922,7 @@ document.addEventListener("visibilitychange", function() {
     
     // Kalau layarnya disembunyikan/pindah tab pas lagi ujian
     if (document.visibilityState === 'hidden' && isLagiUjian) {
-        
+        cheatCount++;
         // Munculin notifikasi peringatan pakai SweetAlert
         Swal.fire({
             title: 'Hayo Ketahuan! 👀',
