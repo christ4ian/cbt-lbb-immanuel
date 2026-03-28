@@ -201,14 +201,54 @@ const app = {
                     return; // Hentikan proses login
                 }
                 // --- END CEK WAKTU ---
-                // Jika belum mengerjakan, lanjut masuk soal
-                this.userData = { 
-                    nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
-                };
-                this.sheetRowIndex = res.data.rowIndex;
-                const safeEmail = email.replace(/\./g, '_');
-                this.sessionId = this.currentPaket.id + "_" + safeEmail;
-                this.syncWithCloud(false);
+                // --- KODE BARU: SWEETALERT KONFIRMASI SIAP UJIAN ---
+                // Format rentang waktu biar rapi untuk dibaca
+                const formatWaktu = (date) => date ? date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Tidak dibatasi';
+                const rentangWaktu = `${formatWaktu(waktuBuka)} WIB - ${formatWaktu(waktuTutup)} WIB`;
+
+                Swal.fire({
+                    title: 'Status: Terdaftar! ✅',
+                    html: `
+                        <div style="text-align: left; font-size: 0.95rem; color: #444; margin-top: 10px;">
+                            <p>Ujian untuk paket ini sudah dapat dikerjakan saat ini.</p>
+                            
+                            <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin: 15px 0;">
+                                <strong style="color: #007bff;"><i class="fa-regular fa-clock"></i> Rentang Waktu Ujian:</strong><br>
+                                <span style="font-size: 0.9rem; font-weight: bold;">${rentangWaktu}</span>
+                            </div>
+
+                            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; border-radius: 6px;">
+                                <strong style="color: #856404; font-size: 0.9rem;">⚠️ PERINGATAN PENTING:</strong><br>
+                                <span style="font-size: 0.85rem; color: #666;">
+                                    Jika kamu mengklik tombol <strong>Mulai Ujian</strong>, kamu akan diarahkan ke halaman ujian dan tidak dapat kembali. Pastikan alat tulis dan dirimu sudah siap sepenuhnya! Silakan klik <strong>Kembali</strong> jika belum siap.
+                                </span>
+                            </div>
+                        </div>
+                    `,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745', // Hijau (Mulai)
+                    cancelButtonColor: '#6c757d', // Abu-abu (Kembali)
+                    confirmButtonText: 'Mulai Ujian 🚀',
+                    cancelButtonText: 'Kembali',
+                    reverseButtons: true, // Tombol mulai ditaruh di kanan biar lebih natural
+                    allowOutsideClick: false // Gak bisa ditutup cuma dengan klik di luar kotak
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Jika klik MULAI, baru data diset dan masuk ke ujian
+                        Swal.fire({ title: 'Memuat Data...', didOpen: () => Swal.showLoading() });
+                        
+                        this.userData = { 
+                            nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
+                        };
+                        this.sheetRowIndex = res.data.rowIndex;
+                        const safeEmail = email.replace(/\./g, '_');
+                        this.sessionId = this.currentPaket.id + "_" + safeEmail;
+                        this.syncWithCloud(false);
+                    }
+                    // Jika klik KEMBALI, pop-up hilang dan sistem tetap di halaman login (gak ngapa-ngapain)
+                });
+                // --- END KODE BARU ---
             } else {
                 Swal.fire('Gagal', 'Email tidak terdaftar.', 'error');
             }
