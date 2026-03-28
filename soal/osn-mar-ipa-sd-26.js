@@ -7,6 +7,8 @@ PAKET_SOAL.push({
     judul: "Try Out OSN-K IPA SD 2026",
     mapel: "Ilmu Pengetahuan Alam",
     waktu: 60,
+    waktu_buka: "2026-03-29 00:00:00",
+    waktu_tutup: "2026-04-04 23:59:00",
     
     // Konfigurasi fitur poin
     sistem_poin: true,
