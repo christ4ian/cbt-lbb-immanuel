@@ -151,7 +151,56 @@ const app = {
                     });
                     return;
                 }
+                // --- CEK WAKTU AKSES UJIAN ---
+                const now = new Date();
+                // Replace '-' dengan '/' untuk mencegah error parsing tanggal di browser Safari/iOS
+                const strBuka = this.currentPaket.waktu_buka ? this.currentPaket.waktu_buka.replace(/-/g, '/') : null;
+                const strTutup = this.currentPaket.waktu_tutup ? this.currentPaket.waktu_tutup.replace(/-/g, '/') : null;
                 
+                const waktuBuka = strBuka ? new Date(strBuka) : null;
+                const waktuTutup = strTutup ? new Date(strTutup) : null;
+
+                // 1. Jika belum waktunya mulai
+                if (waktuBuka && now < waktuBuka) {
+                    Swal.fire({
+                        title: 'Anda Terdaftar!',
+                        html: `
+                            <div style="margin-top: 10px;">
+                                <p style="color: #666; font-size: 0.95rem;">Status peserta Anda <strong>AKTIF</strong>, namun sesi ujian untuk paket ini belum dimulai.</p>
+                                <div style="background: #eaf6ff; border-left: 4px solid #007bff; padding: 12px; margin: 15px 0; border-radius: 6px; text-align: left;">
+                                    <strong style="color: #0056b3; font-size: 0.9rem;">Ujian dapat dikerjakan mulai:</strong><br>
+                                    <span style="font-size: 1.1rem; font-weight: bold; color: #333;">
+                                        ${waktuBuka.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
+                                    </span>
+                                </div>
+                            </div>
+                        `,
+                        icon: 'success', // Menggunakan icon centang hijau
+                        confirmButtonText: 'Mengerti',
+                        confirmButtonColor: '#007bff'
+                    });
+                    return; // Hentikan proses login
+                }
+
+                // 2. Jika sudah lewat batas penutupan
+                if (waktuTutup && now > waktuTutup) {
+                    Swal.fire({
+                        title: 'Akses Ditutup',
+                        html: `
+                            <div style="margin-top: 10px;">
+                                <p style="color: #666;">Mohon maaf, batas waktu akses/login untuk paket soal ini telah berakhir pada:</p>
+                                <p style="font-weight: bold; color: #dc3545; font-size: 1.1rem; margin-top: 10px;">
+                                    ${waktuTutup.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
+                                </p>
+                            </div>
+                        `,
+                        icon: 'error',
+                        confirmButtonText: 'Tutup',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    return; // Hentikan proses login
+                }
+                // --- END CEK WAKTU ---
                 // Jika belum mengerjakan, lanjut masuk soal
                 this.userData = { 
                     nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
