@@ -752,6 +752,24 @@ const app = {
         Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const result = this.calculateResult();
 
+        // ==========================================
+        // FITUR BARU: MENGHITUNG DURASI PENGERJAAN
+        // ==========================================
+        let teksDurasi = "Tidak diketahui";
+        if (this.currentPaket && this.deadline) {
+            const sisaDetik = Math.floor((this.deadline - Date.now()) / 1000);
+            const totalWaktuDetik = this.currentPaket.waktu * 60;
+            let durasiDetik = totalWaktuDetik - sisaDetik;
+            
+            // Jaga-jaga kalau ada glitch waktu
+            if (durasiDetik < 0) durasiDetik = totalWaktuDetik; 
+            
+            const menit = Math.floor(durasiDetik / 60);
+            const detik = durasiDetik % 60;
+            teksDurasi = `${menit} Menit ${detik} Detik`;
+        }
+        // ==========================================
+
         db.ref('sessions/' + this.sessionId).update({
             status: 'submitted',
             finalScore: result.skor,
@@ -766,7 +784,8 @@ const app = {
                 rowIndex: this.sheetRowIndex,
                 skor: result.skor,
                 detailJawaban: result.detail,
-               pelanggaran: cheatCount
+                pelanggaran: cheatCount,
+                durasi: teksDurasi // <-- INI DIA YANG DIKIRIM KE TELEGRAM!
             })
         })
         .then(res => res.json())
