@@ -1502,3 +1502,14 @@ mjx-container::-webkit-scrollbar-thumb {
     padding: 10px 15px;
     border: 1px solid #dee2e6; /* MUNCULKAN GARIS DI SINI */
 }
+/* Mencegah halaman keangkat/loncat ke atas */
+html.swal2-height-auto,
+body.swal2-height-auto {
+    height: 100% !important;
+}
+
+/* Mencegah layar geser karena SweetAlert menyembunyikan scrollbar */
+body.swal2-shown {
+    padding-right: 0 !important;
+    overflow-y: auto !important;
+}
