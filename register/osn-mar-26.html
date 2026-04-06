@@ -312,7 +312,11 @@
                 const filePromises = fileYangDipilih.map(file => toBase64(file));
                 const filesData = await Promise.all(filePromises);
 
-                // 3. Simpan ke Firebase (ID TERSTRUKTUR!)
+                // 3. Set Role Otomatis Berdasarkan Jalur
+                // Huruf pertama dikapitalisasi ('gratis' -> 'Gratis', 'berbayar' -> 'Berbayar')
+                const roleOtomatis = jalurDipilih ? (jalurDipilih.charAt(0).toUpperCase() + jalurDipilih.slice(1)) : 'Default';
+
+                // 4. Simpan ke Firebase (ID TERSTRUKTUR!)
                 const idAman = emailInput.replace(/[^a-zA-Z0-9]/g, '_');
                 const customId = `${paketId}_${idAman}`;
                 
@@ -325,13 +329,13 @@
                     kelas: kelas,
                     telp: telp,
                     kota: "-", // Default karna di form gak ada input kota
-                    role: "Default", // Akan diset manual oleh admin di dashboard nanti
+                    role: roleOtomatis, // SEKARANG OTOMATIS SESUAI JALUR
                     waktu_daftar: new Date().toISOString()
                 };
 
                 await db.ref('pendaftaran/' + customId).set(dataPendaftaran);
 
-                // 4. Teruskan Foto dan Rekap ke Telegram (GAS)
+                // 5. Teruskan Foto dan Rekap ke Telegram (GAS)
                 const payload = {
                     action: "register",
                     paketId: paketId,
