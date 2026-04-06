@@ -1,13 +1,12 @@
 /* ===========================================================
-   CBT SYSTEM FINAL STABLE - REVISED (FIXED ANDROID)
-   - Fixed: Navigasi Kanan/Kiri Mobile & Desktop
-   - Fixed: Scroll Halaman Data
-   - Fixed: Logika Tombol Selesai
-   - Fixed: MathJax Render Error
-   - Fixed: Timer Element ID Error
+   CBT SYSTEM FINAL STABLE - REVISED (ULTIMATE VERSION V2)
+   - FIXED: Peringatan Login Dipertegas (Minim Literasi)
+   - FIXED: Analisis & Pembahasan Tampil SETELAH Waktu Tutup
+   - FIXED: Tombol Pembahasan Lenyap Jika Dibatasi Role
+   - FIXED: Pesan Notifikasi Siswa Lebih Profesional
    =========================================================== */
 
-// 1. CONFIG
+// 1. CONFIG & ANTI-CHEAT
 let cheatCount = 0;
 const firebaseConfig = {
     apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
@@ -42,14 +41,36 @@ const app = {
     sheetRowIndex: null,
     serverStartTime: 0, 
 
-    // Config (3 Jam)
+    // Config
     deadline: 0,
+
+    // --- PENYIMPANAN FOTO INTEL ---
+    capturedImages: { start: null, mid: null, end: null },
+
+    captureSnapshot: function(momentType) {
+        if (this.capturedImages[momentType]) return; 
+        if (this.userData && this.userData.isAdmin) return;
+
+        const video = document.getElementById('proctor-video');
+        if (!video || !video.srcObject) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 320; 
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const base64Data = canvas.toDataURL('image/jpeg', 0.5);
+        
+        this.capturedImages[momentType] = base64Data;
+        console.log(`📸 Jepretan berhasil diamankan.`);
+    },
 
     // --- INIT ---
     init: function() {
-        console.log("System Ready (Fixed Version).");
+        console.log("System Ready (Role Sync & Deadline Logic Version).");
         
-        // Setup Device ID
         let did = localStorage.getItem('cbt_device_id');
         if (!did) {
             did = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -60,10 +81,10 @@ const app = {
         this.loadDaftarPaket();
         this.checkResume();
 
-        // --- FIX TAMBAHAN: AUTO PATCH CSS VIA JS (Agar bisa scroll di Android) ---
         const styleFix = document.createElement('style');
         styleFix.innerHTML = `
             .container-data { overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
+            #view-hasil { overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-bottom: 50px; height: 100vh; display: flex; flex-direction: column; }
             .active-view { height: 100vh; height: 100dvh; overflow: hidden; }
         `;
         document.head.appendChild(styleFix);
@@ -79,7 +100,7 @@ const app = {
             const paket = PAKET_SOAL.find(p => p.id === saved.paketId);
             if(paket) {
                 this.currentPaket = paket;
-                this.syncWithCloud(true); // True = Resume Mode
+                this.syncWithCloud(true); 
             }
         }
     },
@@ -97,7 +118,7 @@ const app = {
     },
 
     // =========================================
-    // 1. LOGIN (WITH SUPER ADMIN BYPASS)
+    // 1. LOGIN
     // =========================================
     gotoData: function() {
         const idx = document.getElementById('input-paket').value;
@@ -106,176 +127,173 @@ const app = {
         if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
         if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
 
-        // --- CEK SAKTI: JIKA ADMIN, LANGSUNG MASUK ---
+        // --- CEK ADMIN ---
         if (email === ADMIN_EMAIL) {
             this.currentPaket = PAKET_SOAL[idx];
             this.userData = { 
                 nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL", 
-                email: email, isAdmin: true 
+                email: email, isAdmin: true, role: "Admin" 
             };
-            // Session ID unik agar setiap masuk dianggap sesi baru di browser
             this.sessionId = "admin_" + this.currentPaket.id + "_" + Date.now();
-            
             this.gotoConfirmPage(); 
-            return; // Berhenti di sini, jangan lanjut ke fetch bawahnya 
+            return; 
         }
 
-        // --- LOGIKA SISWA BIASA (Tetap Pakai Fetch) ---
         if(!navigator.onLine) return Swal.fire('Offline', 'Wajib online untuk login.', 'error');
         this.currentPaket = PAKET_SOAL[idx];
         Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
 
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST", body: JSON.stringify({
-                action: "check_user", paketId: this.currentPaket.id, email: email
-            })
-        })
-        .then(res => res.json())
-        .then(res => {
-            if (res.status === "found") {
-                // JIKA SISWA SUDAH MENGERJAKAN
-                if (res.data.statusSheet === "SUDAH") {
-                    const nilai = res.data.skor !== undefined ? res.data.skor : "?";
-                    Swal.fire({
-                        title: 'Ujian Selesai',
-                        html: `
-                            <div class="text-center">
-                                <p>Anda sudah menyelesaikan ujian ini sebelumnya.</p>
-                                <div style="font-size: 2.5rem; font-weight: bold; color: #2ecc71; margin: 15px 0;">
-                                    ${nilai}
-                                </div>
-                                <p class="text-muted">Skor Anda telah tercatat di server.</p>
-                            </div>
-                        `,
-                        icon: 'success',
-                        confirmButtonText: 'Tutup'
-                    });
-                    return;
-                }
-                // --- CEK WAKTU AKSES UJIAN ---
-                const now = new Date();
-                // Replace '-' dengan '/' untuk mencegah error parsing tanggal di browser Safari/iOS
-                const strBuka = this.currentPaket.waktu_buka ? this.currentPaket.waktu_buka.replace(/-/g, '/') : null;
-                const strTutup = this.currentPaket.waktu_tutup ? this.currentPaket.waktu_tutup.replace(/-/g, '/') : null;
+        db.ref('pendaftaran').orderByChild('email').equalTo(email).once('value').then(snap => {
+            if (snap.exists()) {
+                let studentData = null;
+                let studentKey = null;
                 
-                const waktuBuka = strBuka ? new Date(strBuka) : null;
-                const waktuTutup = strTutup ? new Date(strTutup) : null;
-
-                // 1. Jika belum waktunya mulai
-                if (waktuBuka && now < waktuBuka) {
-                    Swal.fire({
-                        title: 'Anda Terdaftar!',
-                        html: `
-                            <div style="margin-top: 10px;">
-                                <p style="color: #666; font-size: 0.95rem;">Status peserta Anda <strong>AKTIF</strong>, namun sesi ujian untuk paket ini belum dimulai.</p>
-                                <div style="background: #eaf6ff; border-left: 4px solid #007bff; padding: 12px; margin: 15px 0; border-radius: 6px; text-align: left;">
-                                    <strong style="color: #0056b3; font-size: 0.9rem;">Ujian dapat dikerjakan mulai:</strong><br>
-                                    <span style="font-size: 1.1rem; font-weight: bold; color: #333;">
-                                        ${waktuBuka.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
-                                    </span>
-                                </div>
-                            </div>
-                        `,
-                        icon: 'success', // Menggunakan icon centang hijau
-                        confirmButtonText: 'Mengerti',
-                        confirmButtonColor: '#007bff'
-                    });
-                    return; // Hentikan proses login
-                }
-
-                // 2. Jika sudah lewat batas penutupan
-                if (waktuTutup && now > waktuTutup) {
-                    Swal.fire({
-                        title: 'Akses Ditutup',
-                        html: `
-                            <div style="margin-top: 10px;">
-                                <p style="color: #666;">Mohon maaf, batas waktu akses/login untuk paket soal ini telah berakhir pada:</p>
-                                <p style="font-weight: bold; color: #dc3545; font-size: 1.1rem; margin-top: 10px;">
-                                    ${waktuTutup.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
-                                </p>
-                            </div>
-                        `,
-                        icon: 'error',
-                        confirmButtonText: 'Tutup',
-                        confirmButtonColor: '#dc3545'
-                    });
-                    return; // Hentikan proses login
-                }
-                // --- END CEK WAKTU ---
-                // --- KODE BARU: SWEETALERT KONFIRMASI SIAP UJIAN ---
-                // Format rentang waktu biar rapi untuk dibaca
-                const formatWaktu = (date) => date ? date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Tidak dibatasi';
-                const rentangWaktu = `${formatWaktu(waktuBuka)} WIB - ${formatWaktu(waktuTutup)} WIB`;
-
-                Swal.fire({
-                    title: 'Status: Terdaftar! ✅',
-                    html: `
-                        <div style="text-align: left; font-size: 0.95rem; color: #444; margin-top: 10px;">
-                            <p>Ujian untuk paket ini sudah dapat dikerjakan saat ini.</p>
-                            
-                            <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin: 15px 0;">
-                                <strong style="color: #007bff;"><i class="fa-regular fa-clock"></i> Rentang Waktu Ujian:</strong><br>
-                                <span style="font-size: 0.9rem; font-weight: bold;">${rentangWaktu}</span>
-                            </div>
-
-                            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; border-radius: 6px;">
-                                <strong style="color: #856404; font-size: 0.9rem;">⚠️ PERINGATAN PENTING:</strong><br>
-                                <span style="font-size: 0.85rem; color: #666;">
-                                    Jika kamu mengklik tombol <strong>Mulai Ujian</strong>, kamu akan diarahkan ke halaman ujian dan tidak dapat kembali. Pastikan alat tulis dan dirimu sudah siap sepenuhnya! Silakan klik <strong>Kembali</strong> jika belum siap.
-                                </span>
-                            </div>
-                        </div>
-                    `,
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonColor: '#28a745', // Hijau (Mulai)
-                    cancelButtonColor: '#6c757d', // Abu-abu (Kembali)
-                    confirmButtonText: 'Mulai Ujian 🚀',
-                    cancelButtonText: 'Kembali',
-                    reverseButtons: true, // Tombol mulai ditaruh di kanan biar lebih natural
-                    allowOutsideClick: false // Gak bisa ditutup cuma dengan klik di luar kotak
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Jika klik MULAI, baru data diset dan masuk ke ujian
-                        Swal.fire({ title: 'Memuat Data...', didOpen: () => Swal.showLoading() });
-                        
-                        this.userData = { 
-                            nama: res.data.nama, kelas: res.data.kelas, sekolah: res.data.sekolah, email: email 
-                        };
-                        this.sheetRowIndex = res.data.rowIndex;
-                        const safeEmail = email.replace(/\./g, '_');
-                        this.sessionId = this.currentPaket.id + "_" + safeEmail;
-                        this.syncWithCloud(false);
+                snap.forEach(child => {
+                    let data = child.val();
+                    if(data.id_paket === this.currentPaket.id) {
+                        studentData = data;
+                        studentKey = child.key;
                     }
-                    // Jika klik KEMBALI, pop-up hilang dan sistem tetap di halaman login (gak ngapa-ngapain)
                 });
-                // --- END KODE BARU ---
+
+                if (studentData) {
+                    const safeEmail = email.replace(/\./g, '_');
+                    const tempSessionId = this.currentPaket.id + "_" + safeEmail;
+
+                    db.ref('sessions/' + tempSessionId).once('value').then(sesSnap => {
+                        let sessionData = sesSnap.val();
+                        
+                        if (sessionData && sessionData.status === 'finished') {
+                            Swal.close();
+                            this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role };
+                            this.sessionId = tempSessionId;
+                            
+                            let durasiStr = sessionData.durasi_teks || "-";
+                            if(durasiStr === "-" && sessionData.startTime && sessionData.finishTime) {
+                                let dMs = sessionData.finishTime - sessionData.startTime;
+                                let menit = Math.floor(dMs / 60000);
+                                let detik = Math.floor((dMs % 60000) / 1000);
+                                durasiStr = `${menit} Menit ${detik} Detik`;
+                            }
+                            
+                            this.tampilkanHalamanHasil(sessionData.skor_akhir || 0, durasiStr, sessionData.detail || []);
+                            return;
+                        }
+
+                        const now = new Date();
+                        const strBuka = this.currentPaket.waktu_buka ? this.currentPaket.waktu_buka.replace(' ', 'T') : null;
+                        const strTutup = this.currentPaket.waktu_tutup ? this.currentPaket.waktu_tutup.replace(' ', 'T') : null;
+                        
+                        const waktuBuka = strBuka ? new Date(strBuka) : null;
+                        const waktuTutup = strTutup ? new Date(strTutup) : null;
+
+                        if (waktuBuka && now < waktuBuka) {
+                            Swal.fire({
+                                title: 'Anda Terdaftar!',
+                                html: `
+                                    <div style="margin-top: 10px;">
+                                        <p style="color: #666; font-size: 0.95rem;">Status peserta Anda <strong>AKTIF</strong>, namun sesi ujian untuk paket ini belum dimulai.</p>
+                                        <div style="background: #eaf6ff; border-left: 4px solid #007bff; padding: 12px; margin: 15px 0; border-radius: 6px; text-align: left;">
+                                            <strong style="color: #0056b3; font-size: 0.9rem;">Ujian dapat dikerjakan mulai:</strong><br>
+                                            <span style="font-size: 1.1rem; font-weight: bold; color: #333;">
+                                                ${waktuBuka.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
+                                            </span>
+                                        </div>
+                                    </div>
+                                `,
+                                icon: 'success', confirmButtonText: 'Mengerti', confirmButtonColor: '#007bff'
+                            });
+                            return;
+                        }
+
+                        if (waktuTutup && now > waktuTutup) {
+                            Swal.fire({
+                                title: 'Akses Ditutup',
+                                html: `
+                                    <div style="margin-top: 10px;">
+                                        <p style="color: #666;">Mohon maaf, batas waktu akses/login untuk paket soal ini telah berakhir pada:</p>
+                                        <p style="font-weight: bold; color: #dc3545; font-size: 1.1rem; margin-top: 10px;">
+                                            ${waktuTutup.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
+                                        </p>
+                                    </div>
+                                `,
+                                icon: 'error', confirmButtonText: 'Tutup', confirmButtonColor: '#dc3545'
+                            });
+                            return; 
+                        }
+
+                        const formatWaktu = (date) => date ? date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Tidak dibatasi';
+                        const rentangWaktu = `${formatWaktu(waktuBuka)} WIB - ${formatWaktu(waktuTutup)} WIB`;
+
+                        Swal.fire({
+                            title: 'Status: Terdaftar! ✅',
+                            html: `
+                                <div style="text-align: left; font-size: 0.95rem; color: #444; margin-top: 10px;">
+                                    <p>Ujian untuk paket ini sudah dapat dikerjakan saat ini.</p>
+                                    <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 6px; margin: 15px 0;">
+                                        <strong style="color: #007bff;"><i class="fa-regular fa-clock"></i> Rentang Waktu Ujian:</strong><br>
+                                        <span style="font-size: 0.9rem; font-weight: bold;">${rentangWaktu}</span>
+                                    </div>
+                                    <div style="background: #fff3cd; border: 2px dashed #dc3545; padding: 12px; border-radius: 8px; margin-top: 15px;">
+                                        <strong style="color: #dc3545; font-size: 1.1rem;"><i class="fa-solid fa-triangle-exclamation"></i> PERINGATAN PENTING:</strong><br>
+                                        <span style="font-size: 0.95rem; color: #333; font-weight: bold;">
+                                            Jika kamu mengklik tombol "Mulai Ujian", kamu akan masuk ke layar soal dan <u>waktu akan langsung berjalan</u>! Kamu tidak bisa kembali atau pindah tab. Pastikan alat tulis sudah siap!
+                                        </span>
+                                    </div>
+                                </div>
+                            `,
+                            icon: 'info', showCancelButton: true, confirmButtonColor: '#28a745', cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Mulai Ujian 🚀', cancelButtonText: 'Kembali', reverseButtons: true, allowOutsideClick: false
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                Swal.fire({ title: 'Memuat Data...', didOpen: () => Swal.showLoading() });
+                                
+                                this.userData = { 
+                                    nama: studentData.nama_siswa, 
+                                    kelas: studentData.kelas, 
+                                    sekolah: studentData.sekolah, 
+                                    email: email,
+                                    role: studentData.role || 'Default'
+                                };
+                                this.sheetRowIndex = studentKey; 
+                                this.sessionId = tempSessionId;
+                                this.syncWithCloud(false);
+                            }
+                        });
+                    });
+                } else {
+                    Swal.fire('Gagal', 'Email terdaftar, tapi tidak mempunyai akses untuk Paket Try Out ini.', 'error');
+                }
             } else {
-                Swal.fire('Gagal', 'Email tidak terdaftar.', 'error');
+                Swal.fire('Gagal', 'Email tidak terdaftar di database.', 'error');
             }
-        })
-        .catch(err => {
+        }).catch(err => {
             console.error(err);
-            Swal.fire('Error', 'Gagal koneksi server.', 'error');
+            Swal.fire('Error', 'Gagal koneksi ke server database.', 'error');
         });
     },
 
-    // =========================================
-    // 1. SINKRONISASI CLOUD
-    // =========================================
     syncWithCloud: function(isResume) {
         db.ref('sessions/' + this.sessionId).once('value').then((snapshot) => {
             const data = snapshot.val();
             Swal.close();
 
             if (data) {
-                // Cek jika sudah selesai
-                if (data.status === 'submitted') {
+                if (data.status === 'finished') {
                     localStorage.removeItem('cbt_active_session');
-                    return Swal.fire('Selesai', 'Ujian telah dikumpulkan.', 'warning').then(() => location.reload());
+                    this.userData = data.userData || this.userData; 
+                    
+                    let durasiStr = data.durasi_teks || "-";
+                    if(durasiStr === "-" && data.startTime && data.finishTime) {
+                        let dMs = data.finishTime - data.startTime;
+                        let menit = Math.floor(dMs / 60000);
+                        let detik = Math.floor((dMs % 60000) / 1000);
+                        durasiStr = `${menit} Menit ${detik} Detik`;
+                    }
+                    this.tampilkanHalamanHasil(data.skor_akhir, durasiStr, data.detail || []);
+                    return;
                 }
                 
-                // Langsung update device dan masuk soal
                 db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId });
                 this.restoreSession(data);
             } else {
@@ -286,17 +304,14 @@ const app = {
     },
 
     gotoConfirmPage: function() {
-        // 1. Tampilkan Info Mapel, Waktu, dan Jumlah Soal
         document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
         document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
         document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
         
-        // 2. LOGIKA BARU: Tampilkan Petunjuk sebagai Daftar List (Nomor)
         const petunjukList = document.getElementById('info-petunjuk-list');
         if(petunjukList) {
             petunjukList.innerHTML = ""; 
             const daftarPetunjuk = this.currentPaket.petunjuk || ["Ikuti instruksi pengawas."];
-            
             daftarPetunjuk.forEach(teks => {
                 const li = document.createElement('li');
                 li.innerHTML = teks; 
@@ -304,7 +319,6 @@ const app = {
             });
         } 
 
-        // 3. Isi Form Data Peserta (Nama, Kelas, Sekolah)
         const inpNama = document.getElementById('data-nama');
         const inpKelas = document.getElementById('data-kelas');
         const inpSekolah = document.getElementById('data-sekolah');
@@ -312,52 +326,55 @@ const app = {
         if(inpNama) inpNama.value = this.userData.nama;
         if(inpKelas) inpKelas.value = this.userData.kelas;
         if(inpSekolah) inpSekolah.value = this.userData.sekolah;
-
+        this.startSecurityProctor();
         this.switchView('view-data');
     },
 
-    // =========================================
-    // 2. START UJIAN
-    // =========================================
     startUjian: function() {
         if (this.userData && this.userData.isAdmin) {
-            const dummyData = {
-                startTime: Date.now(),
-                answers: {}, 
-                ragu: {},
-                status: 'ongoing'
-            };
+            const dummyData = { startTime: Date.now(), answers: {}, ragu: {}, status: 'ongoing' };
             this.restoreSession(dummyData); 
             return; 
         }
         
         if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
-        Swal.fire({ title: 'Memulai...', didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'Memulai Ujian...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
+        const currentTime = Date.now();
         db.ref('sessions/' + this.sessionId).once('value').then(snap => {
-            let updates = {};
             if (!snap.exists()) {
-                updates.startTime = firebase.database.ServerValue.TIMESTAMP;
-                updates.paketId = this.currentPaket.id;
-                updates.userData = this.userData;
-                updates.sheetRowIndex = this.sheetRowIndex;
-                updates.status = 'ongoing';
+                const newSession = {
+                    startTime: currentTime, 
+                    paketId: this.currentPaket.id,
+                    userData: this.userData,
+                    sheetRowIndex: this.sheetRowIndex,
+                    status: 'ongoing',
+                    activeDeviceId: this.deviceId
+                };
+                db.ref('sessions/' + this.sessionId).set(newSession).catch(err => console.error("Firebase Set Error:", err));
+                
+                Swal.close();
+                this.restoreSession(newSession);
+            } else {
+                let existingData = snap.val();
+                if (typeof existingData.startTime === 'object' || !existingData.startTime) {
+                    existingData.startTime = currentTime;
+                    db.ref('sessions/' + this.sessionId).update({ startTime: currentTime });
+                }
+                
+                db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId }).catch(err => console.error(err));
+                existingData.activeDeviceId = this.deviceId;
+                
+                Swal.close();
+                this.restoreSession(existingData);
             }
-            updates.activeDeviceId = this.deviceId; 
-            return db.ref('sessions/' + this.sessionId).update(updates);
-        }).then(() => {
-            return db.ref('sessions/' + this.sessionId).once('value');
-        }).then((snap) => {
-            Swal.close();
-            this.restoreSession(snap.val());
+        }).catch(err => {
+            console.error(err);
+            Swal.fire('Error', 'Gagal membuat sesi ujian. Pastikan aturan database sudah benar.', 'error');
         });
     },
 
-    // =========================================
-    // 3. SESSION RESTORE & UI SETUP
-    // =========================================
     restoreSession: function(data) {
-        // 1. Simpan Jejak di Browser
         localStorage.setItem('cbt_active_session', JSON.stringify({
             sessionId: this.sessionId, paketId: this.currentPaket.id, 
             userData: this.userData, sheetRowIndex: this.sheetRowIndex
@@ -366,33 +383,26 @@ const app = {
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
         
-        // 2. LOGIKA DEADLINE TETAP (Fixed Deadline)
         const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
         this.deadline = data.startTime + (durasiMenit * 60 * 1000);
 
-        // 3. CEK EXPIRED
         if (Date.now() >= this.deadline && !this.userData.isAdmin) {
             return this.submitData(true);
         }
 
-        // 4. MENGISI HEADER
         if(document.getElementById('disp-nama')) document.getElementById('disp-nama').innerText = this.userData.nama;
         if(document.getElementById('disp-mapel')) document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
         
-        // 5. JALANKAN MESIN SOAL
         this.renderSoal(0);
         this.updateGrid(); 
         this.startTimer(); 
         this.monitorSingleDevice(); 
         this.setFont(2);
-
-        // 6. TAMPILKAN LAYAR UJIAN
+        this.startSecurityProctor();
+        
         this.switchView('view-ujian');
     },
 
-    // =========================================
-    // 4. SECURITY MONITORING
-    // =========================================
     monitorSingleDevice: function() {
         if (this.userData.isAdmin) return;
         const deviceRef = db.ref('sessions/' + this.sessionId + '/activeDeviceId');
@@ -403,23 +413,22 @@ const app = {
                 if(this.timerInterval) clearInterval(this.timerInterval);
                 localStorage.removeItem('cbt_active_session');
                 Swal.fire({ 
-                    title: 'Logout Otomatis', 
-                    text: 'Akun login di perangkat lain.', 
-                    icon: 'error', 
-                    allowOutsideClick: false, 
-                    confirmButtonText: 'Keluar' 
+                    title: 'Logout Otomatis', text: 'Akun login di perangkat lain.', 
+                    icon: 'error', allowOutsideClick: false, confirmButtonText: 'Keluar' 
                 }).then(() => location.reload());
             }
         });
     },
 
-    // =========================================
-    // 3. UI RENDER
-    // =========================================
     renderSoal: function(index) {
         this.currentIndex = index;
-        const data = this.currentPaket.soal[index];
+        const totalSoal = this.currentPaket.soal.length;
+        const midPoint = Math.floor(totalSoal / 2);
 
+        if (index === 0) { setTimeout(() => this.captureSnapshot('start'), 3000); } 
+        else if (index === midPoint) { setTimeout(() => this.captureSnapshot('mid'), 1000); }
+
+        const data = this.currentPaket.soal[index];
         document.getElementById('nomor-soal').innerText = index + 1;
         
         const pStim = document.getElementById('panel-stimulus');
@@ -427,14 +436,9 @@ const app = {
             if (this.lastStimulusContent !== data.stimulus.konten) {
                 pStim.innerHTML = data.stimulus.konten;
                 this.lastStimulusContent = data.stimulus.konten;
-                
-                // --- FIX MATHJAX UNTUK STIMULUS ---
                 if (window.MathJax) {
-                    if (MathJax.typesetPromise) {
-                        MathJax.typesetPromise([pStim]).catch(err => console.error(err));
-                    } else if (MathJax.Hub && MathJax.Hub.Queue) {
-                        MathJax.Hub.Queue(["Typeset", MathJax.Hub, pStim]);
-                    }
+                    if (MathJax.typesetPromise) MathJax.typesetPromise([pStim]).catch(err => console.error(err));
+                    else if (MathJax.Hub && MathJax.Hub.Queue) MathJax.Hub.Queue(["Typeset", MathJax.Hub, pStim]);
                 }
             }
             pStim.classList.add('active');
@@ -455,7 +459,6 @@ const app = {
                 html += `<div class="opsi-item ${active}" onclick="app.selectAnswer('${char}')"><div class="marker">${char}</div><div class="text">${opt}</div></div>`;
             });
             html += `</div>`;
-
         } else if (data.tipe === 'pgk') {
             html += `<div class="pilihan-wrapper">`;
             const arr = Array.isArray(jwb) ? jwb : [];
@@ -465,10 +468,9 @@ const app = {
                 html += `<div class="opsi-item ${active}" onclick="app.toggleCheck('${val}')"><div class="marker"><i class="fa-solid fa-check"></i></div><div class="text">${opt}</div></div>`;
             });
             html += `</div>`;
-
         } else if (data.tipe === 'pgk-kategori') {
             const obj = jwb || {};
-            const label = data.labelKategori || ["B", "S"]; 
+            const label = data.label_pgk || ["B", "S"]; 
             
             html += `<table class="table-bs">
                         <thead>
@@ -506,13 +508,9 @@ const app = {
 
         pSoal.innerHTML = html;
         
-        // --- FIX MATHJAX UNTUK SOAL ---
         if (window.MathJax) {
-            if (MathJax.typesetPromise) {
-                MathJax.typesetPromise([pSoal]).catch(err => console.error(err));
-            } else if (MathJax.Hub && MathJax.Hub.Queue) {
-                MathJax.Hub.Queue(["Typeset", MathJax.Hub, pSoal]);
-            }
+            if (MathJax.typesetPromise) MathJax.typesetPromise([pSoal]).catch(err => console.error(err));
+            else if (MathJax.Hub && MathJax.Hub.Queue) MathJax.Hub.Queue(["Typeset", MathJax.Hub, pSoal]);
         }
 
         document.getElementById('check-ragu').checked = this.ragu[index] || false;
@@ -520,7 +518,6 @@ const app = {
         this.updateNavButtons(index);
     },
 
-    // HANDLERS
     selectAnswer: function(val) { this.answers[this.currentIndex] = val; this.renderSoal(this.currentIndex); this.saveRealtime(); },
     toggleCheck: function(val) { 
         let arr = this.answers[this.currentIndex] || [];
@@ -532,6 +529,7 @@ const app = {
         let obj = this.answers[this.currentIndex] || {}; obj[r] = v; this.answers[this.currentIndex] = obj; this.updateGrid(); this.saveRealtime(); 
     },
     setRagu: function() { this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked; this.updateGrid(); this.saveRealtime(); },
+    
     saveRealtime: function() {
         if(this.userData.isAdmin) return;
         if(this.sessionId) {
@@ -539,11 +537,10 @@ const app = {
                 answers: this.answers,
                 ragu: this.ragu,
                 lastUpdate: firebase.database.ServerValue.TIMESTAMP
-            });
+            }).catch(err => console.error(err));
         }
     },
 
-    // --- NAVIGASI ---
     prevSoal: function() { this.navigasi(-1); },
     nextSoal: function() { this.navigasi(1); },
     navigasi: function(step) {
@@ -597,15 +594,11 @@ const app = {
         c.innerHTML = h;
     },
 
-    // --- TIMER FIXED ---
     startTimer: function() {
         if (this.timerInterval) clearInterval(this.timerInterval);
-
-        // FIX: ID-nya wajib pakai "time-val" karena di index.html pakai id="time-val"
         const timerDisplay = document.getElementById('time-val');
         
         this.timerInterval = setInterval(() => {
-            // Pengaman tambahan agar jika gagal mendeteksi ID tidak langsung crash
             if (!timerDisplay) return; 
 
             const sekarang = Date.now();
@@ -616,101 +609,60 @@ const app = {
                 timerDisplay.innerText = "00:00:00";
                 if (!this.userData.isAdmin) {
                     Swal.fire({
-                        title: 'Waktu Habis!',
-                        text: 'Jawaban Anda akan dikirim otomatis.',
-                        icon: 'warning',
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        this.submitData(true); // Paksa submit
-                    });
+                        title: 'Waktu Habis!', text: 'Jawaban Anda akan dikirim otomatis.', icon: 'warning', timer: 2000, showConfirmButton: false
+                    }).then(() => { this.submitData(true); });
                 }
                 return;
             }
 
-            // Konversi sisaDetik ke format Jam:Menit:Detik
             const h = Math.floor(sisaDetik / 3600).toString().padStart(2, '0');
             const m = Math.floor((sisaDetik % 3600) / 60).toString().padStart(2, '0');
             const s = (sisaDetik % 60).toString().padStart(2, '0');
             timerDisplay.innerText = `${h}:${m}:${s}`;
 
-            // Warnai merah jika sisa 5 menit
-            if (sisaDetik < 300) {
-                timerDisplay.style.color = 'red';
-                timerDisplay.classList.add('blink');
-            }
+            if (sisaDetik < 300) { timerDisplay.style.color = 'red'; timerDisplay.classList.add('blink'); }
         }, 1000);
     },
 
-    // SUBMIT
     confirmSubmit: function() {
-        Swal.fire({
-            title: 'Konfirmasi',
-            text: "Yakin ingin mengakhiri ujian?",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#28a745',
-            confirmButtonText: 'Ya, Kumpulkan'
-        }).then((res) => {
-            if (res.isConfirmed) this.submitData(false);
-        });
+        this.captureSnapshot('end');
+        Swal.fire({ title: 'Konfirmasi', text: "Yakin ingin mengakhiri ujian?", icon: 'question', showCancelButton: true, confirmButtonColor: '#28a745', confirmButtonText: 'Ya, Kumpulkan'
+        }).then((res) => { if (res.isConfirmed) this.submitData(false); });
     },
 
     calculateResult: function() {
         let detail = [];
         let benarCount = 0;
-        
-        // --- VARIABEL BARU UNTUK FITUR POIN ---
         let totalPoinDiperoleh = 0;
         let totalPoinMaksimal = 0; 
         
         const totalSoal = this.currentPaket.soal.length;
-        
-        // Deteksi apakah paket ini pakai sistem poin atau persentase klasik
         const isSistemPoin = this.currentPaket.sistem_poin === true; 
 
         this.currentPaket.soal.forEach((soal, i) => {
             const jwb = this.answers[i];
             const kunci = soal.kunci;
             let status = "SALAH";
-
-            // Set poin default 1 kalau pembuat soal lupa ngisi poin di soal tertentu
             let poinMaksSoalIni = soal.poin !== undefined ? soal.poin : 1; 
 
-            if (isSistemPoin) {
-                totalPoinMaksimal += poinMaksSoalIni;
-            }
+            if (isSistemPoin) totalPoinMaksimal += poinMaksSoalIni;
 
-            // 1. CEK DATA KOSONG
-            if (!jwb) { 
-                detail.push("KOSONG"); 
-                return; // Lanjut evaluasi soal berikutnya
-            }
+            if (!jwb) { detail.push("KOSONG"); return; }
 
-            // 2. LOGIKA PENILAIAN
             if (soal.tipe === 'pg') {
                 if (jwb === kunci) status = "BENAR";
-                
             } else if (soal.tipe === 'pgk') {
                 if (Array.isArray(jwb) && Array.isArray(kunci)) {
-                    const jwbSorted = JSON.stringify([...jwb].sort());
-                    const kunciSorted = JSON.stringify([...kunci].sort());
-                    if (jwbSorted === kunciSorted) status = "BENAR";
+                    if (JSON.stringify([...jwb].sort()) === JSON.stringify([...kunci].sort())) status = "BENAR";
                 }
-                
             } else if (soal.tipe === 'pgk-kategori') {
                 let isPerfect = true;
-                const rows = Object.keys(kunci);
-                for (let r of rows) {
-                    if (!jwb[r] || jwb[r] !== kunci[r]) {
-                        isPerfect = false;
-                        break;
-                    }
+                for (let r of Object.keys(kunci)) {
+                    if (!jwb[r] || jwb[r] !== kunci[r]) { isPerfect = false; break; }
                 }
                 if (isPerfect) status = "BENAR";
             }
 
-            // 3. REKAP NILAI & POIN
             if (status === "BENAR") {
                 benarCount++;
                 if (isSistemPoin) totalPoinDiperoleh += poinMaksSoalIni;
@@ -718,86 +670,288 @@ const app = {
             detail.push(status);
         });
 
-        // 4. HITUNG SKOR AKHIR
         let skorAkhir = 0;
-        
         if (isSistemPoin) {
-            // Jika ada "base_poin" di paket, pakai itu sebagai pembagi utama. 
-            // Jika tidak ada, pakai total poin semua soal.
             let pembagi = this.currentPaket.base_poin || totalPoinMaksimal;
             skorAkhir = (totalPoinDiperoleh / pembagi) * 100;
         } else {
-            // KOMPABILITAS MUNDUR: Pakai persentase klasik
             skorAkhir = (benarCount / totalSoal) * 100;
         }
         
-        return { 
-            skor: skorAkhir.toFixed(2), 
-            detail: detail 
-        };
+        return { skor: skorAkhir.toFixed(2), detail: detail };
     },
 
     submitData: function(force) {
-       if(this.userData && this.userData.isAdmin) {
-            localStorage.removeItem('cbt_active_session'); // Hapus jejak login 
-            return Swal.fire({
-                title: 'Simulasi Selesai',
-                text: 'Data admin tidak disimpan di database.',
-                icon: 'success'
-            }).then(() => {
-                location.reload(); 
-            });
+        this.captureSnapshot('end'); 
+        this.stopSecurityProctor();
+        
+        if(this.userData && this.userData.isAdmin) {
+            localStorage.removeItem('cbt_active_session'); 
+            return Swal.fire({ title: 'Simulasi Selesai', text: 'Data admin tidak disimpan di database.', icon: 'success' }).then(() => { location.reload(); });
         }
-        if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet.', 'error');
-        Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet. Pastikan jaringan stabil.', 'error');
+        
+        Swal.fire({ title: 'Memproses Nilai...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const result = this.calculateResult();
 
-        // ==========================================
-        // FITUR BARU: MENGHITUNG DURASI PENGERJAAN
-        // ==========================================
         let teksDurasi = "Tidak diketahui";
         if (this.currentPaket && this.deadline) {
             const sisaDetik = Math.floor((this.deadline - Date.now()) / 1000);
             const totalWaktuDetik = this.currentPaket.waktu * 60;
             let durasiDetik = totalWaktuDetik - sisaDetik;
-            
-            // Jaga-jaga kalau ada glitch waktu
             if (durasiDetik < 0) durasiDetik = totalWaktuDetik; 
-            
             const menit = Math.floor(durasiDetik / 60);
             const detik = durasiDetik % 60;
             teksDurasi = `${menit} Menit ${detik} Detik`;
         }
-        // ==========================================
 
         db.ref('sessions/' + this.sessionId).update({
-            status: 'submitted',
-            finalScore: result.skor,
-            finishTime: firebase.database.ServerValue.TIMESTAMP
-        });
+            status: 'finished',         
+            skor_akhir: result.skor,    
+            answers: this.answers,      
+            finishTime: firebase.database.ServerValue.TIMESTAMP,
+            durasi_teks: teksDurasi,
+            detail: result.detail,
+            cheat_count: cheatCount 
+        }).then(() => {
+            localStorage.removeItem('cbt_active_session');
+            Swal.close();
+            this.tampilkanHalamanHasil(result.skor, teksDurasi, result.detail);
 
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST", body: JSON.stringify({
-                action: "submit_score",
-                paketId: this.currentPaket.id,
-                email: this.userData.email,
-                rowIndex: this.sheetRowIndex,
-                skor: result.skor,
-                detailJawaban: result.detail,
-                pelanggaran: cheatCount,
-                durasi: teksDurasi // <-- INI DIA YANG DIKIRIM KE TELEGRAM!
+            const statusUpload = document.getElementById('status-upload-intel');
+            if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #f59e0b;"></i> Memverifikasi bukti keamanan proctoring...';
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                redirect: "follow", 
+                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                body: JSON.stringify({
+                    action: "submit_score",
+                    paketId: this.currentPaket.id,
+                    namaSiswa: this.userData.nama || this.userData.nama_siswa || "Anonim",
+                    email: this.userData.email,
+                    rowIndex: this.sheetRowIndex,
+                    skor: result.skor,
+                    detailJawaban: result.detail,
+                    pelanggaran: cheatCount, 
+                    durasi: teksDurasi, 
+                    fotoIntel: this.capturedImages
+                })
             })
-        })
-        .then(res => res.json())
-        .then(res => {
-            localStorage.removeItem('cbt_active_session');
-            Swal.fire({ title: 'Sukses!', text: `Nilai: ${result.skor}`, icon: 'success' })
-                .then(() => location.reload());
-        })
-        .catch(err => {
-            console.error(err);
-            localStorage.removeItem('cbt_active_session');
-            Swal.fire('Tersimpan', 'Data aman di server cadangan.', 'success').then(() => location.reload());
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    db.ref('sessions/' + this.sessionId).update({ ss_url: "Tersimpan di Telegram" });
+                    // PESAN LEBIH PROFESIONAL
+                    if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Bukti keamanan berhasil diverifikasi dan diamankan oleh sistem.';
+                } else {
+                    console.error("Error dari GAS:", res.message);
+                    if(statusUpload) statusUpload.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i> Server Error: ${res.message}`;
+                }
+            })
+            .catch(err => {
+                console.error("Fetch API error:", err);
+                if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-wifi" style="color: #ef4444;"></i> Koneksi terputus saat memverifikasi bukti keamanan.';
+            });
+
+        }).catch(err => {
+            console.error("Firebase Update Error:", err);
+            Swal.fire('Error', 'Gagal menyimpan nilai ke database.', 'error');
+        });
+    },
+
+    // =========================================
+    // ROLE PRIVILEGE & LOGIKA DEADLINE HASIL
+    // =========================================
+    tampilkanHalamanHasil: async function(skor, teksDurasi, detailJawaban) {
+        this.switchView('view-hasil'); 
+        
+        document.getElementById('hasil-nama').innerText = this.userData.nama || this.userData.nama_siswa || "Siswa";
+        document.getElementById('hasil-durasi').innerText = teksDurasi;
+
+        let statusBox = document.getElementById('status-upload-intel');
+        if (!statusBox) {
+            const containerSkor = document.getElementById('hasil-skor-wrapper');
+            if (containerSkor) {
+                statusBox = document.createElement('div');
+                statusBox.id = 'status-upload-intel';
+                statusBox.style.marginTop = '15px';
+                statusBox.style.fontSize = '0.85rem';
+                statusBox.style.fontWeight = 'bold';
+                statusBox.style.color = '#64748b';
+                containerSkor.appendChild(statusBox);
+            }
+        }
+
+        // --- TARIK ROLE DARI FIREBASE ---
+        let roleSiswa = this.userData.role || 'Default';
+        let priv = { lihat_skor: true, lihat_kunci: false, akses_pembahasan: false }; 
+        
+        try {
+            let snap = await db.ref(`paket_ujian/${this.currentPaket.id}/roles/${roleSiswa}`).once('value');
+            if(snap.exists()) priv = snap.val();
+        } catch(e) { console.error("Gagal menarik Role Privilege", e); }
+
+        // --- CEK DEADLINE UJIAN ---
+        const now = Date.now();
+        const strTutup = this.currentPaket.waktu_tutup ? this.currentPaket.waktu_tutup.replace(' ', 'T') : null;
+        const waktuTutupMs = strTutup ? new Date(strTutup).getTime() : 0;
+        const isWaktuTutupLewat = (waktuTutupMs === 0 || now >= waktuTutupMs);
+
+        // 1. ATUR SKOR AKHIR
+        const divSkor = document.getElementById('hasil-skor');
+        if (!priv.lihat_skor) {
+            divSkor.innerHTML = '<i class="fa-solid fa-lock"></i>';
+            divSkor.style.fontSize = '3.5rem';
+            divSkor.style.color = '#94a3b8';
+            if (!document.getElementById('msg-skor-lock')) {
+                divSkor.insertAdjacentHTML('afterend', '<div id="msg-skor-lock" style="font-size:0.85rem; color:#ef4444; margin-top:10px; font-weight:bold;">Skor disembunyikan karena pengaturan hak akses Role Anda.</div>');
+            }
+        } else {
+            divSkor.innerText = skor;
+        }
+
+        // 2 & 3. ATUR TOMBOL PEMBAHASAN & ANALISIS (LOGIKA DEADLINE & ROLE)
+        const btnBahas = document.getElementById('btn-pembahasan');
+        const areaRincian = document.getElementById('area-rincian');
+        const boxNotif = document.getElementById('box-notif-hasil');
+
+        // Reset display
+        if (btnBahas) btnBahas.style.display = 'none';
+        if (areaRincian) areaRincian.style.display = 'none';
+
+        if (isWaktuTutupLewat) {
+            // WAKTU UJIAN SUDAH DITUTUP
+            if (priv.lihat_kunci) {
+                areaRincian.style.display = 'block';
+                areaRincian.innerHTML = `<button class="btn-login" style="background:#2563eb; color:white; width:100%; border:none; padding:14px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 4px 6px rgba(37,99,235,0.2);" onclick="app.bukaPopUpAnalisis()"> <i class="fa-solid fa-table-list"></i> Lihat Analisis Benar/Salah </button>`;
+                this.dataAnalisisDetail = detailJawaban;
+            }
+
+            if (priv.akses_pembahasan && btnBahas) {
+                btnBahas.style.display = 'block'; // Munculkan tombolnya
+                if (this.currentPaket.url_pembahasan) {
+                    btnBahas.disabled = false;
+                    btnBahas.style.background = '#10b981'; 
+                    btnBahas.style.cursor = 'pointer';
+                    btnBahas.innerHTML = '<i class="fa-solid fa-download"></i> Download File Pembahasan';
+                    btnBahas.onclick = () => { window.open(this.currentPaket.url_pembahasan, '_blank'); };
+                } else {
+                    btnBahas.disabled = true;
+                    btnBahas.style.background = '#94a3b8';
+                    btnBahas.innerHTML = '<i class="fa-solid fa-file-excel"></i> Pembahasan Belum Diunggah Admin';
+                }
+            }
+
+            if(boxNotif) {
+                boxNotif.className = 'alert-info success';
+                boxNotif.style.background = '#dcfce7'; boxNotif.style.color = '#166534'; boxNotif.style.borderColor = '#bbf7d0';
+                boxNotif.innerHTML = '<i class="fa-solid fa-circle-check"></i> <strong>Sesi Ujian Selesai:</strong><br>Sistem menerapkan kebijakan hak akses (Role) Anda untuk melihat hasil dan pembahasan.';
+            }
+
+        } else {
+            // WAKTU UJIAN BELUM DITUTUP (HANYA MENUNGGU)
+            if (priv.akses_pembahasan && btnBahas) {
+                btnBahas.style.display = 'block';
+                btnBahas.disabled = true;
+                btnBahas.style.background = '#94a3b8';
+                btnBahas.innerHTML = '<i class="fa-solid fa-clock"></i> Pembahasan Terbuka Setelah Ujian Ditutup';
+            }
+
+            if(boxNotif) {
+                boxNotif.className = 'alert-info';
+                boxNotif.style.background = '#fff3cd'; boxNotif.style.color = '#856404'; boxNotif.style.borderColor = '#ffeeba';
+                boxNotif.innerHTML = '<i class="fa-solid fa-clock"></i> <strong>Menunggu Waktu Ujian Ditutup:</strong><br>Analisis jawaban dan akses pembahasan (jika Role mengizinkan) baru dapat dilihat setelah batas waktu ujian berakhir. Silakan login kembali nanti.';
+            }
+        }
+
+        // LOGIKA PERINGKAT (TETAP)
+        try {
+            const snap = await db.ref('sessions').orderByChild('paketId').equalTo(this.currentPaket.id).once('value');
+            let allSessions = [];
+            if(snap.exists()) {
+                snap.forEach(child => {
+                    let d = child.val();
+                    if(d.status === 'finished') {
+                        let dMs = (d.finishTime && d.startTime) ? (d.finishTime - d.startTime) : 99999999;
+                        allSessions.push({ skor: parseFloat(d.skor_akhir || 0), durasi: dMs, id: child.key });
+                    }
+                });
+            }
+            allSessions.sort((a,b) => {
+                if(b.skor !== a.skor) return b.skor - a.skor;
+                return a.durasi - b.durasi;
+            });
+            let myRank = allSessions.findIndex(x => x.id === this.sessionId) + 1;
+            document.getElementById('hasil-rank').innerText = myRank ? `#${myRank} dari ${allSessions.length}` : '-';
+        } catch(e) {
+            console.error("Gagal hitung rank", e);
+            document.getElementById('hasil-rank').innerText = "-";
+        }
+    },
+
+    // POP-UP TABEL ANALISIS TANPA KUNCI JAWABAN
+    bukaPopUpAnalisis: function() {
+        if(!this.dataAnalisisDetail) return;
+        
+        let tHTML = `<div style="overflow-x:auto; margin-top:10px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; min-width: 450px;">
+                <thead>
+                    <tr style="background: #f8fafc;">
+                        <th style="padding: 12px 10px; border-bottom: 2px solid #cbd5e1; text-align:center;">No</th>
+                        <th style="padding: 12px 10px; border-bottom: 2px solid #cbd5e1;">Jawaban Kamu</th>
+                        <th style="padding: 12px 10px; border-bottom: 2px solid #cbd5e1; text-align:center;">Bobot</th>
+                        <th style="padding: 12px 10px; border-bottom: 2px solid #cbd5e1; text-align:center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        
+        this.dataAnalisisDetail.forEach((stat, i) => {
+            let jwb = this.answers[i];
+            let soal = this.currentPaket.soal[i];
+            let jwbStr = '<span style="color:#ef4444; font-style:italic;">Tidak dijawab</span>';
+            
+            if (jwb !== undefined && jwb !== null && jwb !== "") {
+                if (soal.tipe === 'pg') {
+                    jwbStr = `<strong>${jwb}</strong>`;
+                } else if (soal.tipe === 'pgk') {
+                    if (Array.isArray(jwb) && jwb.length > 0) {
+                        jwbStr = jwb.map(v => "Pernyataan " + (parseInt(v) + 1)).join('<br>');
+                    }
+                } else if (soal.tipe === 'pgk-kategori') {
+                    let lbl = soal.label_pgk || ["Benar", "Salah"];
+                    let lines = [];
+                    Object.keys(jwb).forEach(k => {
+                        let textPernyataan = "Pernyt. " + (parseInt(k) + 1);
+                        let textJawaban = jwb[k] === 'L1' ? lbl[0] : lbl[1];
+                        lines.push(`<strong>${textPernyataan}</strong>: <span style="color:#2563eb">${textJawaban}</span>`);
+                    });
+                    if(lines.length > 0) jwbStr = lines.join('<br>');
+                }
+            }
+
+            let color = stat === 'BENAR' ? '#166534' : (stat === 'KOSONG' ? '#475569' : '#991b1b');
+            let bg = stat === 'BENAR' ? '#dcfce7' : (stat === 'KOSONG' ? '#f1f5f9' : '#fee2e2');
+            let bobotSoal = soal.poin || 1;
+            
+            tHTML += `<tr>
+                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center; font-weight:bold;">${i+1}</td>
+                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; word-break: break-word;">${jwbStr}</td>
+                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center; font-weight:bold; color:#64748b;">${bobotSoal}</td>
+                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center;">
+                    <span style="background:${bg}; color:${color}; padding:6px 10px; border-radius:6px; font-weight:bold; font-size:0.75rem;">${stat}</span>
+                </td>
+            </tr>`;
+        });
+        
+        tHTML += `</tbody></table></div>
+        <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.8rem; margin-top: 15px; text-align: left; border-left: 4px solid #ffeeba;">
+            <i class="fa-solid fa-circle-info"></i> <strong>Kunci Jawaban Disembunyikan.</strong><br>Silakan unduh file pembahasan untuk melihat penjelasan lengkap.
+        </div>`;
+        
+        Swal.fire({
+            title: 'Analisis Jawaban', html: tHTML, width: '800px', showCloseButton: true, showConfirmButton: false
         });
     },
 
@@ -818,7 +972,6 @@ const app = {
     logout: function() { this.confirmSubmit(); }
 };
 
-// GLOBAL FUNCTION
 function toggleSidebar() {
     const sb = document.getElementById('sidebar-list');
     const ov = document.getElementById('overlay');
@@ -828,53 +981,27 @@ function toggleSidebar() {
     }
 }
 
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(() => app.init(), 1);
-} else {
-    document.addEventListener('DOMContentLoaded', () => app.init());
-}
+if (document.readyState === 'complete' || document.readyState === 'interactive') { setTimeout(() => app.init(), 1); } 
+else { document.addEventListener('DOMContentLoaded', () => app.init()); }
 
-/* ========================================================== */
-/* [ADD-ON] AUTO-BACKUP & NOTIFIKASI SWEETALERT (TOAST)      */
-/* ========================================================== */
 (function() {
     const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 4000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-            toast.addEventListener('mouseenter', Swal.stopTimer)
-            toast.addEventListener('mouseleave', Swal.resumeTimer)
-        }
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true,
+        didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
     });
 
     function handleConnectionChange() {
         if (!navigator.onLine) {
-            Toast.fire({
-                icon: 'error',
-                title: 'Koneksi Terputus!',
-                text: 'Tenang, jawabanmu aman disimpan di HP ini.'
-            });
+            Toast.fire({ icon: 'error', title: 'Koneksi Terputus!', text: 'Tenang, jawabanmu aman disimpan di HP ini.' });
         } else {
-            Toast.fire({
-                icon: 'success',
-                title: 'Koneksi Kembali!',
-                text: 'Mencoba sinkronisasi data ke server...'
-            });
-            if(typeof app !== 'undefined' && app.saveRealtime) {
-                app.saveRealtime();
-            }
+            Toast.fire({ icon: 'success', title: 'Koneksi Kembali!', text: 'Mencoba sinkronisasi data ke server...' });
+            if(typeof app !== 'undefined' && app.saveRealtime) app.saveRealtime();
         }
     }
 
     window.addEventListener('offline', handleConnectionChange);
     window.addEventListener('online', handleConnectionChange);
-
-    if (!navigator.onLine) {
-        handleConnectionChange();
-    }
+    if (!navigator.onLine) handleConnectionChange();
 
     if (typeof app !== 'undefined') {
         const originalSave = app.saveRealtime; 
@@ -882,15 +1009,9 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 
         app.saveRealtime = function() {
             originalSave.call(app); 
-
             if(app.sessionId) {
-                const backupData = {
-                    answers: app.answers,
-                    ragu: app.ragu,
-                    timestamp: Date.now()
-                };
+                const backupData = { answers: app.answers, ragu: app.ragu, timestamp: Date.now() };
                 localStorage.setItem('CBT_BACKUP_' + app.sessionId, JSON.stringify(backupData));
-                console.log("💾 Jawaban ter-backup di LocalStorage.");
             }
         };
 
@@ -899,59 +1020,116 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
             const localBackup = JSON.parse(localStorage.getItem(backupKey));
 
             if (localBackup && (!data.answers || Object.keys(localBackup.answers).length > Object.keys(data.answers || {}).length)) {
-                console.log("♻️ Mengembalikan jawaban dari backup HP.");
-                data.answers = localBackup.answers;
-                data.ragu = localBackup.ragu;
-                
-                Toast.fire({
-                    icon: 'info',
-                    title: 'Data Dipulihkan',
-                    text: 'Mengambil jawaban terakhir dari memori HP.'
-                });
+                data.answers = localBackup.answers; data.ragu = localBackup.ragu;
+                Toast.fire({ icon: 'info', title: 'Data Dipulihkan', text: 'Mengambil jawaban terakhir dari memori HP.' });
             }
-            
             originalRestore.call(app, data);
         };
     }
 })();
 
-// Fitur klik gambar untuk memperbesar
 document.addEventListener('click', function (e) {
     if (e.target.tagName === 'IMG' && !e.target.closest('.zoomed')) {
         const fullOverlay = document.createElement('div');
         fullOverlay.className = 'zoomed';
-        
         const imgClone = e.target.cloneNode();
         fullOverlay.appendChild(imgClone);
-        
         document.body.appendChild(fullOverlay);
-        
-        fullOverlay.onclick = function() {
-            fullOverlay.remove();
-        };
+        fullOverlay.onclick = function() { fullOverlay.remove(); };
     }
 });
-/* ========================================================== */
-/* [ADD-ON] ANTI-CHEAT: DETEKSI PINDAH TAB / MINIMIZE BROWSER */
-/* ========================================================== */
+
+// EVENT LISTENER ANTI-CHEAT TAB SWITCHING
 document.addEventListener("visibilitychange", function() {
-    // Kita cek dulu, apakah siswanya lagi di dalam halaman ujian?
     const viewUjian = document.getElementById('view-ujian');
     const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
-    
-    // Kalau layarnya disembunyikan/pindah tab pas lagi ujian
     if (document.visibilityState === 'hidden' && isLagiUjian) {
         cheatCount++;
-        // Munculin notifikasi peringatan pakai SweetAlert
-        Swal.fire({
-            title: 'Hayo Ketahuan! 👀',
-            text: 'Kamu terdeteksi pindah tab atau keluar dari layar ujian. Jangan nyontek ya, kerjakan dengan jujur!',
-            icon: 'warning',
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Iya, janji jujur 🙏'
-        });
-        
-        // Opsional: Kalau kamu mau ngerekam berapa kali dia ketahuan pindah tab di console
-        console.warn("Siswa mencoba pindah tab/minimize pada: " + new Date().toLocaleTimeString());
+        Swal.fire({ title: 'Hayo Ketahuan! 👀', text: 'Kamu terdeteksi pindah tab atau keluar dari layar ujian. Jangan nyontek ya, kerjakan dengan jujur!', icon: 'warning', confirmButtonColor: '#d33', confirmButtonText: 'Iya, janji jujur 🙏' });
     }
 });
+
+app.startSecurityProctor = function() {
+    if (document.getElementById('proctor-container')) return;
+    Swal.fire({
+        title: 'Verifikasi Pengawas 👁️',
+        html: 'Ujian ini diawasi oleh <b>Sistem Kamera Keamanan</b>.<br><br>Mohon klik <b>"Allow" / "Izinkan"</b> pada notifikasi browser di atas layar untuk melanjutkan ke halaman identitas.',
+        icon: 'info', confirmButtonText: 'Siap, Izinkan! 🚀', confirmButtonColor: '#007bff', allowOutsideClick: false
+    }).then((res) => {
+        if(res.isConfirmed) {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    #proctor-container { position: fixed; bottom: 20px; left: 20px; width: 160px; background: #000; border: 2px solid #333; border-radius: 8px; z-index: 9999; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5); resize: both; min-width: 130px; max-width: 300px; min-height: 100px; max-height: 250px; }
+                    #proctor-container.minimized { width: 120px !important; height: auto !important; resize: none; }
+                    #proctor-container.minimized #proctor-video { display: none; }
+                    .cam-header { background: rgba(0,0,0,0.8); color: white; font-size: 11px; font-family: monospace; padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; border-bottom: 1px solid #444; }
+                    .cam-controls { display: flex; gap: 8px; align-items: center; }
+                    .btn-minimize { cursor: pointer; font-weight: bold; padding: 0 5px; color: #aaa; font-size: 14px; }
+                    .btn-minimize:hover { color: white; }
+                    .blink-red { color: #ff4757; animation: blinker 1s linear infinite; font-weight: bold; }
+                    @keyframes blinker { 50% { opacity: 0; } }
+                    #proctor-video { width: 100%; height: calc(100% - 25px); display: block; transform: scaleX(-1); object-fit: cover; }
+                    @media(max-width: 768px) { #proctor-container { width: 130px; bottom: 10px; left: 10px; } .cam-header { font-size: 10px; } }
+                `;
+                document.head.appendChild(style);
+
+                const div = document.createElement('div');
+                div.id = 'proctor-container';
+                div.innerHTML = `<div class="cam-header" id="proctor-header"><div class="cam-controls"><span class="blink-red">🔴 REC</span><span id="proctor-timer">00:00:00</span></div><div class="btn-minimize" id="proctor-min" title="Minimize">−</div></div><video id="proctor-video" autoplay muted playsinline></video>`;
+                document.body.appendChild(div);
+
+                document.getElementById('proctor-video').srcObject = stream;
+                document.getElementById('proctor-min').onclick = function() { div.classList.toggle('minimized'); this.innerText = div.classList.contains('minimized') ? '□' : '−'; };
+
+                dragElement(div);
+
+                let sec = 0;
+                app.proctorTimer = setInterval(() => {
+                    sec++;
+                    const h = Math.floor(sec / 3600).toString().padStart(2, '0');
+                    const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+                    const s = (sec % 60).toString().padStart(2, '0');
+                    const timerEl = document.getElementById('proctor-timer');
+                    if(timerEl) timerEl.innerText = `${h}:${m}:${s}`;
+                }, 1000);
+            }).catch(err => {
+                Swal.fire({ title: 'Akses Ditolak! ❌', html: `<div style="text-align:left; font-size: 14px;">Kamu <b>TIDAK BISA</b> mengikuti ujian tanpa menyalakan kamera & mikrofon pengawas.<br><br><b>Cara Memperbaiki:</b><br>1. Klik ikon <b>Gembok 🔒 / Kamera 📷</b> di bilah alamat browser.<br>2. Pilih <b>Site Settings (Setelan Situs)</b> atau <b>Permissions</b>.<br>3. Ubah Izin Kamera & Mikrofon menjadi <b>Allow (Izinkan)</b>.<br>4. Ulangi proses masuk ujian.</div>`, icon: 'error', confirmButtonText: 'Mengerti & Ulangi', confirmButtonColor: '#d33', allowOutsideClick: false }).then(() => { location.reload(); });
+            });
+        }
+    });
+};
+
+app.stopSecurityProctor = function() {
+    const video = document.getElementById('proctor-video');
+    if (video && video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+    const container = document.getElementById('proctor-container');
+    if (container) container.remove();
+    if (app.proctorTimer) clearInterval(app.proctorTimer);
+};
+
+function dragElement(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    var header = document.getElementById("proctor-header");
+    header.onmousedown = dragMouseDown; header.ontouchstart = dragMouseDown; 
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
+        else { e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; }
+        document.onmouseup = closeDragElement; document.ontouchend = closeDragElement;
+        document.onmousemove = elementDrag; document.ontouchmove = elementDrag;
+    }
+    function elementDrag(e) {
+        e = e || window.event;
+        var clientX, clientY;
+        if(e.type === 'touchmove') { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; } 
+        else { e.preventDefault(); clientX = e.clientX; clientY = e.clientY; }
+        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        elmnt.style.bottom = "auto"; elmnt.style.right = "auto";
+    }
+    function closeDragElement() {
+        document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null;
+    }
+}
