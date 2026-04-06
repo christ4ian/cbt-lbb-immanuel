@@ -472,9 +472,60 @@
             }).then(res => { if(res.isConfirmed) db.ref('paket_ujian/' + res.value.id).set(res.value.data); });
         }
 
-        function hapusPaketKeseluruhan(id) { 
-            Swal.fire({ title: 'Hapus Permanen?', text: 'Seluruh soal dan konfigurasi akan hilang!', icon:'warning', showCancelButton:true, confirmButtonColor: '#ef4444' }).then(r => { 
-                if(r.isConfirmed) { db.ref('paket_ujian/'+id).remove(); db.ref('soal/'+id).remove(); db.ref('bank_stimulus/'+id).remove(); db.ref('published_soal/'+id).remove(); }
+        async function hapusPaketKeseluruhan(id) { 
+            Swal.fire({ 
+                title: 'Hapus Paket Ujian?', 
+                html: 'Pilih mode penghapusan di bawah ini. Tindakan ini tidak dapat dibatalkan.', 
+                icon: 'warning', 
+                showDenyButton: true,
+                showCancelButton: true, 
+                confirmButtonColor: '#ef4444', 
+                denyButtonColor: '#f59e0b',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Hapus Paket & Siswa',
+                denyButtonText: 'Hapus Paket Saja',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => { 
+                if(result.isConfirmed || result.isDenied) { 
+                    Swal.fire({ title: 'Menghapus Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    
+                    try {
+                        // Kumpulkan semua jalur yang mau dihapus dalam 1 objek (Atomic Update)
+                        let rootUpdates = {};
+                        
+                        // 1. Data Core Paket
+                        rootUpdates[`paket_ujian/${id}`] = null;
+                        rootUpdates[`soal/${id}`] = null;
+                        rootUpdates[`bank_stimulus/${id}`] = null;
+                        rootUpdates[`published_soal/${id}`] = null;
+
+                        // 2. Data Siswa (Jika dipilih)
+                        if (result.isConfirmed) {
+                            // Tarik data pendaftaran & sesi BERSAMAAN (Paralel) biar ngebut
+                            const [snapPendaftar, snapSesi] = await Promise.all([
+                                db.ref('pendaftaran').orderByChild('id_paket').equalTo(id).once('value'),
+                                db.ref('sessions').orderByChild('paketId').equalTo(id).once('value')
+                            ]);
+
+                            if (snapPendaftar.exists()) {
+                                snapPendaftar.forEach(child => { rootUpdates[`pendaftaran/${child.key}`] = null; });
+                            }
+                            if (snapSesi.exists()) {
+                                snapSesi.forEach(child => { rootUpdates[`sessions/${child.key}`] = null; });
+                            }
+                        }
+
+                        // 3. EKSEKUSI HAPUS SEKALIGUS (SUPER CEPAT)
+                        await db.ref().update(rootUpdates);
+
+                        let msg = result.isConfirmed ? 'Paket ujian beserta seluruh data siswa terkait berhasil dihapus.' : 'Paket ujian berhasil dihapus.';
+                        Swal.fire('Berhasil', msg, 'success');
+
+                    } catch (error) {
+                        console.error(error);
+                        Swal.fire('Gagal', 'Terjadi kesalahan jaringan saat menghapus data.', 'error');
+                    }
+                } 
             }); 
         }
 
