@@ -128,6 +128,10 @@
         .kategori-table td { padding: 10px; border-bottom: 1px solid var(--border); }
         .kategori-table input { border: 1px solid transparent; background: transparent; padding: 8px; font-weight: bold; width: 100%; border-radius: 6px; transition: 0.2s;}
         .kategori-table input:focus { border: 2px solid var(--primary); background: white; outline: none; }
+        
+        /* Thumbnail Bank Gambar */
+        .img-thumbnail { width: 100%; height: 140px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 10px; border: 1px solid var(--border); }
+        .img-thumbnail img { max-width: 100%; max-height: 100%; object-fit: contain; }
     </style>
 </head>
 <body>
@@ -194,7 +198,8 @@
 
             <div class="tabs-container">
                 <button class="tab-btn active" onclick="bukaTabTryout('pengaturan', this)"><i class="fa-solid fa-gear"></i> Konfigurasi Dasar</button>
-                <button class="tab-btn" onclick="bukaTabTryout('stimulus', this)"><i class="fa-solid fa-book-open"></i> Bank Stimulus (Wacana)</button>
+                <button class="tab-btn" onclick="bukaTabTryout('stimulus', this)"><i class="fa-solid fa-book-open"></i> Bank Stimulus</button>
+                <button class="tab-btn" onclick="bukaTabTryout('gambar', this)"><i class="fa-solid fa-images"></i> Bank Gambar</button>
                 <button class="tab-btn" onclick="bukaTabTryout('soal', this)"><i class="fa-solid fa-pen-nib"></i> Editor Soal</button>
             </div>
 
@@ -265,11 +270,27 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
                     <div>
                         <h3 style="margin: 0; font-size: 1.5rem; font-weight: 800;">Bank Stimulus (Wacana)</h3>
-                        <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.95rem;">Buat teks panjang atau gambar, lalu panggil ID-nya di Editor Soal.</p>
+                        <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.95rem;">Buat teks panjang atau tabel, lalu panggil ID-nya di Editor Soal.</p>
                     </div>
                     <button class="btn btn-primary" style="padding: 12px 24px;" onclick="tambahStimulusBaru()"><i class="fa-solid fa-plus"></i> Buat Stimulus Baru</button>
                 </div>
                 <div class="grid-cards" id="list-stimulus"></div>
+            </div>
+
+            <div id="tab-gambar" class="tab-content container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.5rem; font-weight: 800;">Bank Gambar (Dual Imaging)</h3>
+                        <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.95rem;">Upload gambar secara massal ke Firebase untuk disisipkan ke dalam soal.</p>
+                    </div>
+                    <div>
+                        <input type="file" id="upload-bulk-gambar" accept="image/*" multiple style="display:none;" onchange="prosesUploadGambarBulk(event)">
+                        <button class="btn btn-primary" style="padding: 12px 24px;" onclick="document.getElementById('upload-bulk-gambar').click()">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Gambar Bulk
+                        </button>
+                    </div>
+                </div>
+                <div class="grid-cards" id="list-gambar" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));"></div>
             </div>
 
             <div id="tab-soal" class="tab-content container">
@@ -336,7 +357,7 @@
                                 <button class="toolbar-btn" onclick="injectHTML('e-pertanyaan', '<b>Teks</b>')"><i class="fa-solid fa-bold"></i> Bold</button>
                                 <button class="toolbar-btn" onclick="injectHTML('e-pertanyaan', '<i>Teks</i>')"><i class="fa-solid fa-italic"></i> Italic</button>
                                 <button class="toolbar-btn" onclick="promptTable('e-pertanyaan')"><i class="fa-solid fa-table"></i> Buat Tabel</button>
-                                <button class="toolbar-btn" style="color: var(--primary); border-color: var(--primary);" onclick="injectGambarPath('e-pertanyaan')"><i class="fa-solid fa-image"></i> Masukkan Gambar (Path)</button>
+                                <button class="toolbar-btn" style="color: var(--primary); border-color: var(--primary);" onclick="injectGambarModal('e-pertanyaan')"><i class="fa-solid fa-image"></i> Sisipkan Gambar</button>
                             </div>
                             <textarea id="e-pertanyaan" class="form-control with-toolbar" placeholder="Tulis soal di sini. Gunakan tag $$rumus$$ untuk MathJax."></textarea>
                         </div>
@@ -397,7 +418,6 @@
             });
         }
 
-        // PERBAIKAN: Fungsi Filter & Render Terpisah
         function renderGridPaket() {
             const grid = document.getElementById('grid-paket');
             const searchVal = document.getElementById('search-paket').value.toLowerCase();
@@ -410,15 +430,12 @@
                 return; 
             }
 
-            // Ubah objek ke array biar bisa di-sort dan filter
             let arrPaket = Object.keys(globalPaketData).map(key => ({ id: key, ...globalPaketData[key] }));
 
-            // 1. Jalankan Filter Search
             if (searchVal) {
                 arrPaket = arrPaket.filter(p => (p.judul||'').toLowerCase().includes(searchVal) || p.id.toLowerCase().includes(searchVal));
             }
 
-            // 2. Jalankan Sort & Kategori
             if (sortVal === 'live') {
                 arrPaket = arrPaket.filter(p => p.status === 'aktif');
             } else if (sortVal === 'draft') {
@@ -428,7 +445,7 @@
             } else if (sortVal === 'za') {
                 arrPaket.sort((a,b) => (b.judul||'').localeCompare(a.judul||''));
             } else {
-                arrPaket.reverse(); // Terbaru (Simulasi reverse array karena Firebase auto-append di akhir)
+                arrPaket.reverse(); 
             }
 
             if (arrPaket.length === 0) {
@@ -490,18 +507,16 @@
                     Swal.fire({ title: 'Menghapus Data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                     
                     try {
-                        // Kumpulkan semua jalur yang mau dihapus dalam 1 objek (Atomic Update)
                         let rootUpdates = {};
                         
-                        // 1. Data Core Paket
+                        // Termasuk node bank_gambar
                         rootUpdates[`paket_ujian/${id}`] = null;
                         rootUpdates[`soal/${id}`] = null;
                         rootUpdates[`bank_stimulus/${id}`] = null;
+                        rootUpdates[`bank_gambar/${id}`] = null; 
                         rootUpdates[`published_soal/${id}`] = null;
 
-                        // 2. Data Siswa (Jika dipilih)
                         if (result.isConfirmed) {
-                            // Tarik data pendaftaran & sesi BERSAMAAN (Paralel) biar ngebut
                             const [snapPendaftar, snapSesi] = await Promise.all([
                                 db.ref('pendaftaran').orderByChild('id_paket').equalTo(id).once('value'),
                                 db.ref('sessions').orderByChild('paketId').equalTo(id).once('value')
@@ -515,7 +530,6 @@
                             }
                         }
 
-                        // 3. EKSEKUSI HAPUS SEKALIGUS (SUPER CEPAT)
                         await db.ref().update(rootUpdates);
 
                         let msg = result.isConfirmed ? 'Paket ujian beserta seluruh data siswa terkait berhasil dihapus.' : 'Paket ujian berhasil dihapus.';
@@ -548,7 +562,6 @@
 
             document.getElementById('toggle-status').checked = (p.status === 'aktif');
             
-            // Set mode poin
             const isSistemPoin = p.sistem_poin !== false; 
             document.getElementById('set-sistem-poin').checked = isSistemPoin;
             toggleSistemPoin();
@@ -558,12 +571,16 @@
             document.getElementById('set-buka').value = (p.waktu_buka) ? p.waktu_buka.replace(' ', 'T').slice(0,16) : '';
             document.getElementById('set-tutup').value = (p.waktu_tutup) ? p.waktu_tutup.replace(' ', 'T').slice(0,16) : '';
             document.getElementById('set-petunjuk').value = Array.isArray(p.petunjuk) ? p.petunjuk.join('\n') : '';
-            document.getElementById('set-pembahasan').value = p.url_pembahasan || ''; // Load URL Pembahasan
+            document.getElementById('set-pembahasan').value = p.url_pembahasan || ''; 
 
             renderTabelKategoriPoin(p.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 });
 
             bukaTabTryout('pengaturan', document.querySelector('.tab-btn')); 
-            loadBankStimulus(id); muatSoalAdmin(id);
+            
+            // Load 3 komponen database sekunder
+            loadBankStimulus(id); 
+            loadBankGambar(id); 
+            muatSoalAdmin(id);
         }
 
         function kembaliKeListTryOut() { 
@@ -642,7 +659,7 @@
                 judul: document.getElementById('set-judul').value, mapel: document.getElementById('set-mapel').value,
                 durasi_menit: parseInt(document.getElementById('set-durasi').value), waktu: parseInt(document.getElementById('set-durasi').value),
                 base_poin: parseInt(document.getElementById('set-base-poin').value), sistem_poin: isSistemPoin,
-                url_pembahasan: document.getElementById('set-pembahasan').value, // Simpan URL Pembahasan
+                url_pembahasan: document.getElementById('set-pembahasan').value,
                 waktu_buka: tBuka, waktu_tutup: tTutup, petunjuk: pArray, kategori_poin: newKat
             }).then(() => {
                 Swal.fire({icon: 'success', title: 'Tersimpan', text: 'Konfigurasi berhasil diperbarui.', timer: 1500, showConfirmButton: false});
@@ -683,7 +700,7 @@
         }
 
         function tambahStimulusBaru() {
-            Swal.fire({ title: 'Buat Stimulus Baru', html: `<input id="s-id" class="form-control" placeholder="ID Stimulus (cth: TEKS_1)" style="margin-bottom:15px; font-family:monospace; font-weight:bold; font-size:1.1rem;"><textarea id="s-val" class="form-control" style="height:200px; font-family:monospace;" placeholder="Isi teks bacaan atau tag HTML gambar di sini..."></textarea>`, width:'700px', showCancelButton: true, confirmButtonText: 'Simpan', preConfirm: () => {
+            Swal.fire({ title: 'Buat Stimulus Baru', html: `<input id="s-id" class="form-control" placeholder="ID Stimulus (cth: TEKS_1)" style="margin-bottom:15px; font-family:monospace; font-weight:bold; font-size:1.1rem;"><textarea id="s-val" class="form-control" style="height:200px; font-family:monospace;" placeholder="Isi teks bacaan atau tag HTML tabel di sini..."></textarea>`, width:'700px', showCancelButton: true, confirmButtonText: 'Simpan', preConfirm: () => {
                 const id = document.getElementById('s-id').value.trim().toUpperCase().replace(/\s+/g,'_');
                 if(!id) return Swal.showValidationMessage('ID Wajib diisi');
                 return { id: id, val: document.getElementById('s-val').value };
@@ -694,6 +711,83 @@
             .then(res => { if(res.isConfirmed) db.ref(`bank_stimulus/${activePaketId}/${id}`).set(res.value); });
         }
         function hapusStimulus(id) { Swal.fire({title: 'Hapus Stimulus?', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444'}).then(r => { if(r.isConfirmed) db.ref(`bank_stimulus/${activePaketId}/${id}`).remove(); }); }
+
+        // === BANK GAMBAR (NEW DUAL IMAGING SYSTEM) ===
+        let masterGambar = {};
+        
+        function loadBankGambar(idPaket) {
+            db.ref('bank_gambar/' + idPaket).on('value', snap => {
+                masterGambar = snap.exists() ? snap.val() : {};
+                renderGridGambar();
+            });
+        }
+
+        function renderGridGambar() {
+            const list = document.getElementById('list-gambar');
+            list.innerHTML = '';
+            if(Object.keys(masterGambar).length === 0) { 
+                list.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 30px; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-muted);">Belum ada gambar yang diupload ke Firebase.</div>'; 
+                return; 
+            }
+
+            Object.keys(masterGambar).forEach(id => {
+                const g = masterGambar[id];
+                list.innerHTML += `
+                    <div class="card" style="padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                        <div class="img-thumbnail">
+                            <img src="${g.base64}" alt="${id}">
+                        </div>
+                        <div style="font-size: 0.85rem; font-weight: bold; width: 100%; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dark);" title="${id}">${id}</div>
+                        <div style="display: flex; gap: 5px; width: 100%; margin-top: auto;">
+                            <button class="btn btn-outline" style="flex: 1; padding: 6px; font-size: 0.8rem;" onclick="copyTagGambar('${id}')"><i class="fa-solid fa-copy"></i> Tag</button>
+                            <button class="btn btn-outline" style="color: var(--danger); padding: 6px; border-color: #fca5a5;" onclick="hapusGambar('${id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function prosesUploadGambarBulk(e) {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            Swal.fire({ title: 'Mengunggah...', text: 'Memproses gambar ke Firebase...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            let updates = {};
+            let promises = files.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        // Bersihkan nama file dari spasi dan karakter aneh untuk dijadikan ID
+                        let safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_').split('.')[0]; 
+                        let idGambar = safeName + '_' + Math.floor(Math.random() * 1000); // Mencegah overwrite
+                        
+                        updates[`bank_gambar/${activePaketId}/${idGambar}`] = {
+                            nama: file.name,
+                            base64: event.target.result
+                        };
+                        resolve();
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            Promise.all(promises).then(() => {
+                db.ref().update(updates).then(() => {
+                    Swal.fire('Berhasil', `${files.length} gambar diunggah ke Firebase.`, 'success');
+                    document.getElementById('upload-bulk-gambar').value = '';
+                });
+            });
+        }
+
+        function hapusGambar(id) {
+            Swal.fire({title: 'Hapus Gambar?', text: 'Gambar yang terhapus tidak akan bisa di-render di soal.', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444'})
+            .then(r => { if(r.isConfirmed) db.ref(`bank_gambar/${activePaketId}/${id}`).remove(); });
+        }
+
+        function copyTagGambar(id) {
+            navigator.clipboard.writeText(`[FIREBASE:${id}]`);
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'Tag disalin!', text: 'Bisa langsung dipaste di Editor Soal.', showConfirmButton:false, timer:2000});
+        }
+
 
         // === EDITOR SOAL BARU ===
         let arrSoalAdmin = []; let activeSoalIdx = 0;
@@ -738,18 +832,15 @@
             activeSoalIdx = targetIdx; renderNavigasiSoal(); renderSoalAktif(activeSoalIdx);
         }
 
-        // PERBAIKAN: Fungsi Menggeser Soal ke Kiri/Kanan (Rearrange)
         function geserSoalAktif(arah) {
             tangkapStateSoalAdmin();
             let targetIdx = activeSoalIdx + arah;
             if (targetIdx < 0 || targetIdx >= arrSoalAdmin.length) return;
             
-            // Swap elemen array
             let temp = arrSoalAdmin[activeSoalIdx];
             arrSoalAdmin[activeSoalIdx] = arrSoalAdmin[targetIdx];
             arrSoalAdmin[targetIdx] = temp;
             
-            // Re-index
             arrSoalAdmin.forEach((s, idx) => s.id_soal = idx + 1);
             
             activeSoalIdx = targetIdx;
@@ -762,7 +853,6 @@
             document.getElementById('e-nomor-urut').innerText = i + 1;
             document.getElementById('e-tipe').value = s.tipe || 'pg';
             
-            // Handle Custom Label UI PGK
             const wrapLabel = document.getElementById('wrapper-label-pgk');
             if (s.tipe === 'pgk-kategori') {
                 wrapLabel.style.display = 'block';
@@ -783,7 +873,6 @@
             renderOpsiSoal(s);
         }
 
-        // Live Update Label pada Opsi Select
         function updateOpsiPGKLabel() {
             if(document.getElementById('e-tipe').value === 'pgk-kategori') {
                 renderOpsiSoal(arrSoalAdmin[activeSoalIdx]);
@@ -795,7 +884,6 @@
             const c = document.getElementById('area-opsi'); c.innerHTML = '';
             const opsi = s.opsi || ["", ""]; const k = s.kunci;
             
-            // Tampilkan custom label box kalau tipe pgk-kategori berubah manual dari select dropdown
             if (t === 'pgk-kategori') {
                  document.getElementById('wrapper-label-pgk').style.display = 'block';
             } else {
@@ -821,7 +909,7 @@
                     <div>${input}</div> 
                     <div style="flex:1; display:flex; flex-direction:column; gap:5px; width: 100%;">
                         <textarea class="form-control i-opsi" id="opsi-teks-${i}" style="min-height:60px; font-family:monospace; resize:vertical; background:white;">${txt}</textarea>
-                        <button class="btn btn-outline" style="align-self:flex-start; padding:4px 8px; font-size:0.8rem; color:var(--primary);" onclick="injectGambarOpsi(${i})"><i class="fa-solid fa-image"></i> Sisipkan Gambar Opsi</button>
+                        <button class="btn btn-outline" style="align-self:flex-start; padding:4px 8px; font-size:0.8rem; color:var(--primary);" onclick="injectGambarModal('opsi-teks-${i}')"><i class="fa-solid fa-image"></i> Sisipkan Gambar</button>
                     </div> 
                     <button class="btn btn-outline" style="color:var(--danger); padding:15px; border-color:#cbd5e1;" onclick="hapusOpsi(${i})"><i class="fa-solid fa-xmark"></i></button>`;
                 c.appendChild(row);
@@ -833,7 +921,7 @@
             const t = document.getElementById('e-tipe').value;
             const textOpsi = Array.from(document.querySelectorAll('.i-opsi')).map(e => e.value);
             let k = null;
-            let customLabel = ["Benar", "Salah"]; // Default
+            let customLabel = ["Benar", "Salah"]; 
 
             if(t==='pg') { const r = document.querySelector('input[name="k_pg"]:checked'); if(r) k = r.value; }
             else if(t==='pgk') { k=[]; document.querySelectorAll('.k_pgk:checked').forEach(e => k.push(e.value)); }
@@ -880,14 +968,59 @@
         function injectHTML(targetId, str) { const a = document.getElementById(targetId); const p = a.selectionStart; a.value = a.value.substring(0,p) + str + a.value.substring(a.selectionEnd); a.focus(); }
         function promptTable(targetId) { injectHTML(targetId, `\n<table border="1" style="width:100%; border-collapse:collapse; text-align:center;">\n  <tr><th>Head 1</th><th>Head 2</th></tr>\n  <tr><td>Isi 1</td><td>Isi 2</td></tr>\n</table>\n`); }
         
-        function injectGambarPath(targetId) { 
-            const url = prompt("Masukkan Nama File Gambar (Cth: gambar1.png)\nSistem akan memanggilnya dari folder assets/"); 
-            if(url) injectHTML(targetId, `<br><img src="assets/${url.replace('assets/', '')}" style="max-width:100%; border-radius:8px;"><br>`); 
+        // MODAL DUAL IMAGING SYSTEM
+        async function injectGambarModal(targetId) {
+            let optionsHTML = '<option value="">-- Pilih ID Gambar dari Firebase --</option>';
+            Object.keys(masterGambar).forEach(id => {
+                optionsHTML += `<option value="${id}">${id}</option>`;
+            });
+
+            const { value: formValues } = await Swal.fire({
+                title: 'Sisipkan Gambar',
+                html: `
+                    <div style="text-align:left; font-size:0.9rem;">
+                        <label class="form-label" style="color:var(--primary);"><i class="fa-solid fa-cloud"></i> Opsi 1: Dari Bank Gambar Firebase</label>
+                        <select id="swal-img-fb" class="form-control" style="margin-bottom:20px;">${optionsHTML}</select>
+                        
+                        <div style="text-align:center; font-weight:bold; margin-bottom:20px; color:#94a3b8;">ATAU</div>
+
+                        <label class="form-label" style="color:var(--success);"><i class="fa-solid fa-folder"></i> Opsi 2: Dari Folder Assets Lokal</label>
+                        <input id="swal-img-local" class="form-control" placeholder="Cth: sel_hewan.png">
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Sisipkan',
+                preConfirm: () => {
+                    const fb = document.getElementById('swal-img-fb').value;
+                    const local = document.getElementById('swal-img-local').value.trim();
+                    if(!fb && !local) { Swal.showValidationMessage('Pilih salah satu sumber gambar!'); return false; }
+                    if(fb && local) { Swal.showValidationMessage('Pilih HANYA salah satu sumber gambar!'); return false; }
+                    
+                    return fb ? { type: 'firebase', val: fb } : { type: 'local', val: local };
+                }
+            });
+
+            if (formValues) {
+                let finalTag = "";
+                if(formValues.type === 'firebase') {
+                    finalTag = `<br><img src="[FIREBASE:${formValues.val}]" style="max-width:100%; border-radius:8px;"><br>`;
+                } else {
+                    finalTag = `<br><img src="assets/${formValues.val.replace('assets/', '')}" style="max-width:100%; border-radius:8px;"><br>`;
+                }
+                injectHTML(targetId, finalTag);
+            }
         }
-        
-        function injectGambarOpsi(idx) {
-            const url = prompt("Masukkan Nama File Gambar untuk Opsi Ini (Cth: opsi_a.png)");
-            if(url) injectHTML(`opsi-teks-${idx}`, `<img src="assets/${url.replace('assets/', '')}" style="max-width:100%; border-radius:8px;">`);
+
+        // COMPILER - Translate TAG Firebase Base64
+        function replaceFirebaseImages(text) {
+            if(!text || typeof text !== 'string') return text;
+            return text.replace(/\[FIREBASE:([^\]]+)\]/g, (match, id) => {
+                if (masterGambar[id] && masterGambar[id].base64) {
+                    return masterGambar[id].base64;
+                }
+                return match; 
+            });
         }
 
         // === ENGINE COMPILER & PUBLISHER (KUNCI KESUKSESAN INDEX.HTML) ===
@@ -898,7 +1031,7 @@
             Swal.fire({ title: 'Menyimpan Data...', text: isPublish ? 'Mempublish ke halaman siswa secara instan...' : 'Menyimpan sebagai draft...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
             try {
-                // 1. Simpan selalu ke raw database Admin (Draft Aman)
+                // 1. Simpan ke raw database (Draft Aman - Tag tidak diganti agar bisa diedit lagi)
                 await db.ref('soal/' + activePaketId).set(arrSoalAdmin);
                 
                 if(isPublish) {
@@ -908,14 +1041,15 @@
                     let isSistemPoinAktif = config.sistem_poin !== false;
                     
                     let compiledSoal = arrSoalAdmin.map(s => {
-                        let bobot = 1; // Default jika off
+                        let bobot = 1; 
                         if(isSistemPoinAktif && config.kategori_poin && config.kategori_poin[s.tingkat_kesulitan]) {
                             bobot = config.kategori_poin[s.tingkat_kesulitan];
                         }
                         
                         let stimObj = { tampil: false };
                         if(s.id_stimulus && masterStimulus[s.id_stimulus]) {
-                            stimObj = { tampil: true, konten: masterStimulus[s.id_stimulus] };
+                            // Replace base64 di dalam wacana stimulus juga
+                            stimObj = { tampil: true, konten: replaceFirebaseImages(masterStimulus[s.id_stimulus]) };
                         }
 
                         return {
@@ -923,10 +1057,11 @@
                             tipe: s.tipe,
                             poin: bobot,
                             stimulus: stimObj,
-                            pertanyaan: s.pertanyaan,
-                            opsi: s.opsi,
+                            // Replace base64 ke dalam pertanyaan dan opsi untuk dirender index.html
+                            pertanyaan: replaceFirebaseImages(s.pertanyaan),
+                            opsi: s.opsi.map(opt => replaceFirebaseImages(opt)),
                             kunci: s.kunci,
-                            label_pgk: s.label_pgk || ["Benar", "Salah"], // PERBAIKAN: Suntik ke JSON
+                            label_pgk: s.label_pgk || ["Benar", "Salah"], 
                             ragu: false 
                         };
                     });
@@ -940,7 +1075,7 @@
                         waktu_tutup: config.waktu_tutup || "",
                         sistem_poin: isSistemPoinAktif,
                         base_poin: config.base_poin || 100,
-                        url_pembahasan: config.url_pembahasan || "", // PERBAIKAN: Suntik Pembahasan
+                        url_pembahasan: config.url_pembahasan || "", 
                         petunjuk: petunjukArray,
                         soal: compiledSoal
                     };
@@ -970,7 +1105,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                Swal.fire('Error Database', 'Gagal menyimpan. Pastikan Rule Database Firebase "published_soal" sudah diizinkan (write).', 'error');
+                Swal.fire('Error Database', 'Gagal menyimpan. Pastikan Rule Database Firebase sudah diizinkan (write).', 'error');
             }
         }
 
@@ -984,10 +1119,11 @@
                 judul: config.judul, mapel: config.mapel || "", durasi_menit: config.durasi_menit,
                 waktu_buka: config.waktu_buka || "", waktu_tutup: config.waktu_tutup || "",
                 sistem_poin: config.sistem_poin !== false, base_poin: config.base_poin || 100,
-                url_pembahasan: config.url_pembahasan || "", // PERBAIKAN: Export Pembahasan
+                url_pembahasan: config.url_pembahasan || "", 
                 petunjuk: Array.isArray(config.petunjuk) ? config.petunjuk : [],
                 kategori_poin: config.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 },
                 bank_stimulus: masterStimulus,
+                bank_gambar: masterGambar, // Ikut di-export
                 soal: arrSoalAdmin
             };
 
@@ -1012,13 +1148,16 @@
                         updates['paket_ujian/' + activePaketId + '/waktu_tutup'] = parsed.waktu_tutup || '';
                         updates['paket_ujian/' + activePaketId + '/base_poin'] = parsed.base_poin || 100;
                         updates['paket_ujian/' + activePaketId + '/sistem_poin'] = parsed.sistem_poin !== false;
-                        updates['paket_ujian/' + activePaketId + '/url_pembahasan'] = parsed.url_pembahasan || ''; // PERBAIKAN: Import Pembahasan
+                        updates['paket_ujian/' + activePaketId + '/url_pembahasan'] = parsed.url_pembahasan || ''; 
                         updates['paket_ujian/' + activePaketId + '/petunjuk'] = parsed.petunjuk || [];
                         updates['paket_ujian/' + activePaketId + '/kategori_poin'] = parsed.kategori_poin || { "Standar": 1 };
                         
                         await db.ref().update(updates);
                         if(parsed.bank_stimulus) await db.ref('bank_stimulus/' + activePaketId).set(parsed.bank_stimulus);
                         else await db.ref('bank_stimulus/' + activePaketId).set(null); 
+                        
+                        if(parsed.bank_gambar) await db.ref('bank_gambar/' + activePaketId).set(parsed.bank_gambar);
+                        else await db.ref('bank_gambar/' + activePaketId).set(null); 
                         
                         await db.ref('soal/' + activePaketId).set(parsed.soal);
 
