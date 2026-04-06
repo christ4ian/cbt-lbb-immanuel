@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <link rel="stylesheet" href="style.css">
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -70,58 +69,56 @@
         </header>
 
         <div class="container-data">
-    <div class="card-info-wide">
-        <h4><i class="fa-solid fa-circle-info"></i> Informasi Ujian</h4>
-        
-        <div class="info-row">
-            <span class="label">Mata Uji :</span>
-            <span class="value" id="info-mapel">-</span>
-        </div>
-        <div class="info-row">
-            <span class="label">Waktu :</span>
-            <span class="value" id="info-waktu">0 Menit</span>
-        </div>
-        <div class="info-row">
-            <span class="label">Jumlah Soal :</span>
-            <span class="value" id="info-jml-soal">0 Butir</span>
-        </div>
-        
-        <div class="info-row-petunjuk">
-            <span class="label" style="margin-bottom: 12px; display: block; font-weight: bold; color: #6c757d;">Petunjuk Ujian :</span>
-            <div class="petunjuk-box-wide">
-                <ul id="info-petunjuk-list"></ul>
+            <div class="card-info-wide">
+                <h4><i class="fa-solid fa-circle-info"></i> Informasi Ujian</h4>
+                
+                <div class="info-row">
+                    <span class="label">Mata Uji :</span>
+                    <span class="value" id="info-mapel">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Waktu :</span>
+                    <span class="value" id="info-waktu">0 Menit</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Jumlah Soal :</span>
+                    <span class="value" id="info-jml-soal">0 Butir</span>
+                </div>
+                
+                <div class="info-row-petunjuk">
+                    <span class="label" style="margin-bottom: 12px; display: block; font-weight: bold; color: #6c757d;">Petunjuk Ujian :</span>
+                    <div class="petunjuk-box-wide">
+                        <ul id="info-petunjuk-list"></ul>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="card-input">
-        <h4><i class="fa-solid fa-user-pen"></i> Identitas Peserta</h4>
-        
-        <div class="form-group">
-            <label>Nama Lengkap</label>
-            <input type="text" id="data-nama" readonly placeholder="Memuat nama...">
-        </div>
+            <div class="card-input">
+                <h4><i class="fa-solid fa-user-pen"></i> Identitas Peserta</h4>
+                
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="data-nama" readonly placeholder="Memuat nama...">
+                </div>
 
-        <div class="form-group">
-            <label>Asal Sekolah</label>
-            <input type="text" id="data-sekolah" readonly placeholder="Memuat sekolah...">
-        </div>
+                <div class="form-group">
+                    <label>Asal Sekolah</label>
+                    <input type="text" id="data-sekolah" readonly placeholder="Memuat sekolah...">
+                </div>
 
-        <div class="form-group">
-            <label>Kelas</label>
-            <input type="text" id="data-kelas" readonly placeholder="Memuat kelas...">
-        </div>
+                <div class="form-group">
+                    <label>Kelas</label>
+                    <input type="text" id="data-kelas" readonly placeholder="Memuat kelas...">
+                </div>
 
-        <button class="btn-start" onclick="app.startUjian()">
-            MULAI MENGERJAKAN <i class="fa-solid fa-play"></i>
-        </button>
-    </div>
-</div>
+                <button class="btn-start" onclick="app.startUjian()">
+                    MULAI MENGERJAKAN <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
         </div>
     </section>
 
     <section id="view-ujian" class="hidden-view">
-        
         <header class="ujian-header">
             <div class="header-left">
                 <div class="logo-small">CBT</div>
@@ -143,7 +140,6 @@
             </div>
 
             <div class="tool-right">
-                
                 <div class="timer-badge" id="timer-display">
                     <i class="fa-regular fa-clock"></i> 
                     <span id="time-val" style="margin-left: 5px;">00:00:00</span>
@@ -162,108 +158,134 @@
         </div>
 
         <div class="ujian-wrapper">
-            
-            <div id="panel-stimulus" class="panel panel-kiri">
-                </div>
-
-            <div id="panel-soal" class="panel panel-kanan">
-                </div>
+            <div id="panel-stimulus" class="panel panel-kiri"></div>
+            <div id="panel-soal" class="panel panel-kanan"></div>
 
             <div id="sidebar-list" class="sidebar">
                 <div class="sidebar-head">
                     <span>Daftar Soal</span>
                     <button onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="sidebar-body" id="grid-container">
-                    </div>
+                <div class="sidebar-body" id="grid-container"></div>
             </div>
-
         </div>
 
         <footer class="ujian-footer">
-    <div class="footer-side">
-        <button class="btn-nav desktop-nav prev" onclick="app.prevSoal()">
-            <i class="fa-solid fa-chevron-left"></i> <span>Sebelumnya</span>
-        </button>
-        <button class="btn-mobile-icon prev" onclick="app.prevSoal()">
-            <i class="fa-solid fa-chevron-left"></i>
-        </button>
-    </div>
+            <div class="footer-side">
+                <button class="btn-nav desktop-nav prev" onclick="app.prevSoal()">
+                    <i class="fa-solid fa-chevron-left"></i> <span>Sebelumnya</span>
+                </button>
+                <button class="btn-mobile-icon prev" onclick="app.prevSoal()">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
 
-    <div class="footer-center">
-        <div class="ragu-checkbox">
-            <input type="checkbox" id="check-ragu" onchange="app.setRagu()">
-            <label for="check-ragu">Ragu-ragu</label>
+            <div class="footer-center">
+                <div class="ragu-checkbox">
+                    <input type="checkbox" id="check-ragu" onchange="app.setRagu()">
+                    <label for="check-ragu">Ragu-ragu</label>
+                </div>
+            </div>
+
+            <div class="footer-side" style="justify-content: flex-end;">
+                <button class="btn-nav desktop-nav next" id="btn-next-desktop" onclick="app.nextSoal()">
+                    <span>Selanjutnya</span> <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <button class="btn-mobile-icon next" id="btn-next-mobile" onclick="app.nextSoal()">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </footer>
+    </section>
+
+    <section id="view-hasil" class="hidden-view" style="overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; height: 100vh; display: flex; flex-direction: column;">
+        <div class="login-bg-wave" style="position: fixed; z-index: 1;"></div>
+        <div class="login-container" style="max-width: 650px; width: 100%; padding: 40px 20px; text-align: center; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); position: relative; z-index: 10; margin: auto;">
+            <i class="fa-solid fa-trophy" style="font-size: 4rem; color: #f59e0b; margin-bottom: 15px;"></i>
+            <h2 style="font-family: 'Nunito', sans-serif; color: #0f172a; margin-bottom: 5px;">Ujian Selesai! 🎉</h2>
+            <p style="color: #64748b; margin-bottom: 20px;">Kerja bagus, <strong id="hasil-nama">Siswa</strong>. Jawabanmu telah diamankan di server.</p>
+            
+            <div style="margin: 25px 0; padding: 30px 20px; background: #f8fafc; border-radius: 12px; border: 2px dashed #cbd5e1;">
+                <h3 style="color: #64748b; margin-bottom: 10px; font-size: 1rem;">Skor Akhir Kamu</h3>
+                <div id="hasil-skor-wrapper">
+                    <div id="hasil-skor" style="font-size: 5rem; font-weight: 900; color: #2563eb; line-height: 1;">0</div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-around; margin-bottom: 25px; background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #bfdbfe; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Peringkat Sementara</div>
+                    <div id="hasil-rank" style="font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-top: 5px;"><i class="fa-solid fa-spinner fa-spin"></i></div>
+                </div>
+                <div style="width: 1px; background: #bfdbfe; min-height: 40px;"></div>
+                <div>
+                    <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Durasi Pengerjaan</div>
+                    <div id="hasil-durasi" style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-top: 10px;">-</div>
+                </div>
+            </div>
+
+            <div id="box-notif-hasil" class="alert-info" style="background: #fff3cd; color: #856404; border-color: #ffeeba; text-align: left; font-size: 0.9rem; line-height: 1.5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <i class="fa-solid fa-circle-info"></i> <strong>Pemberitahuan:</strong><br>
+                Sistem menerapkan kebijakan hak akses (Role). Beberapa fitur mungkin dibatasi sesuai dengan paket pendaftaran Anda.
+            </div>
+
+            <div id="area-rincian" style="display: none; margin-bottom: 15px;">
+                </div>
+
+            <button id="btn-pembahasan" class="btn-login" style="background: #94a3b8; cursor: not-allowed; margin-top: 5px; box-shadow: none; width: 100%; padding: 14px; border: none; border-radius: 8px; color: white; font-weight: bold;" disabled>
+                <i class="fa-solid fa-lock"></i> Download Pembahasan (Terkunci)
+            </button>
+            
+            <button class="btn-login" style="margin-top: 25px; background: white; color: #0f172a; border: 2px solid #e2e8f0; box-shadow: none; width: 100%; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;" onclick="location.reload()">
+                Kembali ke Beranda Utama <i class="fa-solid fa-house"></i>
+            </button>
         </div>
-    </div>
-
-    <div class="footer-side" style="justify-content: flex-end;">
-        <button class="btn-nav desktop-nav next" id="btn-next-desktop" onclick="app.nextSoal()">
-            <span>Selanjutnya</span> <i class="fa-solid fa-chevron-right"></i>
-        </button>
-        <button class="btn-mobile-icon next" id="btn-next-mobile" onclick="app.nextSoal()">
-            <i class="fa-solid fa-chevron-right"></i>
-        </button>
-    </div>
-</footer>
     </section>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    
-     
-    <script src="paket-soal.js"></script>
+    <script>
+        window.PAKET_SOAL = window.PAKET_SOAL || [];
 
-<script>
-    (function() {
-        const listFile = [
-            "osn-mar-mtk-sd-26.js",
-            "osn-mar-ipa-sd-26.js",
-            "osn-mar-mtk-smp-26.js",
-            "osn-mar-ipa-smp-26.js",
-        ];
+        (function() {
+            const firebaseConfigLocal = {
+                apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
+                authDomain: "cbt-lbb-immanuel.firebaseapp.com",
+                databaseURL: "https://cbt-lbb-immanuel-default-rtdb.firebaseio.com",
+                projectId: "cbt-lbb-immanuel",
+                storageBucket: "cbt-lbb-immanuel.firebasestorage.app"
+            };
+            
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfigLocal);
+            }
+            const dbLocal = firebase.database();
 
-        // --- JANGAN UBAH KODE DI BAWAH INI ---
-        const folderPath = "soal/"; // Nama foldernya
-        let loaded = 0;
-
-        function loadOne(filename) {
-            return new Promise((resolve) => {
-                const s = document.createElement('script');
-                s.src = folderPath + filename + "?v=" + new Date().getTime();
-                s.onload = () => {
-                    console.log(`✅ Berhasil load: ${filename}`);
-                    resolve();
-                };
-                s.onerror = () => {
-                    console.error(`❌ Gagal load: ${filename} (Cek nama file!)`);
-                    resolve(); // Tetap lanjut meski error
-                };
-                document.body.appendChild(s);
-            });
-        }
-
-        // Load semua soal dulu, baru load system.js
-        Promise.all(listFile.map(f => loadOne(f)))
-            .then(() => {
-                console.log("Semua paket soal siap! Menjalankan sistem...");
-                const sys = document.createElement('script');
-                sys.src = "system.js";
-                document.body.appendChild(sys);
-            });
-    })();
-</script>
-
+            console.log("⏳ Menarik data paket soal dari Firebase (Node: published_soal)...");
+            
+            dbLocal.ref('published_soal').once('value')
+                .then((snap) => {
+                    if (snap.exists()) {
+                        snap.forEach(child => {
+                            PAKET_SOAL.push(child.val());
+                        });
+                        console.log(`✅ Berhasil memuat ${PAKET_SOAL.length} paket soal dari Firebase.`);
+                    } else {
+                        console.warn("⚠️ Peringatan: Tidak ada paket soal yang berstatus PUBLISHED di Firebase.");
+                    }
+                })
+                .catch((error) => {
+                    console.error("❌ Terjadi kesalahan saat memuat soal dari Firebase:", error);
+                    Swal.fire({ icon: 'error', title: 'Gagal Memuat Soal', text: 'Silakan periksa koneksi internet Anda atau hubungi Admin.' });
+                })
+                .finally(() => {
+                    console.log("🚀 Semua data paket siap! Menjalankan system.js...");
+                    const sys = document.createElement('script');
+                    sys.src = "system.js?v=" + new Date().getTime(); 
+                    document.body.appendChild(sys);
+                });
+        })();
+    </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
