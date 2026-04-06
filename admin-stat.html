@@ -3,525 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Statistik & Peringkat | LBB CBT Admin</title>
+    <title>Pendaftaran Try Out OSN-K | LBB Immanuel</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../register.css">
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        :root {
-            --primary: #2563eb; --primary-hover: #1d4ed8; --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
-            --bg-main: #f1f5f9; --text-dark: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
-            --radius: 12px; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; outline: none; }
-        body { background-color: var(--bg-main); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
-        a, button, .card { transition: all 0.2s ease; }
-
-        /* LAYOUT UTAMA */
-        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; box-shadow: var(--shadow); }
-        .main-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; padding-bottom: 0; scroll-behavior: smooth;}
-        
-        .brand { padding: 0 20px 20px 20px; font-size: 1.3rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 15px;}
-        .nav-item { padding: 12px 20px; margin: 4px 15px; border-radius: 8px; color: var(--text-muted); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 12px; text-decoration: none;}
-        .nav-item:hover { background: #f8fafc; color: var(--primary); transform: translateX(5px); }
-        .nav-item.active { background: #eff6ff; color: var(--primary); }
-
-        .top-navbar { background: white; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 90; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .container { padding: 25px; max-width: 1500px; margin: 0 auto; width: 100%; flex: 1; }
-
-        /* MOBILE BOTTOM NAV */
-        .bottom-nav { display: none; }
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .main-content { padding-bottom: 80px; } 
-            .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid var(--border); z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom); }
-            .bottom-nav-item { flex: 1; text-align: center; padding: 12px 5px; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none;}
-            .bottom-nav-item i { font-size: 1.3rem; margin-bottom: 2px;}
-            .bottom-nav-item.active { color: var(--primary); }
-            .container { padding: 15px; }
-        }
-
-        /* KOMPONEN UI */
-        .btn { padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(37,99,235,0.2); }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 6px rgba(37,99,235,0.3); }
-        .btn-outline { background: white; border-color: var(--border); color: var(--text-dark); }
-        .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
-        .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fca5a5;}
-
-        .form-control { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #f8fafc; transition: 0.2s; }
-        .form-control:focus { background: white; border-color: var(--primary); }
-
-        /* TABLE */
-        .table-wrapper { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; box-shadow: var(--shadow); max-height: 65vh; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; font-size: 0.85rem; }
-        .data-table thead th { background: #f8fafc; padding: 12px 15px; font-weight: 700; border-bottom: 2px solid var(--border); color: var(--text-muted); position: sticky; top: 0; z-index: 10;}
-        .data-table td { padding: 12px 15px; border-bottom: 1px solid var(--border); vertical-align: middle;}
-        .data-table tbody tr:hover td { background: #f1f5f9; }
-
-        .rank-1 { background: #fef08a !important; font-weight: bold; }
-        .rank-2 { background: #e2e8f0 !important; font-weight: bold; }
-        .rank-3 { background: #fed7aa !important; font-weight: bold; }
-
-        .detail-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
-        .detail-table th, .detail-table td { border: 1px solid #cbd5e1; padding: 8px; }
-        .detail-table th { background: #f1f5f9; }
-
-        /* CHECKBOX EXPORT */
-        .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);}
-        .chk-row { display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
-        .chk-row input { width: 18px; height: 18px; accent-color: var(--primary); }
+        .preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px; }
+        .preview-box { position: relative; width: 85px; height: 85px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 2px solid #e2e8f0; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-remove-foto { position: absolute; top: 4px; right: 4px; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-remove-foto:hover { background: #c0392b; transform: scale(1.1); }
     </style>
 </head>
-<body>
+<body class="bg-body">
 
-    <aside class="sidebar">
-        <div class="brand"><i class="fa-solid fa-layer-group"></i> Master Admin</div>
-        <a href="admin-tryout.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Manajemen Try Out</a>
-        <a href="admin-database.html" class="nav-item"><i class="fa-solid fa-users"></i> Data Siswa & Nilai</a>
-        <a href="admin-stat.html" class="nav-item active"><i class="fa-solid fa-chart-line"></i> Statistik & Peringkat</a>
-        <div style="flex: 1;"></div>
-        
-        <a href="admin-settings.html" class="nav-item"><i class="fa-solid fa-user-gear"></i> Pengaturan Akun Admin</a>
-        
-        <div class="nav-item" style="color: var(--danger); cursor: pointer;" onclick="auth.signOut()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar Sistem</div>
-    </aside>
-
-    <main class="main-content">
-        <nav class="top-navbar">
-            <div style="font-weight: 800; color: var(--text-dark); font-size: 1.1rem;">CBT Ranking Engine</div>
-        </nav>
-
-        <div class="container">
-            <div style="background: white; padding: 25px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 25px;">
-                <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; font-weight: 800;"><i class="fa-solid fa-trophy" style="color: var(--warning);"></i> Papan Peringkat & Analisis</h2>
-                
-                <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;">
-                    <div style="flex: 1; min-width: 250px;">
-                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Pilih Paket Try Out:</label>
-                        <select id="select-paket" class="form-control" style="font-weight: 700; border-color: var(--primary);" onchange="loadDataMaster()">
-                            <option value="">-- Memuat Paket Ujian... --</option>
-                        </select>
-                    </div>
-                    <div style="flex: 1; min-width: 250px;">
-                        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Algoritma Peringkat:</label>
-                        <select id="select-algo" class="form-control" style="font-weight: 700; background: #eff6ff; color: var(--primary);" onchange="jalankanAlgoritma()">
-                            <option value="standar">Standar</option>
-                            <option value="tiebreaker">Olimpiade Sains Nasional</option>
-                            <option value="irt">IRT (Item Response Theory)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <button class="btn btn-primary" style="padding: 12px 20px;" onclick="modalExportPDF()"><i class="fa-solid fa-file-pdf"></i> Cetak PDF Laporan</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead><tr id="tabel-header"><th>Memuat Data...</th></tr></thead>
-                    <tbody id="tabel-body">
-                        <tr><td style="text-align: center; padding: 40px; color: var(--text-muted);">Silakan pilih paket ujian terlebih dahulu.</td></tr>
-                    </tbody>
-                </table>
+    <header class="ujian-header" style="justify-content: center;">
+        <div class="header-left">
+            <div class="logo-small"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="siswa-info">
+                <span style="font-size: 1.1rem;">LBB IMMANUEL</span>
             </div>
         </div>
-    </main>
+    </header>
 
-    <nav class="bottom-nav">
-        <a href="admin-tryout.html" class="bottom-nav-item"><i class="fa-solid fa-folder-open"></i> Try Out</a>
-        <a href="admin-database.html" class="bottom-nav-item"><i class="fa-solid fa-users"></i> Siswa</a>
-        <a href="admin-stat.html" class="bottom-nav-item active"><i class="fa-solid fa-chart-line"></i> Statistik</a>
-    </nav>
+    <div class="register-wrapper">
+        <div class="register-card">
+            
+            <div id="layar-form">
+                <h3 style="text-align: center; margin-top: 0; color: var(--text-main); font-family: var(--font-heading);">
+                    Pendaftaran Try Out OSN-K
+                </h3>
+                <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;">
+
+                <div id="step-1">
+                    <div class="alert-info">
+                        <strong>Petunjuk Umum Pendaftaran:</strong>
+                        <ol>
+                            <li>Try Out OSN terdiri atas Matematika dan IPA (SD & SMP).</li>
+                            <li>Pengerjaan soal bersifat fleksibel dalam rentang 24 jam.</li>
+                            <li>Skor langsung muncul setelah selesai, pembahasan & ranking menyusul.</li>
+                        </ol>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pilih Jalur Pendaftaran <span style="color:red">*</span></label>
+                        <div class="radio-group">
+                            <div class="radio-card" id="btn-gratis" onclick="selectJalur('gratis')">
+                                <i class="fa-solid fa-gift"></i> Gratis
+                            </div>
+                            <div class="radio-card" id="btn-berbayar" onclick="selectJalur('berbayar')">
+                                <i class="fa-solid fa-wallet"></i> Berbayar
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="form-pendaftaran" class="form-section" onsubmit="kirimData(event)">
+                    
+                    <div id="info-jalur" class="alert-info" style="background-color: #fff3cd; border-color: #ffc107; color: #856404;"></div>
+
+                    <div class="form-group">
+                        <label>Nama Siswa <span style="color:red">*</span></label>
+                        <input type="text" id="reg-nama" required placeholder="Masukkan nama lengkap">
+                        <span class="small-note" id="note-nama"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Kelas <span style="color:red">*</span></label>
+                        <input type="number" id="reg-kelas" required min="1" max="12" placeholder="Contoh: 5, 6, 7, atau 8">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Asal Sekolah <span style="color:red">*</span></label>
+                        <input type="text" id="reg-sekolah" required placeholder="Nama sekolah asal">
+                    </div>
+
+                    <div class="form-group">
+                        <label>E-mail <span style="color:red">*</span></label>
+                        <input type="email" id="reg-email" required placeholder="Pastikan email aktif">
+                        <span class="small-note" id="note-email">1 email hanya bisa digunakan 1 anak (tidak bisa lebih).</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nomor Telepon / WhatsApp <span style="color:red">*</span></label>
+                        <input type="tel" id="reg-telp" required placeholder="Contoh: 08123456789">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mata Pelajaran <span style="color:red">*</span></label>
+                        <select id="reg-mapel" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                            <option value="">-- Pilih Mata Pelajaran --</option>
+                            <option value="osn-mar-mtk-sd-26">SD Matematika</option>
+                            <option value="osn-mar-ipa-sd-26">SD IPA</option>
+                            <option value="osn-mar-mtk-smp-26">SMP Matematika</option>
+                            <option value="osn-mar-ipa-smp-26">SMP IPA</option>
+                        </select>
+                        <span class="small-note">Apabila mendaftar lebih dari 1 mapel, isi formulir 2 kali.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="label-upload">Bukti Persyaratan <span style="color:red">*</span></label>
+                        <div class="file-upload-box" id="box-upload" onclick="document.getElementById('reg-foto').click()" style="cursor: pointer;">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: #007bff; margin-bottom: 15px; display: block;"></i>
+                            <p style="margin: 0; font-size: 0.95rem; color: #007bff; font-weight: bold;">Klik di sini untuk pilih foto</p>
+                            <p style="margin: 5px 0 0; font-size: 0.85rem; color: #666;" id="desc-upload">Bisa pilih lebih dari 1 foto sekaligus</p>
+                            <input type="file" id="reg-foto" accept="image/*" multiple style="display: none;">
+                        </div>
+                        <div class="preview-container" id="tempat-preview"></div>
+                    </div>
+
+                    <button type="submit" class="btn-login" style="margin-top: 25px; width: 100%; padding: 14px; border-radius: 8px; font-size: 1.05rem; font-weight: bold;" id="btn-submit">
+                        KIRIM PENDAFTARAN <i class="fa-solid fa-circle-check" style="margin-left: 5px;"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="layar-sukses" style="display: none; text-align: center; padding: 20px 0;">
+                <i class="fa-solid fa-circle-check" style="font-size: 5rem; color: #25D366; margin-bottom: 20px;"></i>
+                <h2 style="margin-top: 0; color: #333;">Pendaftaran Berhasil! 🎉</h2>
+                <p style="color: #666; font-size: 1.05rem; line-height: 1.6; margin-bottom: 30px;">
+                    Data siswa telah masuk ke antrean ujian.<br>
+                    <strong>Langkah Terakhir:</strong> Wajib bergabung ke Grup WhatsApp kami untuk mendapatkan info terbaru.
+                </p>
+
+                <a href="https://chat.whatsapp.com/FasZVaSShwtIN713ZtoxOA" target="_blank" class="btn-wa-huge">
+                    <i class="fa-brands fa-whatsapp" style="font-size: 1.8rem; vertical-align: middle; margin-right: 8px;"></i> 
+                    <span style="vertical-align: middle;">GABUNG GRUP WA</span>
+                </a>
+
+                <button onclick="salinLinkWA()" class="btn-action btn-copy">
+                    <i class="fa-regular fa-copy"></i> Salin Link Grup WA
+                </button>
+
+                <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 35px 0;">
+
+                <button onclick="daftarLagi()" class="btn-action btn-reset">
+                    <i class="fa-solid fa-user-plus"></i> Isi Pendaftaran Siswa Lain
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // =======================================================================
-        // 1. INISIALISASI FIREBASE
-        // =======================================================================
-        const firebaseConfig = { apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs", authDomain: "cbt-lbb-immanuel.firebaseapp.com", databaseURL: "https://cbt-lbb-immanuel-default-rtdb.firebaseio.com", projectId: "cbt-lbb-immanuel", storageBucket: "cbt-lbb-immanuel.firebasestorage.app" };
+        // INISIALISASI FIREBASE (Mekanisme Pengiriman)
+        const firebaseConfig = { 
+            apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs", 
+            authDomain: "cbt-lbb-immanuel.firebaseapp.com", 
+            databaseURL: "https://cbt-lbb-immanuel-default-rtdb.firebaseio.com", 
+            projectId: "cbt-lbb-immanuel", 
+            storageBucket: "cbt-lbb-immanuel.firebasestorage.app" 
+        };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(); const db = firebase.database();
+        const db = firebase.database();
 
-        auth.onAuthStateChanged(user => { if (!user) window.location.replace('login-admin.html'); else initDropdown(); });
+        // CONFIGURASI LINK
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec";
+        const LINK_WA = "https://chat.whatsapp.com/FasZVaSShwtIN713ZtoxOA";
+        
+        window.onload = function() {
+            if(localStorage.getItem('statusDaftar_OSN26') === 'sukses') {
+                tampilkanLayarSukses();
+            }
+        };
 
-        let activePaketId = null;
-        let activePaketName = "";
-        let masterSoal = [];
-        let masterSesi = [];
-        let calculatedSiswa = [];
+        function tampilkanLayarSukses() {
+            document.getElementById('layar-form').style.display = 'none';
+            document.getElementById('layar-sukses').style.display = 'block';
+            window.scrollTo(0, 0); 
+        }
 
-        // =======================================================================
-        // 2. LOAD DROPDOWN
-        // =======================================================================
-        function initDropdown() {
-            db.ref('paket_ujian').once('value').then(snap => {
-                const select = document.getElementById('select-paket');
-                if(!snap.exists()) { select.innerHTML = '<option value="">Belum ada try out.</option>'; return; }
-                select.innerHTML = '<option value="">-- Silakan Pilih Paket Ujian --</option>';
-                snap.forEach(child => { select.innerHTML += `<option value="${child.key}">${child.val().judul} (${child.key})</option>`; });
+        function daftarLagi() {
+            localStorage.removeItem('statusDaftar_OSN26'); 
+            window.location.reload(); 
+        }
+
+        function salinLinkWA() {
+            navigator.clipboard.writeText(LINK_WA).then(() => {
+                Swal.fire({
+                    icon: 'success', title: 'Tersalin!', text: 'Link Grup WA berhasil disalin ke clipboard.',
+                    timer: 2000, showConfirmButton: false
+                });
             });
         }
 
-        // =======================================================================
-        // 3. TARIK DATA MASTER (SOAL & SESI)
-        // =======================================================================
-        async function loadDataMaster() {
-            const select = document.getElementById('select-paket');
-            activePaketId = select.value;
-            activePaketName = select.options[select.selectedIndex].text;
-            const tbody = document.getElementById('tabel-body');
+        let jalurDipilih = "";
 
-            if(!activePaketId) { tbody.innerHTML = '<tr><td style="text-align:center;">Pilih paket terlebih dahulu.</td></tr>'; return; }
-            tbody.innerHTML = '<tr><td colspan="15" style="text-align:center; padding:30px;"><i class="fa-solid fa-spinner fa-spin"></i> Mengekstrak data jawaban dan menghitung statistik...</td></tr>';
+        function selectJalur(jalur) {
+            jalurDipilih = jalur;
+            
+            document.getElementById('btn-gratis').classList.remove('active');
+            document.getElementById('btn-berbayar').classList.remove('active');
+            document.getElementById(`btn-${jalur}`).classList.add('active');
+            document.getElementById('form-pendaftaran').classList.add('active');
+
+            const infoBox = document.getElementById('info-jalur');
+            const noteNama = document.getElementById('note-nama');
+            const labelUpload = document.getElementById('label-upload');
+            const descUpload = document.getElementById('desc-upload');
+
+            if (jalur === 'gratis') {
+                infoBox.innerHTML = `<strong>Syarat Pendaftaran Gratis:</strong><br>1. Follow IG @lbbimmanuel.<br>2. Share poster ke status/grup.<br>3. Tag 3 teman di komentar IG.`;
+                noteNama.innerText = "Pendaftaran gratis maksimal 1 siswa saja!";
+                labelUpload.innerHTML = `Bukti Screenshot Follow, Tag, dan Share <span style="color:red">*</span>`;
+                descUpload.innerText = "Masukkan ketiga foto sekaligus!";
+            } else {
+                infoBox.innerHTML = `<strong>Pendaftaran Berbayar:</strong><br>Biaya Rp15.000/siswa/mapel. Pembayaran via QRIS A.n LBB Immanuel.<br><br>
+                <div style="text-align: center; margin: 15px 0;">
+                    <img src="https://cbt.lbbimmanuel.com/assets/QRIS.jpeg" alt="QRIS LBB Immanuel" style="max-width: 100%; height: auto; border-radius: 8px; border: 2px dashed #007bff; padding: 5px;">
+                </div>
+                <div style="color: #d9534f; font-weight: bold; font-size: 0.9rem; margin-top: 10px;">
+                    * CATATAN: Apabila ingin mendaftar 2 anak, mohon isi formulir ini 2 kali.
+                </div>`;
+                noteNama.innerText = "Kolektif > 5 siswa? Hubungi +62816551929";
+                labelUpload.innerHTML = `Bukti Pembayaran QRIS (15k/siswa) <span style="color:red">*</span>`;
+                descUpload.innerText = "Upload bukti transfer/QRIS yang sah.";
+            }
+        }
+
+        let fileYangDipilih = [];
+
+        document.getElementById('reg-foto').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    fileYangDipilih.push(file);
+                }
+            });
+            renderPreviewFoto();
+            this.value = ''; 
+        });
+
+        function renderPreviewFoto() {
+            const wadah = document.getElementById('tempat-preview');
+            wadah.innerHTML = ''; 
+            
+            fileYangDipilih.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'preview-box';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button type="button" class="btn-remove-foto" onclick="hapusFoto(${index})"><i class="fa-solid fa-xmark"></i></button>
+                    `;
+                    wadah.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function hapusFoto(index) {
+            fileYangDipilih.splice(index, 1); 
+            renderPreviewFoto(); 
+        }
+
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve({ name: file.name, mimeType: file.type, base64: reader.result.split(',')[1] });
+            reader.onerror = error => reject(error);
+        });
+
+        // ==========================================
+        // LOGIKA PENGIRIMAN DATA (REVISI FIREBASE & GAS)
+        // ==========================================
+        async function kirimData(e) {
+            e.preventDefault(); 
+            
+            const btnSubmit = document.getElementById('btn-submit');
+
+            if(fileYangDipilih.length === 0) {
+                Swal.fire("Peringatan", "Mohon upload bukti persyaratan terlebih dahulu!", "warning");
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = 'MENGIRIM... <i class="fa-solid fa-spinner fa-spin"></i>';
+
+            Swal.fire({
+                title: 'Sedang Mengirim...',
+                text: 'Mohon tunggu, data pendaftaran dan foto sedang diunggah ke server.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
 
             try {
-                // Tarik Soal (Untuk Kunci & Tingkat Kesulitan)
-                const snapSoal = await db.ref('soal/' + activePaketId).once('value');
-                masterSoal = snapSoal.exists() ? snapSoal.val() : [];
-                if(!Array.isArray(masterSoal)) masterSoal = Object.values(masterSoal);
+                // 1. Ambil Input User
+                const nama = document.getElementById('reg-nama').value.trim();
+                const emailInput = document.getElementById('reg-email').value.trim().toLowerCase();
+                const paketId = document.getElementById('reg-mapel').value;
+                const sekolah = document.getElementById('reg-sekolah').value.trim();
+                const kelas = document.getElementById('reg-kelas').value.trim();
+                const telp = document.getElementById('reg-telp').value.trim();
 
-                // Tarik Sesi Jawaban Siswa
-                const snapSesi = await db.ref('sessions').orderByChild('paketId').equalTo(activePaketId).once('value');
-                const rawSesi = snapSesi.exists() ? snapSesi.val() : {};
+                // 2. Convert Foto
+                const filePromises = fileYangDipilih.map(file => toBase64(file));
+                const filesData = await Promise.all(filePromises);
 
-                masterSesi = [];
-                Object.keys(rawSesi).forEach(key => {
-                    let s = rawSesi[key];
-                    if(s.status === 'finished') { s.id = key; masterSesi.push(s); }
-                });
+                // 3. Set Role Otomatis Berdasarkan Jalur
+                // Huruf pertama dikapitalisasi ('gratis' -> 'Gratis', 'berbayar' -> 'Berbayar')
+                const roleOtomatis = jalurDipilih ? (jalurDipilih.charAt(0).toUpperCase() + jalurDipilih.slice(1)) : 'Default';
 
-                if(masterSesi.length === 0) { tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;">Belum ada siswa yang menyelesaikan ujian ini.</td></tr>`; return; }
-
-                // Langsung jalankan evaluasi awal
-                jalankanAlgoritma();
-
-            } catch(e) {
-                console.error(e);
-                tbody.innerHTML = '<tr><td style="text-align:center; color:red;">Gagal menarik data dari server.</td></tr>';
-            }
-        }
-
-        // =======================================================================
-        // 4. MESIN EVALUATOR KUNCI JAWABAN
-        // =======================================================================
-        function evalJawaban(jwbSiswa, soal) {
-            if(!jwbSiswa) return false;
-            if(soal.tipe === 'pg') return jwbSiswa === soal.kunci;
-            if(soal.tipe === 'pgk') {
-                if(!Array.isArray(jwbSiswa) || !Array.isArray(soal.kunci)) return false;
-                return JSON.stringify(jwbSiswa.slice().sort()) === JSON.stringify(soal.kunci.slice().sort());
-            }
-            if(soal.tipe === 'pgk-kategori') {
-                if(typeof jwbSiswa !== 'object' || typeof soal.kunci !== 'object') return false;
-                return JSON.stringify(jwbSiswa) === JSON.stringify(soal.kunci);
-            }
-            return false;
-        }
-
-        function extractKelasNumber(kelasStr) {
-            if(!kelasStr) return 99; // Kalau kosong lempar ke bawah
-            const num = kelasStr.match(/\d+/);
-            return num ? parseInt(num[0]) : 99;
-        }
-
-        function isKategori(kesulitanStr, keyword) {
-            if(!kesulitanStr) return false;
-            return kesulitanStr.toLowerCase().includes(keyword.toLowerCase());
-        }
-
-        // =======================================================================
-        // 5. ALGORITMA PERINGKAT (THE BRAIN)
-        // =======================================================================
-        function jalankanAlgoritma() {
-            if(masterSesi.length === 0) return;
-            const mode = document.getElementById('select-algo').value;
-
-            // PRE-PROCESSING: Hitung breakdown benar/salah tiap siswa
-            calculatedSiswa = masterSesi.map(sesi => {
-                let u = sesi.userData || {};
-                let ans = sesi.answers || [];
-                let b_sulit = 0, b_sedang = 0, b_mudah = 0, jml_salah = 0;
-                let jwbDetails = [];
-
-                masterSoal.forEach((soal, i) => {
-                    let jwb = ans[i];
-                    let isBenar = evalJawaban(jwb, soal);
-                    
-                    jwbDetails.push({ soalNo: i+1, jwb: jwb, kunci: soal.kunci, isBenar: isBenar, kesulitan: soal.tingkat_kesulitan || '-' });
-
-                    if(isBenar) {
-                        if(isKategori(soal.tingkat_kesulitan, 'sulit') || isKategori(soal.tingkat_kesulitan, 'hots')) b_sulit++;
-                        else if(isKategori(soal.tingkat_kesulitan, 'sedang')) b_sedang++;
-                        else if(isKategori(soal.tingkat_kesulitan, 'mudah')) b_mudah++;
-                    } else {
-                        jml_salah++;
-                    }
-                });
-
-                let durasiMs = (sesi.finishTime && sesi.startTime) ? (sesi.finishTime - sesi.startTime) : 9999999;
-                let durasiMnt = Math.round(durasiMs / 60000) + 'm';
-
-                return {
-                    id: sesi.id, nama: u.nama || 'Anonim', email: u.email || '-', sekolah: u.sekolah || '-', 
-                    kelasStr: u.kelas || '-', kelasNum: extractKelasNumber(u.kelas),
-                    startTime: sesi.startTime, finishTime: sesi.finishTime, durasiMs: durasiMs, durasiStr: durasiMnt,
-                    cheatCount: sesi.cheatCount || 0,
-                    skorAsli: sesi.skor_akhir || 0,
-                    b_sulit: b_sulit, b_sedang: b_sedang, b_mudah: b_mudah, jml_salah: jml_salah,
-                    jwbDetails: jwbDetails, irtScore: 0, finalScore: 0
+                // 4. Simpan ke Firebase (ID TERSTRUKTUR!)
+                const idAman = emailInput.replace(/[^a-zA-Z0-9]/g, '_');
+                const customId = `${paketId}_${idAman}`;
+                
+                const dataPendaftaran = {
+                    id_paket: paketId,
+                    jalur: jalurDipilih,
+                    nama_siswa: nama,
+                    email: emailInput,
+                    sekolah: sekolah,
+                    kelas: kelas,
+                    telp: telp,
+                    kota: "-", // Default karna di form gak ada input kota
+                    role: roleOtomatis, // SEKARANG OTOMATIS SESUAI JALUR
+                    waktu_daftar: new Date().toISOString()
                 };
-            });
 
-            // IRT ALGORITHM
-            if(mode === 'irt') {
-                let itemStats = masterSoal.map(s => ({ b: 0 }));
-                calculatedSiswa.forEach(s => {
-                    s.jwbDetails.forEach((d, i) => { if(d.isBenar) itemStats[i].b++; });
+                await db.ref('pendaftaran/' + customId).set(dataPendaftaran);
+
+                // 5. Teruskan Foto dan Rekap ke Telegram (GAS)
+                const payload = {
+                    action: "register",
+                    paketId: paketId,
+                    jalur: jalurDipilih,
+                    userData: dataPendaftaran,
+                    files: filesData
+                };
+
+                const response = await fetch(SCRIPT_URL, { 
+                    method: 'POST', 
+                    redirect: "follow", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify(payload) 
                 });
+                
+                const result = await response.json();
 
-                let N = calculatedSiswa.length;
-                itemStats.forEach(item => {
-                    let p = item.b / N; 
-                    item.difficulty = 1 - p; // Makin sedikit yg jawab benar, difficulty mendekati 1
-                });
-
-                calculatedSiswa.forEach(s => {
-                    let rawIrt = 0;
-                    s.jwbDetails.forEach((d, i) => { if(d.isBenar) rawIrt += itemStats[i].difficulty; });
-                    // Normalisasi sederhana (dikalikan 10 biar skornya kelihatan besar)
-                    s.irtScore = parseFloat((rawIrt * 10).toFixed(2)); 
-                    s.finalScore = parseFloat(((s.skorAsli + s.irtScore) / 2).toFixed(2));
-                });
-            } else {
-                // Untuk Standar & Tie-Breaker
-                calculatedSiswa.forEach(s => s.finalScore = s.skorAsli);
-            }
-
-            // SORTING LOGIC
-            calculatedSiswa.sort((a, b) => {
-                // 1. Prioritas Utama: Skor Akhir
-                if(b.finalScore !== a.finalScore) return b.finalScore - a.finalScore;
-
-                if(mode === 'tiebreaker') {
-                    // OSN RULES
-                    if(a.jml_salah !== b.jml_salah) return a.jml_salah - b.jml_salah; // Sedikit salah menang
-                    if(b.b_sulit !== a.b_sulit) return b.b_sulit - a.b_sulit;
-                    if(b.b_sedang !== a.b_sedang) return b.b_sedang - a.b_sedang;
-                    if(b.b_mudah !== a.b_mudah) return b.b_mudah - a.b_mudah;
-                    if(a.kelasNum !== b.kelasNum) return a.kelasNum - b.kelasNum; // Kelas lebih muda (kecil) menang
-                    return a.durasiMs - b.durasiMs; // Tie breaker terakhir kecepatan
+                if(result.status === "success") {
+                    localStorage.setItem('statusDaftar_OSN26', 'sukses');
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Pendaftaran Berhasil!',
+                        text: 'Mengarahkan ke halaman selanjutnya...',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        timerProgressBar: true,
+                        allowOutsideClick: false
+                    }).then(() => {
+                        tampilkanLayarSukses();
+                        window.open(LINK_WA, '_blank');
+                    });
                 } else {
-                    // STANDAR / IRT (Kalo sama persis ya kecepatan)
-                    return a.durasiMs - b.durasiMs;
+                    throw new Error(result.message);
                 }
-            });
 
-            // Assign Rank (Biar yg skor sama rank-nya sama di tabel PDF nanti)
-            let currentRank = 1;
-            calculatedSiswa.forEach((s, i) => {
-                if(i > 0) {
-                    let prev = calculatedSiswa[i-1];
-                    let isTie = (s.finalScore === prev.finalScore);
-                    if(mode === 'tiebreaker') {
-                        isTie = isTie && (s.jml_salah === prev.jml_salah) && (s.b_sulit === prev.b_sulit) && (s.b_sedang === prev.b_sedang) && (s.b_mudah === prev.b_mudah) && (s.kelasNum === prev.kelasNum);
-                    }
-                    if(!isTie) currentRank = i + 1;
-                }
-                s.rank = currentRank;
-            });
-
-            renderTabelUI(mode);
-        }
-
-        // =======================================================================
-        // 6. RENDER KE HTML
-        // =======================================================================
-        function formatWIB(ts) { return ts ? new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'; }
-
-        function renderTabelUI(mode) {
-            const thead = document.getElementById('tabel-header');
-            const tbody = document.getElementById('tabel-body');
-
-            let thHTML = `<th>Rank</th><th>Detail</th><th>Nama Peserta</th><th>Asal Sekolah</th><th>Kls</th><th>Skor Akhir</th>`;
-            if(mode === 'irt') thHTML += `<th style="color:var(--primary);">Skor IRT</th>`;
-            thHTML += `<th>Durasi</th><th>Cheat</th>`;
-            for(let i=1; i<=masterSoal.length; i++) thHTML += `<th style="text-align:center;">Q${i}</th>`;
-            thead.innerHTML = thHTML;
-
-            tbody.innerHTML = '';
-            calculatedSiswa.forEach((s, idx) => {
-                let rClass = (s.rank === 1) ? 'rank-1' : ((s.rank === 2) ? 'rank-2' : ((s.rank === 3) ? 'rank-3' : ''));
-                
-                let tr = `<tr class="${rClass}">
-                    <td style="text-align:center; font-size:1.1rem;">${s.rank === 1 ? '🥇' : (s.rank === 2 ? '🥈' : (s.rank === 3 ? '🥉' : s.rank))}</td>
-                    <td><button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" onclick="lihatDetail('${s.id}')"><i class="fa-solid fa-magnifying-glass"></i></button></td>
-                    <td style="font-weight:700;">${s.nama}</td>
-                    <td>${s.sekolah}</td>
-                    <td style="text-align:center;">${s.kelasStr}</td>
-                    <td style="font-weight:900; color:var(--primary); font-size:1.1rem;">${s.finalScore}</td>`;
-                
-                if(mode === 'irt') tr += `<td style="font-weight:bold; color:var(--success);">${s.irtScore}</td>`;
-                
-                tr += `<td>${s.durasiStr}</td><td style="color:${s.cheatCount>0?'var(--danger)':'#ccc'}; font-weight:bold;">${s.cheatCount}</td>`;
-
-                s.jwbDetails.forEach(d => {
-                    let icon = !d.jwb ? '<span style="color:#ccc;">-</span>' : (d.isBenar ? '✅' : '❌');
-                    tr += `<td style="text-align:center; font-size:0.9rem;">${icon}</td>`;
-                });
-
-                tbody.innerHTML += tr + `</tr>`;
-            });
-        }
-
-        // =======================================================================
-        // 7. DETAIL JAWABAN POPUP
-        // =======================================================================
-        function lihatDetail(id) {
-            let s = calculatedSiswa.find(x => x.id === id);
-            if(!s) return;
-
-            let tabelDet = `<table class="detail-table">
-                <tr><th style="width:40px; text-align:center;">No</th><th>Kesulitan</th><th>Jwb Siswa</th><th>Kunci</th><th style="text-align:center;">Status</th></tr>`;
-            
-            s.jwbDetails.forEach(d => {
-                let stat = !d.jwb ? 'Kosong' : (d.isBenar ? '<span style="color:var(--success); font-weight:bold;">Benar</span>' : '<span style="color:var(--danger); font-weight:bold;">Salah</span>');
-                let jwbStr = typeof d.jwb === 'object' ? JSON.stringify(d.jwb) : (d.jwb || '-');
-                let kncStr = typeof d.kunci === 'object' ? JSON.stringify(d.kunci) : (d.kunci || '-');
-                
-                tabelDet += `<tr>
-                    <td style="text-align:center; font-weight:bold;">${d.soalNo}</td>
-                    <td>${d.kesulitan}</td>
-                    <td>${jwbStr}</td>
-                    <td>${kncStr}</td>
-                    <td style="text-align:center;">${stat}</td>
-                </tr>`;
-            });
-            tabelDet += `</table>`;
-
-            Swal.fire({
-                title: `Analisis Jawaban: ${s.nama}`,
-                html: `<div style="text-align:left; font-size:0.9rem; margin-bottom:15px;">
-                        <b>Total Benar Sulit:</b> ${s.b_sulit} | <b>Sedang:</b> ${s.b_sedang} | <b>Mudah:</b> ${s.b_mudah} <br>
-                        <b>Total Salah / Kosong:</b> ${s.jml_salah}
-                       </div>
-                       <div style="max-height:60vh; overflow-y:auto;">${tabelDet}</div>`,
-                width: '650px', showCloseButton: true, showConfirmButton: false
-            });
-        }
-
-        // =======================================================================
-        // 8. EXPORT CETAK PDF (AUTO-TABLE ADVANCED)
-        // =======================================================================
-        function modalExportPDF() {
-            if(calculatedSiswa.length === 0) return Swal.fire('Kosong', 'Pilih paket dan jalankan algoritma dulu.', 'warning');
-
-            Swal.fire({
-                title: 'Konfigurasi Cetak PDF',
-                html: `
-                    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:10px; text-align:left;">Pilih kolom yang ingin ditampilkan di laporan PDF:</p>
-                    <div class="export-grid">
-                        <label class="chk-row"><input type="checkbox" id="pdf-nama" checked disabled> Nama Peserta (Wajib)</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-skor" checked disabled> Skor Akhir (Wajib)</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-kls" checked> Kelas</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-sek" checked> Asal Sekolah</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-wkt" checked> Durasi Pengerjaan</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-breakdown" checked> Rincian Benar (Sulit/Sedang/Mudah)</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-email"> Email Login</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-q"> Detail Q1 - Qn (B/S)</label>
-                    </div>`,
-                width: '600px', showCancelButton: true, confirmButtonText: 'Generate & Cetak PDF',
-                preConfirm: () => {
-                    return {
-                        kls: document.getElementById('pdf-kls').checked,
-                        sek: document.getElementById('pdf-sek').checked,
-                        wkt: document.getElementById('pdf-wkt').checked,
-                        brk: document.getElementById('pdf-breakdown').checked,
-                        eml: document.getElementById('pdf-email').checked,
-                        qq: document.getElementById('pdf-q').checked
-                    };
-                }
-            }).then(res => {
-                if(res.isConfirmed) eksekusiCetakPDF(res.value);
-            });
-        }
-
-        function eksekusiCetakPDF(cfg) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF(cfg.qq ? 'landscape' : 'portrait'); // Landscape kalo centang Q1-Qn
-            
-            doc.setFontSize(16); doc.setFont("helvetica", "bold");
-            doc.text("PENGUMUMAN HASIL TRY OUT (RANKING)", 14, 20);
-            doc.setFontSize(10); doc.setFont("helvetica", "normal");
-            doc.text(`Paket Ujian : ${activePaketName}`, 14, 27);
-            doc.text(`Algoritma   : ${document.getElementById('select-algo').options[document.getElementById('select-algo').selectedIndex].text}`, 14, 32);
-            doc.text(`Tanggal     : ${new Date().toLocaleString('id-ID')}`, 14, 37);
-
-            // Bikin Struktur Header Bertingkat (Nested Headers)
-            let headRow1 = [{content: 'Rank', rowSpan: cfg.brk ? 2 : 1}, {content: 'Nama Siswa', rowSpan: cfg.brk ? 2 : 1}];
-            let headRow2 = [];
-
-            if(cfg.eml) headRow1.push({content: 'Email', rowSpan: cfg.brk ? 2 : 1});
-            if(cfg.kls) headRow1.push({content: 'Kls', rowSpan: cfg.brk ? 2 : 1});
-            if(cfg.sek) headRow1.push({content: 'Asal Sekolah', rowSpan: cfg.brk ? 2 : 1});
-            
-            headRow1.push({content: 'Skor', rowSpan: cfg.brk ? 2 : 1});
-            if(cfg.wkt) headRow1.push({content: 'Waktu', rowSpan: cfg.brk ? 2 : 1});
-
-            // Ini logika Header Bertingkat khas OSN
-            if(cfg.brk) {
-                headRow1.push({content: 'Soal Dijawab Benar', colSpan: 3, styles: {halign: 'center'}});
-                headRow2.push('Sulit', 'Sedang', 'Mudah');
+            } catch (error) {
+                Swal.fire("Gagal Terkirim", error.message || "Terjadi kesalahan jaringan.", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = 'KIRIM PENDAFTARAN <i class="fa-solid fa-circle-check" style="margin-left: 5px;"></i>';
             }
-
-            if(cfg.qq) {
-                let maxQ = Math.min(masterSoal.length, 30); // Dibatasi 30 biar ga jebol kertas PDF
-                for(let i=1; i<=maxQ; i++) headRow1.push({content: `Q${i}`, rowSpan: cfg.brk ? 2 : 1});
-            }
-
-            let finalHead = cfg.brk ? [headRow1, headRow2] : [headRow1];
-
-            // Bikin Body
-            let bodyData = [];
-            calculatedSiswa.forEach(s => {
-                let row = [ s.rank.toString(), s.nama ];
-                if(cfg.eml) row.push(s.email);
-                if(cfg.kls) row.push(s.kelasStr);
-                if(cfg.sek) row.push(s.sekolah);
-                row.push(s.finalScore.toString());
-                if(cfg.wkt) row.push(s.durasiStr);
-                
-                if(cfg.brk) { row.push(s.b_sulit.toString(), s.b_sedang.toString(), s.b_mudah.toString()); }
-
-                if(cfg.qq) {
-                    let maxQ = Math.min(masterSoal.length, 30);
-                    for(let i=0; i<maxQ; i++) {
-                        let d = s.jwbDetails[i];
-                        row.push(!d.jwb ? '-' : (d.isBenar ? 'B' : 'S'));
-                    }
-                }
-                bodyData.push(row);
-            });
-
-            doc.autoTable({
-                startY: 45,
-                head: finalHead,
-                body: bodyData,
-                theme: 'grid',
-                headStyles: { fillColor: [37, 99, 235], halign: 'center', valign: 'middle' },
-                styles: { fontSize: 8, cellPadding: 3 },
-                columnStyles: { 0: { fontStyle: 'bold', halign: 'center' } }
-            });
-
-            doc.save(`Ranking_${activePaketId}_${new Date().getTime()}.pdf`);
         }
     </script>
 </body>
