@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manajemen Try Out | LBB CBT Admin</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb; --primary-hover: #1d4ed8; --danger: #ef4444; --success: #10b981;
+            --bg-main: #f1f5f9; --text-dark: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
+            --radius: 12px; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; outline: none; }
+        body { background-color: var(--bg-main); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
+
+        a, button, .card { transition: all 0.2s ease; }
+
+        /* === LAYOUT UTAMA === */
+        .sidebar { width: 260px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; z-index: 100; box-shadow: var(--shadow); }
+        .main-content { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; padding-bottom: 0; scroll-behavior: smooth;}
+        
+        .brand { padding: 0 20px 20px 20px; font-size: 1.3rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); margin-bottom: 15px;}
+        .nav-item { padding: 12px 20px; margin: 4px 15px; border-radius: 8px; color: var(--text-muted); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 12px; text-decoration: none;}
+        .nav-item:hover { background: #f8fafc; color: var(--primary); transform: translateX(5px); }
+        .nav-item.active { background: #eff6ff; color: var(--primary); }
+
+        .top-navbar { background: white; padding: 15px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 90; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .container { padding: 25px; max-width: 1400px; margin: 0 auto; width: 100%; flex: 1; }
+
+        /* === MOBILE BOTTOM NAV === */
+        .bottom-nav { display: none; }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-content { padding-bottom: 80px; } 
+            .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid var(--border); z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom); }
+            .bottom-nav-item { flex: 1; text-align: center; padding: 12px 5px; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none;}
+            .bottom-nav-item i { font-size: 1.3rem; margin-bottom: 2px;}
+            .bottom-nav-item.active { color: var(--primary); }
+            .container { padding: 15px; }
+        }
+
+        /* === KOMPONEN UI === */
+        .btn { padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(37,99,235,0.2); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 6px rgba(37,99,235,0.3); }
+        .btn-outline { background: white; border-color: var(--border); color: var(--text-dark); }
+        .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .btn-danger { background: #fee2e2; color: var(--danger); border-color: #fca5a5;}
+        .btn-danger:hover { background: var(--danger); color: white; }
+        
+        .btn-publish { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; font-size: 1.05rem; padding: 12px 28px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); border: none;}
+        .btn-publish:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 6px 15px rgba(16, 185, 129, 0.4); }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 0.9rem; color: #334155;}
+        .form-control { width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #f8fafc; transition: 0.2s; }
+        .form-control:focus { background: white; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+        /* TOGGLE SWITCH */
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 26px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);}
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* TABS DI DALAM DETAIL TRYOUT */
+        .tabs-container { background: white; padding: 0 25px; border-bottom: 1px solid var(--border); display: flex; gap: 20px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; position: sticky; top: 60px; z-index: 85;}
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tab-btn { background: none; border: none; padding: 15px 5px; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: 0.2s;}
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; padding-top: 25px; animation: fadeIn 0.3s ease-out;}
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* KARTU GRID */
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+        .card { background: white; border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;}
+        .badge.aktif { background: #dcfce7; color: #166534; }
+        .badge.hidden { background: #f1f5f9; color: #475569; }
+
+        /* EDITOR SOAL BARU */
+        .editor-wrapper { display: flex; flex-direction: column; gap: 24px; padding-bottom: 120px; }
+        @media (min-width: 992px) { .editor-wrapper { flex-direction: row; align-items: flex-start; padding-bottom: 40px;} }
+        
+        .nav-panel { width: 100%; background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+        @media (min-width: 992px) { .nav-panel { width: 300px; position: sticky; top: 140px; flex-shrink: 0; } }
+        
+        .soal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 8px; max-height: 250px; overflow-y: auto; margin-top: 15px; padding-right: 5px;}
+        @media (min-width: 992px) { .soal-grid { grid-template-columns: repeat(5, 1fr); max-height: 50vh; } }
+        .soal-box { height: 45px; border: 2px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; cursor: pointer; color: var(--text-muted); background: #f8fafc; transition: 0.2s;}
+        .soal-box:hover { border-color: var(--primary); color: var(--primary); }
+        .soal-box.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 8px rgba(37,99,235,0.3); transform: scale(1.05); z-index: 2;}
+
+        .main-editor { flex: 1; background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); width: 100%;}
+        @media (max-width: 768px) { .main-editor { padding: 15px; } }
+        
+        .toolbar { display: flex; gap: 5px; background: #f1f5f9; padding: 10px; border: 2px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0; flex-wrap: wrap; }
+        .toolbar-btn { background: white; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: var(--text-dark); transition: 0.2s;}
+        .toolbar-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        textarea.with-toolbar { border-radius: 0 0 8px 8px; border-top: none; min-height: 150px; resize: vertical; font-family: 'Consolas', monospace;}
+        
+        .opsi-row { display: flex; align-items: flex-start; gap: 15px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 2px solid var(--border); margin-bottom: 15px; transition: 0.2s;}
+        @media (max-width: 768px) { 
+            .opsi-row { flex-direction: column; align-items: stretch; gap: 10px; } 
+            .opsi-row > div:first-child { display: flex; justify-content: space-between; width: 100%; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+        }
+        .opsi-row:focus-within { border-color: #94a3b8; background: white; }
+        .opsi-row input[type="radio"], .opsi-row input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--primary); cursor: pointer; margin-top: 5px;}
+
+        .floating-bar { position: fixed; bottom: 0; left: 260px; right: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 20px 30px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 95; box-shadow: 0 -10px 25px rgba(0,0,0,0.05); }
+        @media (max-width: 768px) { .floating-bar { left: 0; bottom: 70px; flex-direction: column; gap: 15px; text-align: center; padding: 15px; border-radius: 16px 16px 0 0; } }
+
+        .kategori-table { width: 100%; border-collapse: collapse; border: 2px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .kategori-table th { background: #f8fafc; padding: 12px; font-weight: 700; text-align: left; border-bottom: 2px solid var(--border); color: var(--text-muted); font-size: 0.9rem;}
+        .kategori-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+        .kategori-table input { border: 1px solid transparent; background: transparent; padding: 8px; font-weight: bold; width: 100%; border-radius: 6px; transition: 0.2s;}
+        .kategori-table input:focus { border: 2px solid var(--primary); background: white; outline: none; }
+    </style>
+</head>
+<body>
+
+    <input type="file" id="import-json-file" accept=".json" style="display: none;" onchange="prosesImportJSON(event)">
+
+    <aside class="sidebar">
+        <div class="brand"><i class="fa-solid fa-layer-group"></i> Master Admin</div>
+        <a href="admin-tryout.html" class="nav-item active"><i class="fa-solid fa-folder-open"></i> Manajemen Try Out</a>
+        <a href="admin-database.html" class="nav-item"><i class="fa-solid fa-users"></i> Data Siswa & Nilai</a>
+        <a href="admin-stat.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Statistik & Peringkat</a>
+        <div style="flex: 1;"></div>
+        
+        <a href="admin-settings.html" class="nav-item"><i class="fa-solid fa-user-gear"></i> Pengaturan Akun Admin</a>
+        
+        <div class="nav-item" style="color: var(--danger); cursor: pointer;" onclick="auth.signOut()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar Sistem</div>
+    </aside>
+
+    <main class="main-content">
+        <nav class="top-navbar">
+            <div style="font-weight: 800; color: var(--text-dark); font-size: 1.1rem;">CBT Try Out Builder</div>
+        </nav>
+
+        <div id="view-list-tryout" class="container" style="display: block;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
+                <h2 style="margin:0; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px;">Daftar Try Out</h2>
+                <button class="btn btn-primary" style="padding: 12px 24px; font-size: 1rem;" onclick="modalBuatPaket()"><i class="fa-solid fa-plus"></i> Buat Paket Baru</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border);">
+                <div style="flex: 1; min-width: 200px; display: flex; align-items: center; background: #f8fafc; border-radius: 8px; border: 2px solid var(--border); padding: 0 15px;">
+                    <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted);"></i>
+                    <input type="text" id="search-paket" style="border: none; background: transparent; padding: 12px; width: 100%; font-size: 0.95rem; outline: none;" placeholder="Cari judul try out atau ID database..." oninput="renderGridPaket()">
+                </div>
+                <select id="sort-paket" class="form-control" style="width: auto; font-weight: 600;" onchange="renderGridPaket()">
+                    <option value="terbaru">Terbaru (Default)</option>
+                    <option value="az">A-Z (Nama Paket)</option>
+                    <option value="za">Z-A (Nama Paket)</option>
+                    <option value="live">Hanya PUBLISHED</option>
+                    <option value="draft">Hanya DRAFT</option>
+                </select>
+            </div>
+
+            <div class="grid-cards" id="grid-paket">
+                <div style="padding: 20px; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-spinner fa-spin"></i> Memuat data dari server...</div>
+            </div>
+        </div>
+
+        <div id="view-detail-tryout" style="display: none;">
+            <div style="background: white; padding: 25px 30px 0 30px;">
+                <a style="cursor:pointer; color:var(--text-muted); font-weight:700; display:inline-flex; align-items:center; gap:8px; margin-bottom: 15px;" onclick="kembaliKeListTryOut()">
+                    <i class="fa-solid fa-arrow-left"></i> Kembali ke Daftar
+                </a>
+                
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 8px;">
+                    <h2 style="margin:0; font-size: 1.8rem; font-weight: 800; color: var(--text-dark); letter-spacing: -0.5px;" id="detail-judul">Nama Paket</h2>
+                    <span class="badge" id="detail-badge-status" style="font-size: 0.85rem; padding: 6px 12px;">STATUS</span>
+                </div>
+                
+                <div style="color: var(--text-muted); font-weight: 600; font-size: 0.9rem; margin-bottom: 25px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-database" style="color: #64748b;"></i> ID Database: <span id="detail-id" style="font-family: monospace; color: var(--primary); background: #eff6ff; padding: 4px 8px; border-radius: 6px;">-</span>
+                </div>
+            </div>
+
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="bukaTabTryout('pengaturan', this)"><i class="fa-solid fa-gear"></i> Konfigurasi Dasar</button>
+                <button class="tab-btn" onclick="bukaTabTryout('stimulus', this)"><i class="fa-solid fa-book-open"></i> Bank Stimulus (Wacana)</button>
+                <button class="tab-btn" onclick="bukaTabTryout('soal', this)"><i class="fa-solid fa-pen-nib"></i> Editor Soal</button>
+            </div>
+
+            <div id="tab-pengaturan" class="tab-content active container">
+                <div style="background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 35px; box-shadow: var(--shadow); max-width: 900px;">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid var(--border);">
+                        <div>
+                            <h4 style="margin:0; font-size: 1.1rem; color: var(--text-dark);">Visibilitas Ujian</h4>
+                            <p style="margin:5px 0 0 0; font-size: 0.85rem; color: var(--text-muted);">Aktifkan agar ujian muncul di halaman pendaftaran siswa.</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-status" onchange="toggleStatusSwitch()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+                        <div class="form-group"><label class="form-label">Judul Try Out</label><input type="text" id="set-judul" class="form-control"></div>
+                        <div class="form-group"><label class="form-label">Mata Pelajaran</label><input type="text" id="set-mapel" class="form-control"></div>
+                        <div class="form-group"><label class="form-label">Durasi Ujian (Menit)</label><input type="number" id="set-durasi" class="form-control"></div>
+                        <div class="form-group">
+                            <label class="form-label">Skor Maksimum</label>
+                            <input type="number" id="set-base-poin" class="form-control">
+                            <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 4px; display: block;">Nilai akhir = (Bobot Didapat / Bobot Total) × Skor Maksimum</small>
+                        </div>
+                        <div class="form-group"><label class="form-label">Waktu Buka Akses</label><input type="datetime-local" id="set-buka" class="form-control"></div>
+                        <div class="form-group"><label class="form-label">Waktu Tutup Akses</label><input type="datetime-local" id="set-tutup" class="form-control"></div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;">
+                        <label class="form-label" style="color: #166534;"><i class="fa-solid fa-file-pdf"></i> Link Dokumen Pembahasan (Opsional)</label>
+                        <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 10px;">Siswa hanya bisa mengunduh file ini setelah ujian selesai atau waktu ditutup.</p>
+                        <input type="text" id="set-pembahasan" class="form-control" placeholder="Masukkan Link Google Drive / PDF / Web..." style="border-color: #bbf7d0; background: white;">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 30px;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; align-items: center;">
+                            <label class="form-label" style="margin: 0; font-size: 1.1rem;">Kategori Poin / Tingkat Kesulitan</label>
+                            <label class="switch" style="transform: scale(0.8);">
+                                <input type="checkbox" id="set-sistem-poin" onchange="toggleSistemPoin()" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Jika dinonaktifkan (toggle off), maka poin semua soal akan disamaratakan (Bobot = 1) mengabaikan pengaturan kategori di bawah ini.</p>
+                        <div id="area-kategori-poin">
+                            <table class="kategori-table">
+                                <thead><tr><th>Label Kesulitan</th><th>Bobot Poin (Angka)</th><th style="width: 50px;">Aksi</th></tr></thead>
+                                <tbody id="tabel-kategori-poin"></tbody>
+                            </table>
+                            <button class="btn btn-outline" style="margin-top: 15px; border: 2px dashed #cbd5e1; width: 100%; padding: 12px; color: var(--text-muted);" onclick="tambahKategoriPoin()"><i class="fa-solid fa-plus"></i> Tambah Kategori Baru</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 40px;">
+                        <label class="form-label" style="font-size: 1.1rem;">Petunjuk Ujian Spesifik</label>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">Tekan Enter untuk memisahkan poin. Mendukung tag HTML sederhana.</p>
+                        <textarea id="set-petunjuk" class="form-control" style="height: 180px; font-family: monospace; line-height: 1.6;"></textarea>
+                    </div>
+
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border); display: flex; justify-content: flex-end;">
+                        <button class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem;" onclick="simpanPengaturanTryout()"><i class="fa-solid fa-save"></i> Simpan Konfigurasi</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-stimulus" class="tab-content container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.5rem; font-weight: 800;">Bank Stimulus (Wacana)</h3>
+                        <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.95rem;">Buat teks panjang atau gambar, lalu panggil ID-nya di Editor Soal.</p>
+                    </div>
+                    <button class="btn btn-primary" style="padding: 12px 24px;" onclick="tambahStimulusBaru()"><i class="fa-solid fa-plus"></i> Buat Stimulus Baru</button>
+                </div>
+                <div class="grid-cards" id="list-stimulus"></div>
+            </div>
+
+            <div id="tab-soal" class="tab-content container">
+                <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-outline" style="border-color: #10b981; color: #10b981;" onclick="document.getElementById('import-json-file').click()"><i class="fa-solid fa-file-import"></i> Import .JSON</button>
+                        <button class="btn btn-outline" onclick="downloadFormatJSON()"><i class="fa-solid fa-download"></i> Download .JSON</button>
+                    </div>
+                </div>
+
+                <div class="editor-wrapper">
+                    <div class="nav-panel">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg-main); padding-bottom: 15px;">
+                            <h3 style="font-size: 1.1rem; margin:0; font-weight: 800; color: var(--text-dark);">Daftar Soal</h3>
+                            <button class="btn btn-outline" style="padding: 6px 12px;" onclick="tambahSoal()"><i class="fa-solid fa-plus"></i> Tambah</button>
+                        </div>
+                        <div class="soal-grid" id="nav-soal"></div>
+                    </div>
+
+                    <div class="main-editor" id="area-editor" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px dashed var(--border); padding-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                            <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <button class="btn btn-outline" style="padding: 8px 12px;" onclick="geserSoalAktif(-1)" title="Geser ke kiri/sebelumnya"><i class="fa-solid fa-arrow-left"></i></button>
+                                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--primary); min-width: 70px; text-align: center;">Soal <span id="e-nomor-urut">1</span></div>
+                                    <button class="btn btn-outline" style="padding: 8px 12px;" onclick="geserSoalAktif(1)" title="Geser ke kanan/selanjutnya"><i class="fa-solid fa-arrow-right"></i></button>
+                                </div>
+                                
+                                <div>
+                                    <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 5px;">Tipe Pertanyaan</label>
+                                    <select id="e-tipe" class="form-control" style="padding: 10px 14px; font-weight: 600; width: 220px;" onchange="renderOpsiSoal()">
+                                        <option value="pg">PG Biasa (1 Kunci)</option>
+                                        <option value="pgk">PG Kompleks (Multi Kunci)</option>
+                                        <option value="pgk-kategori">PG Benar/Salah (Kategori)</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="wrapper-kesulitan">
+                                    <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 5px;">Tingkat Kesulitan (Bobot)</label>
+                                    <select id="e-kesulitan" class="form-control" style="padding: 10px 14px; font-weight: 600; border-color: #fbbf24; background: #fffbeb; color: #b45309; width: 200px;">
+                                        </select>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5;" onclick="hapusSoalAktif()"><i class="fa-solid fa-trash-can"></i> Hapus</button>
+                        </div>
+
+                        <div id="wrapper-label-pgk" style="display: none; background: #fdf4ff; border: 1px solid #f5d0fe; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <label style="font-size: 0.85rem; font-weight: bold; color: #a21caf; display: block; margin-bottom: 8px;">Kustomisasi Label Kolom PGK Kategori</label>
+                            <div style="display: flex; gap: 15px;">
+                                <input type="text" id="e-label-kiri" class="form-control" style="background: white;" placeholder="Label Kiri (Default: Benar)" onchange="updateOpsiPGKLabel()">
+                                <input type="text" id="e-label-kanan" class="form-control" style="background: white;" placeholder="Label Kanan (Default: Salah)" onchange="updateOpsiPGKLabel()">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="background: #eff6ff; padding: 20px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                            <label class="form-label" style="color: var(--primary); font-size: 1rem;"><i class="fa-solid fa-link"></i> Sambungkan ID Stimulus (Opsional)</label>
+                            <select id="e-stimulus-id" class="form-control" style="border-color: #bfdbfe; background: white;">
+                                </select>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 30px;">
+                            <label class="form-label" style="font-size: 1.1rem;">Teks Pertanyaan Utama</label>
+                            <div class="toolbar">
+                                <button class="toolbar-btn" onclick="injectHTML('e-pertanyaan', '<b>Teks</b>')"><i class="fa-solid fa-bold"></i> Bold</button>
+                                <button class="toolbar-btn" onclick="injectHTML('e-pertanyaan', '<i>Teks</i>')"><i class="fa-solid fa-italic"></i> Italic</button>
+                                <button class="toolbar-btn" onclick="promptTable('e-pertanyaan')"><i class="fa-solid fa-table"></i> Buat Tabel</button>
+                                <button class="toolbar-btn" style="color: var(--primary); border-color: var(--primary);" onclick="injectGambarPath('e-pertanyaan')"><i class="fa-solid fa-image"></i> Masukkan Gambar (Path)</button>
+                            </div>
+                            <textarea id="e-pertanyaan" class="form-control with-toolbar" placeholder="Tulis soal di sini. Gunakan tag $$rumus$$ untuk MathJax."></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 40px;">
+                            <label class="form-label" style="border-bottom: 2px solid var(--border); padding-bottom: 10px; font-size: 1.1rem; margin-bottom: 20px;">Pilihan Jawaban & Penentuan Kunci</label>
+                            <div id="area-opsi"></div>
+                            <button class="btn btn-outline" style="width: 100%; margin-top: 15px; border: 2px dashed #cbd5e1; padding: 15px; color: var(--text-muted);" onclick="tambahOpsi()"><i class="fa-solid fa-plus"></i> Tambah Baris Opsi</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="floating-bar" id="bottom-floater" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                        <div style="width: 45px; height: 45px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.2rem; flex-shrink: 0;">
+                            <i class="fa-solid fa-circle-info"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-dark);" id="float-status-text">Status: DRAFT</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Data harus dipublish ke Firebase agar terbaca di halaman siswa.</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button class="btn btn-outline" style="padding: 12px 20px; font-size: 1rem;" onclick="simpanKeDatabaseAdmin(false)"><i class="fa-solid fa-save"></i> Simpan Draft Saja</button>
+                        <button class="btn btn-publish" onclick="simpanKeDatabaseAdmin(true)"><i class="fa-solid fa-rocket"></i> PUBLISH KE SISTEM</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <a href="admin-tryout.html" class="bottom-nav-item active"><i class="fa-solid fa-folder-open"></i> Try Out</a>
+        <a href="admin-database.html" class="bottom-nav-item"><i class="fa-solid fa-users"></i> Siswa</a>
+        <a href="admin-stat.html" class="bottom-nav-item"><i class="fa-solid fa-chart-line"></i> Statistik</a>
+    </nav>
+
+    <script>
+        // =======================================================================
+        // 1. INISIALISASI FIREBASE
+        // =======================================================================
+        const firebaseConfig = { apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs", authDomain: "cbt-lbb-immanuel.firebaseapp.com", databaseURL: "https://cbt-lbb-immanuel-default-rtdb.firebaseio.com", projectId: "cbt-lbb-immanuel", storageBucket: "cbt-lbb-immanuel.firebasestorage.app" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(); const db = firebase.database();
+
+        auth.onAuthStateChanged(user => { if (!user) window.location.replace('login-admin.html'); else loadDaftarPaketAwal(); });
+
+        // =======================================================================
+        // 2. DAFTAR TRY OUT & FILTERING
+        // =======================================================================
+        let globalPaketData = {}; 
+        let activePaketId = null;
+
+        function loadDaftarPaketAwal() {
+            db.ref('paket_ujian').on('value', snap => {
+                globalPaketData = snap.exists() ? snap.val() : {};
+                renderGridPaket();
+            });
+        }
+
+        // PERBAIKAN: Fungsi Filter & Render Terpisah
+        function renderGridPaket() {
+            const grid = document.getElementById('grid-paket');
+            const searchVal = document.getElementById('search-paket').value.toLowerCase();
+            const sortVal = document.getElementById('sort-paket').value;
+            
+            grid.innerHTML = '';
+            
+            if(Object.keys(globalPaketData).length === 0) { 
+                grid.innerHTML = '<div style="padding: 20px; color: var(--text-muted); border: 2px dashed var(--border); border-radius: 8px; width: 100%;">Belum ada paket ujian yang dibuat.</div>'; 
+                return; 
+            }
+
+            // Ubah objek ke array biar bisa di-sort dan filter
+            let arrPaket = Object.keys(globalPaketData).map(key => ({ id: key, ...globalPaketData[key] }));
+
+            // 1. Jalankan Filter Search
+            if (searchVal) {
+                arrPaket = arrPaket.filter(p => (p.judul||'').toLowerCase().includes(searchVal) || p.id.toLowerCase().includes(searchVal));
+            }
+
+            // 2. Jalankan Sort & Kategori
+            if (sortVal === 'live') {
+                arrPaket = arrPaket.filter(p => p.status === 'aktif');
+            } else if (sortVal === 'draft') {
+                arrPaket = arrPaket.filter(p => p.status !== 'aktif');
+            } else if (sortVal === 'az') {
+                arrPaket.sort((a,b) => (a.judul||'').localeCompare(b.judul||''));
+            } else if (sortVal === 'za') {
+                arrPaket.sort((a,b) => (b.judul||'').localeCompare(a.judul||''));
+            } else {
+                arrPaket.reverse(); // Terbaru (Simulasi reverse array karena Firebase auto-append di akhir)
+            }
+
+            if (arrPaket.length === 0) {
+                grid.innerHTML = '<div style="padding: 20px; color: var(--text-muted);">Tidak ada paket yang sesuai dengan pencarian/filter.</div>';
+                return;
+            }
+
+            arrPaket.forEach(data => {
+                const isLive = data.status === 'aktif';
+                grid.innerHTML += `
+                    <div class="card">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items: flex-start;">
+                            <div>
+                                <h3 style="font-size:1.25rem; font-weight:800; margin:0 0 8px 0; color: var(--text-dark);">${data.judul}</h3>
+                                <span style="font-size:0.8rem; font-family:monospace; color:var(--primary); background:#eff6ff; padding:4px 8px; border-radius:4px;">${data.id}</span>
+                            </div>
+                            <span class="badge ${isLive?'aktif':'hidden'}">${isLive?'PUBLISHED':'DRAFT'}</span>
+                        </div>
+                        <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border); display:flex; gap:10px;">
+                            <button class="btn btn-primary" style="flex:1;" onclick="bukaDetailTryout('${data.id}')">Kelola Sistem</button>
+                            <button class="btn btn-outline" style="color:var(--danger); border-color:#fecaca;" onclick="hapusPaketKeseluruhan('${data.id}')"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function modalBuatPaket() {
+            Swal.fire({
+                title: 'Buat Paket Ujian Baru',
+                html: `<div style="text-align:left;"><label class="form-label">Judul Ujian</label><input id="n-j" class="form-control" placeholder="Cth: OSN Matematika SD 2026"><label class="form-label" style="margin-top:15px;">ID Database (Tanpa Spasi)</label><input id="n-id" class="form-control" placeholder="Cth: mtk_sd_2026" style="font-family:monospace;"></div>`,
+                showCancelButton: true, confirmButtonText: 'Buat Sekarang', preConfirm: () => {
+                    const j = document.getElementById('n-j').value, id = document.getElementById('n-id').value.trim().toLowerCase().replace(/\s+/g,'_');
+                    if(!j || !id) return Swal.showValidationMessage('Semua wajib diisi!');
+                    
+                    const defaultData = {
+                        judul: j, mapel: "", durasi_menit: 60, status: "hidden", sistem_poin: true, base_poin: 100, url_pembahasan: "",
+                        kategori_poin: { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 }
+                    };
+                    return { id: id, data: defaultData };
+                }
+            }).then(res => { if(res.isConfirmed) db.ref('paket_ujian/' + res.value.id).set(res.value.data); });
+        }
+
+        function hapusPaketKeseluruhan(id) { 
+            Swal.fire({ title: 'Hapus Permanen?', text: 'Seluruh soal dan konfigurasi akan hilang!', icon:'warning', showCancelButton:true, confirmButtonColor: '#ef4444' }).then(r => { 
+                if(r.isConfirmed) { db.ref('paket_ujian/'+id).remove(); db.ref('soal/'+id).remove(); db.ref('bank_stimulus/'+id).remove(); db.ref('published_soal/'+id).remove(); }
+            }); 
+        }
+
+        function bukaDetailTryout(id) {
+            activePaketId = id; const p = globalPaketData[id];
+            
+            document.getElementById('view-list-tryout').style.display = 'none';
+            document.getElementById('view-detail-tryout').style.display = 'block';
+
+            document.getElementById('detail-judul').innerText = p.judul;
+            document.getElementById('detail-id').innerText = id;
+            
+            const badgeTop = document.getElementById('detail-badge-status');
+            badgeTop.innerText = p.status === 'aktif' ? 'PUBLISHED' : 'DRAFT';
+            badgeTop.className = 'badge ' + (p.status === 'aktif' ? 'aktif' : 'hidden');
+
+            const floatStatus = document.getElementById('float-status-text');
+            floatStatus.innerText = `Status: ${p.status === 'aktif' ? 'PUBLISHED' : 'DRAFT'}`;
+            floatStatus.style.color = p.status === 'aktif' ? 'var(--success)' : 'var(--danger)';
+
+            document.getElementById('toggle-status').checked = (p.status === 'aktif');
+            
+            // Set mode poin
+            const isSistemPoin = p.sistem_poin !== false; 
+            document.getElementById('set-sistem-poin').checked = isSistemPoin;
+            toggleSistemPoin();
+
+            document.getElementById('set-judul').value = p.judul || ''; document.getElementById('set-mapel').value = p.mapel || '';
+            document.getElementById('set-durasi').value = p.durasi_menit || 60; document.getElementById('set-base-poin').value = p.base_poin || 100;
+            document.getElementById('set-buka').value = (p.waktu_buka) ? p.waktu_buka.replace(' ', 'T').slice(0,16) : '';
+            document.getElementById('set-tutup').value = (p.waktu_tutup) ? p.waktu_tutup.replace(' ', 'T').slice(0,16) : '';
+            document.getElementById('set-petunjuk').value = Array.isArray(p.petunjuk) ? p.petunjuk.join('\n') : '';
+            document.getElementById('set-pembahasan').value = p.url_pembahasan || ''; // Load URL Pembahasan
+
+            renderTabelKategoriPoin(p.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 });
+
+            bukaTabTryout('pengaturan', document.querySelector('.tab-btn')); 
+            loadBankStimulus(id); muatSoalAdmin(id);
+        }
+
+        function kembaliKeListTryOut() { 
+            if(arrSoalAdmin.length > 0) tangkapStateSoalAdmin(); 
+            document.getElementById('view-detail-tryout').style.display = 'none'; 
+            document.getElementById('view-list-tryout').style.display = 'block'; 
+            activePaketId = null; 
+            document.getElementById('bottom-floater').style.display = 'none';
+            window.scrollTo(0,0);
+        }
+
+        function bukaTabTryout(tabName, el) {
+            if(tabName !== 'soal' && arrSoalAdmin.length > 0) tangkapStateSoalAdmin();
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            el.classList.add('active'); document.getElementById('tab-' + tabName).classList.add('active');
+            
+            document.getElementById('bottom-floater').style.display = (tabName === 'soal') ? 'flex' : 'none';
+        }
+
+        function toggleStatusSwitch() {
+            const isChecked = document.getElementById('toggle-status').checked;
+            const newStatus = isChecked ? 'aktif' : 'hidden';
+            db.ref('paket_ujian/' + activePaketId).update({ status: newStatus }).then(() => {
+                globalPaketData[activePaketId].status = newStatus;
+                document.getElementById('detail-badge-status').innerText = newStatus === 'aktif' ? 'PUBLISHED' : 'DRAFT';
+                document.getElementById('detail-badge-status').className = 'badge ' + (newStatus === 'aktif' ? 'aktif' : 'hidden');
+                document.getElementById('float-status-text').innerText = `Status: ${newStatus === 'aktif' ? 'PUBLISHED' : 'DRAFT'}`;
+                document.getElementById('float-status-text').style.color = newStatus === 'aktif' ? 'var(--success)' : 'var(--danger)';
+            });
+        }
+
+        function toggleSistemPoin() {
+            const isChecked = document.getElementById('set-sistem-poin').checked;
+            const areaKat = document.getElementById('area-kategori-poin');
+            const wrapKesulitan = document.getElementById('wrapper-kesulitan');
+            
+            if(isChecked) {
+                areaKat.style.display = 'block';
+                wrapKesulitan.style.display = 'block';
+            } else {
+                areaKat.style.display = 'none';
+                wrapKesulitan.style.display = 'none';
+            }
+        }
+
+        // === KONFIGURASI KATEGORI POIN ===
+        function renderTabelKategoriPoin(objKategori) {
+            const tbody = document.getElementById('tabel-kategori-poin'); tbody.innerHTML = '';
+            Object.keys(objKategori).forEach(key => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><input type="text" value="${key}" class="kat-key"></td>
+                        <td><input type="number" step="0.25" value="${objKategori[key]}" class="kat-val"></td>
+                        <td style="text-align:center;"><button class="btn btn-outline" style="color:var(--danger); padding:8px 12px;" onclick="hapusBarisKategori(this)"><i class="fa-solid fa-trash-can"></i></button></td>
+                    </tr>`;
+            });
+        }
+        function tambahKategoriPoin() { document.getElementById('tabel-kategori-poin').innerHTML += `<tr><td><input type="text" placeholder="Misal: HOTS" class="kat-key"></td><td><input type="number" step="0.25" value="1" class="kat-val"></td><td style="text-align:center;"><button class="btn btn-outline" style="color:var(--danger); padding:8px 12px;" onclick="hapusBarisKategori(this)"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }
+        function hapusBarisKategori(btn) { btn.closest('tr').remove(); }
+
+        function simpanPengaturanTryout() {
+            let newKat = {};
+            document.querySelectorAll('#tabel-kategori-poin tr').forEach(tr => {
+                let k = tr.querySelector('.kat-key').value.trim();
+                let v = parseFloat(tr.querySelector('.kat-val').value) || 1;
+                if(k) newKat[k] = v;
+            });
+            if(Object.keys(newKat).length === 0) newKat = {"Standar": 1};
+
+            let isSistemPoin = document.getElementById('set-sistem-poin').checked;
+            let tBuka = document.getElementById('set-buka').value.replace('T', ' '); if(tBuka.length===16) tBuka+=':00';
+            let tTutup = document.getElementById('set-tutup').value.replace('T', ' '); if(tTutup.length===16) tTutup+=':00';
+            let pArray = document.getElementById('set-petunjuk').value.split('\n').filter(l => l.trim() !== '');
+
+            db.ref('paket_ujian/'+activePaketId).update({
+                judul: document.getElementById('set-judul').value, mapel: document.getElementById('set-mapel').value,
+                durasi_menit: parseInt(document.getElementById('set-durasi').value), waktu: parseInt(document.getElementById('set-durasi').value),
+                base_poin: parseInt(document.getElementById('set-base-poin').value), sistem_poin: isSistemPoin,
+                url_pembahasan: document.getElementById('set-pembahasan').value, // Simpan URL Pembahasan
+                waktu_buka: tBuka, waktu_tutup: tTutup, petunjuk: pArray, kategori_poin: newKat
+            }).then(() => {
+                Swal.fire({icon: 'success', title: 'Tersimpan', text: 'Konfigurasi berhasil diperbarui.', timer: 1500, showConfirmButton: false});
+                globalPaketData[activePaketId].kategori_poin = newKat; 
+                globalPaketData[activePaketId].sistem_poin = isSistemPoin;
+                globalPaketData[activePaketId].url_pembahasan = document.getElementById('set-pembahasan').value;
+                updateDropdownKategori(); 
+            });
+        }
+
+        // === BANK STIMULUS ===
+        let masterStimulus = {};
+        function loadBankStimulus(idPaket) {
+            db.ref('bank_stimulus/' + idPaket).on('value', snap => {
+                masterStimulus = snap.exists() ? snap.val() : {};
+                const list = document.getElementById('list-stimulus'); list.innerHTML = '';
+                
+                const dd = document.getElementById('e-stimulus-id');
+                dd.innerHTML = '<option value="">-- Tidak Memakai Stimulus --</option>';
+
+                if(Object.keys(masterStimulus).length === 0) { list.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 30px; border: 2px dashed var(--border); border-radius: 8px; color: var(--text-muted);">Belum ada stimulus. Buat baru jika diperlukan.</div>'; return; }
+                
+                Object.keys(masterStimulus).forEach(id => {
+                    dd.innerHTML += `<option value="${id}">${id}</option>`;
+                    list.innerHTML += `
+                        <div class="card" style="border-top: 4px solid var(--primary);">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+                                <h3 style="font-size:1.2rem; color:var(--text-dark); margin:0;">${id}</h3>
+                            </div>
+                            <div style="font-size:0.85rem; color:var(--text-muted); max-height:100px; overflow:hidden; margin-bottom:20px; background: var(--bg-main); padding: 10px; border-radius: 6px; font-family: monospace;">${masterStimulus[id]}</div>
+                            <div style="display:flex; gap:10px; margin-top:auto;">
+                                <button class="btn btn-primary" style="flex:1;" onclick="editStimulus('${id}')"><i class="fa-solid fa-pen"></i> Edit</button>
+                                <button class="btn btn-outline" style="color:var(--danger); border-color:#fca5a5;" onclick="hapusStimulus('${id}')"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>`;
+                });
+            });
+        }
+
+        function tambahStimulusBaru() {
+            Swal.fire({ title: 'Buat Stimulus Baru', html: `<input id="s-id" class="form-control" placeholder="ID Stimulus (cth: TEKS_1)" style="margin-bottom:15px; font-family:monospace; font-weight:bold; font-size:1.1rem;"><textarea id="s-val" class="form-control" style="height:200px; font-family:monospace;" placeholder="Isi teks bacaan atau tag HTML gambar di sini..."></textarea>`, width:'700px', showCancelButton: true, confirmButtonText: 'Simpan', preConfirm: () => {
+                const id = document.getElementById('s-id').value.trim().toUpperCase().replace(/\s+/g,'_');
+                if(!id) return Swal.showValidationMessage('ID Wajib diisi');
+                return { id: id, val: document.getElementById('s-val').value };
+            }}).then(res => { if(res.isConfirmed) db.ref(`bank_stimulus/${activePaketId}/${res.value.id}`).set(res.value.val); });
+        }
+        function editStimulus(id) {
+            Swal.fire({ title: 'Edit Stimulus', html: `<input id="s-id" class="form-control" value="${id}" readonly style="margin-bottom:15px; background:#f1f5f9; font-family:monospace; font-weight:bold; font-size:1.1rem;"><textarea id="s-val" class="form-control" style="height:300px; font-family:monospace;">${masterStimulus[id]}</textarea>`, width:'800px', showCancelButton: true, confirmButtonText: 'Simpan Perubahan', preConfirm: () => document.getElementById('s-val').value })
+            .then(res => { if(res.isConfirmed) db.ref(`bank_stimulus/${activePaketId}/${id}`).set(res.value); });
+        }
+        function hapusStimulus(id) { Swal.fire({title: 'Hapus Stimulus?', icon:'warning', showCancelButton:true, confirmButtonColor:'#ef4444'}).then(r => { if(r.isConfirmed) db.ref(`bank_stimulus/${activePaketId}/${id}`).remove(); }); }
+
+        // === EDITOR SOAL BARU ===
+        let arrSoalAdmin = []; let activeSoalIdx = 0;
+
+        function updateDropdownKategori() {
+            const dd = document.getElementById('e-kesulitan'); dd.innerHTML = '';
+            let kat = globalPaketData[activePaketId]?.kategori_poin || {"Standar": 1};
+            let isSistemPoin = globalPaketData[activePaketId]?.sistem_poin !== false;
+
+            if(isSistemPoin) {
+                Object.keys(kat).forEach(k => { dd.innerHTML += `<option value="${k}">${k} (Bobot: ${kat[k]})</option>`; });
+            } else {
+                dd.innerHTML = `<option value="Flat">Poin Rata (Bobot Dinonaktifkan)</option>`;
+            }
+        }
+
+        function muatSoalAdmin(id) {
+            db.ref('soal/' + id).once('value').then(snap => {
+                arrSoalAdmin = snap.exists() ? snap.val() : [];
+                if(!Array.isArray(arrSoalAdmin)) arrSoalAdmin = Object.values(arrSoalAdmin);
+                
+                updateDropdownKategori();
+                activeSoalIdx = 0; renderNavigasiSoal();
+                if(arrSoalAdmin.length > 0) renderSoalAktif(0); else document.getElementById('area-editor').style.display = 'none';
+            });
+        }
+
+        function renderNavigasiSoal() {
+            const box = document.getElementById('nav-soal'); box.innerHTML = '';
+            if(arrSoalAdmin.length === 0) { document.getElementById('area-editor').style.display = 'none'; return; }
+            document.getElementById('area-editor').style.display = 'block';
+            
+            arrSoalAdmin.forEach((s, i) => {
+                let d = document.createElement('div'); d.className = `soal-box ${i === activeSoalIdx ? 'active' : ''}`;
+                d.innerText = i + 1; 
+                d.onclick = () => pindahSoal(i); box.appendChild(d);
+            });
+        }
+
+        function pindahSoal(targetIdx) {
+            if(activeSoalIdx >= 0 && arrSoalAdmin[activeSoalIdx]) tangkapStateSoalAdmin();
+            activeSoalIdx = targetIdx; renderNavigasiSoal(); renderSoalAktif(activeSoalIdx);
+        }
+
+        // PERBAIKAN: Fungsi Menggeser Soal ke Kiri/Kanan (Rearrange)
+        function geserSoalAktif(arah) {
+            tangkapStateSoalAdmin();
+            let targetIdx = activeSoalIdx + arah;
+            if (targetIdx < 0 || targetIdx >= arrSoalAdmin.length) return;
+            
+            // Swap elemen array
+            let temp = arrSoalAdmin[activeSoalIdx];
+            arrSoalAdmin[activeSoalIdx] = arrSoalAdmin[targetIdx];
+            arrSoalAdmin[targetIdx] = temp;
+            
+            // Re-index
+            arrSoalAdmin.forEach((s, idx) => s.id_soal = idx + 1);
+            
+            activeSoalIdx = targetIdx;
+            renderNavigasiSoal(); 
+            renderSoalAktif(activeSoalIdx);
+        }
+
+        function renderSoalAktif(i) {
+            const s = arrSoalAdmin[i]; if(!s) return;
+            document.getElementById('e-nomor-urut').innerText = i + 1;
+            document.getElementById('e-tipe').value = s.tipe || 'pg';
+            
+            // Handle Custom Label UI PGK
+            const wrapLabel = document.getElementById('wrapper-label-pgk');
+            if (s.tipe === 'pgk-kategori') {
+                wrapLabel.style.display = 'block';
+                const lbl = s.label_pgk || ["Benar", "Salah"];
+                document.getElementById('e-label-kiri').value = lbl[0];
+                document.getElementById('e-label-kanan').value = lbl[1];
+            } else {
+                wrapLabel.style.display = 'none';
+            }
+
+            const ddKesulitan = document.getElementById('e-kesulitan');
+            if(s.tingkat_kesulitan && ddKesulitan.querySelector(`option[value="${s.tingkat_kesulitan}"]`)) {
+                ddKesulitan.value = s.tingkat_kesulitan;
+            } else if (ddKesulitan.options.length > 0) { ddKesulitan.selectedIndex = 0; }
+
+            document.getElementById('e-stimulus-id').value = s.id_stimulus || "";
+            document.getElementById('e-pertanyaan').value = s.pertanyaan || '';
+            renderOpsiSoal(s);
+        }
+
+        // Live Update Label pada Opsi Select
+        function updateOpsiPGKLabel() {
+            if(document.getElementById('e-tipe').value === 'pgk-kategori') {
+                renderOpsiSoal(arrSoalAdmin[activeSoalIdx]);
+            }
+        }
+
+        function renderOpsiSoal(s = arrSoalAdmin[activeSoalIdx]) {
+            const t = document.getElementById('e-tipe').value;
+            const c = document.getElementById('area-opsi'); c.innerHTML = '';
+            const opsi = s.opsi || ["", ""]; const k = s.kunci;
+            
+            // Tampilkan custom label box kalau tipe pgk-kategori berubah manual dari select dropdown
+            if (t === 'pgk-kategori') {
+                 document.getElementById('wrapper-label-pgk').style.display = 'block';
+            } else {
+                 document.getElementById('wrapper-label-pgk').style.display = 'none';
+            }
+
+            let lblKiri = document.getElementById('e-label-kiri').value || "Benar";
+            let lblKanan = document.getElementById('e-label-kanan').value || "Salah";
+
+            opsi.forEach((txt, i) => {
+                const row = document.createElement('div'); row.className = 'opsi-row'; let input = '';
+                if(t === 'pg') { 
+                    const char = String.fromCharCode(65 + i); 
+                    input = `<div style="display:flex; align-items:center; gap:8px;"><input type="radio" name="k_pg" value="${char}" ${k===char?'checked':''}> <b style="color:var(--primary); font-size:1.2rem;">${char}</b></div>`; 
+                } else if(t === 'pgk') { 
+                    input = `<input type="checkbox" class="k_pgk" value="${i}" ${(Array.isArray(k)&&k.includes(i.toString()))?'checked':''}>`; 
+                } else {
+                    const v = (k && k[i]) ? k[i] : '';
+                    input = `<select class="form-control k_cat" style="width:140px; padding:10px; font-weight:bold;"><option value="L1" ${v==='L1'?'selected':''}>${lblKiri}</option><option value="L2" ${v==='L2'?'selected':''}>${lblKanan}</option></select>`;
+                }
+                
+                row.innerHTML = `
+                    <div>${input}</div> 
+                    <div style="flex:1; display:flex; flex-direction:column; gap:5px; width: 100%;">
+                        <textarea class="form-control i-opsi" id="opsi-teks-${i}" style="min-height:60px; font-family:monospace; resize:vertical; background:white;">${txt}</textarea>
+                        <button class="btn btn-outline" style="align-self:flex-start; padding:4px 8px; font-size:0.8rem; color:var(--primary);" onclick="injectGambarOpsi(${i})"><i class="fa-solid fa-image"></i> Sisipkan Gambar Opsi</button>
+                    </div> 
+                    <button class="btn btn-outline" style="color:var(--danger); padding:15px; border-color:#cbd5e1;" onclick="hapusOpsi(${i})"><i class="fa-solid fa-xmark"></i></button>`;
+                c.appendChild(row);
+            });
+        }
+
+        function tangkapStateSoalAdmin() {
+            if(arrSoalAdmin.length === 0 || activeSoalIdx < 0 || !arrSoalAdmin[activeSoalIdx]) return;
+            const t = document.getElementById('e-tipe').value;
+            const textOpsi = Array.from(document.querySelectorAll('.i-opsi')).map(e => e.value);
+            let k = null;
+            let customLabel = ["Benar", "Salah"]; // Default
+
+            if(t==='pg') { const r = document.querySelector('input[name="k_pg"]:checked'); if(r) k = r.value; }
+            else if(t==='pgk') { k=[]; document.querySelectorAll('.k_pgk:checked').forEach(e => k.push(e.value)); }
+            else { 
+                k={}; document.querySelectorAll('.k_cat').forEach((e,i) => { k[i.toString()] = e.value; });
+                customLabel = [
+                    document.getElementById('e-label-kiri').value || "Benar",
+                    document.getElementById('e-label-kanan').value || "Salah"
+                ];
+            }
+            
+            arrSoalAdmin[activeSoalIdx] = { 
+                id_soal: activeSoalIdx + 1,
+                tipe: t, 
+                tingkat_kesulitan: document.getElementById('e-kesulitan').value, 
+                id_stimulus: document.getElementById('e-stimulus-id').value, 
+                pertanyaan: document.getElementById('e-pertanyaan').value, 
+                opsi: textOpsi, 
+                kunci: k,
+                label_pgk: customLabel
+            };
+        }
+
+        function tambahSoal() { 
+            tangkapStateSoalAdmin(); 
+            let defKesulitan = document.getElementById('e-kesulitan').options.length > 0 ? document.getElementById('e-kesulitan').options[0].value : "Standar";
+            arrSoalAdmin.push({ id_soal: arrSoalAdmin.length + 1, tipe: 'pg', tingkat_kesulitan: defKesulitan, id_stimulus: "", pertanyaan: "", opsi: ["", ""], kunci: "A", label_pgk: ["Benar", "Salah"] }); 
+            pindahSoal(arrSoalAdmin.length - 1); 
+        }
+        function hapusSoalAktif() { 
+            if(arrSoalAdmin.length <= 1) return Swal.fire('Gagal', 'Minimal sisakan 1 soal.', 'error'); 
+            Swal.fire({ title: `Hapus Soal No. ${activeSoalIdx + 1}?`, icon: 'warning', showCancelButton:true, confirmButtonColor:'#ef4444' }).then(r => { 
+                if(r.isConfirmed) { 
+                    arrSoalAdmin.splice(activeSoalIdx, 1); 
+                    if(activeSoalIdx >= arrSoalAdmin.length) activeSoalIdx = arrSoalAdmin.length - 1;
+                    arrSoalAdmin.forEach((s, idx) => s.id_soal = idx + 1);
+                    renderNavigasiSoal(); renderSoalAktif(activeSoalIdx); 
+                } 
+            }); 
+        }
+        function tambahOpsi() { tangkapStateSoalAdmin(); arrSoalAdmin[activeSoalIdx].opsi.push(""); renderOpsiSoal(arrSoalAdmin[activeSoalIdx]); }
+        function hapusOpsi(idx) { tangkapStateSoalAdmin(); arrSoalAdmin[activeSoalIdx].opsi.splice(idx, 1); renderOpsiSoal(arrSoalAdmin[activeSoalIdx]); }
+
+        function injectHTML(targetId, str) { const a = document.getElementById(targetId); const p = a.selectionStart; a.value = a.value.substring(0,p) + str + a.value.substring(a.selectionEnd); a.focus(); }
+        function promptTable(targetId) { injectHTML(targetId, `\n<table border="1" style="width:100%; border-collapse:collapse; text-align:center;">\n  <tr><th>Head 1</th><th>Head 2</th></tr>\n  <tr><td>Isi 1</td><td>Isi 2</td></tr>\n</table>\n`); }
+        
+        function injectGambarPath(targetId) { 
+            const url = prompt("Masukkan Nama File Gambar (Cth: gambar1.png)\nSistem akan memanggilnya dari folder assets/"); 
+            if(url) injectHTML(targetId, `<br><img src="assets/${url.replace('assets/', '')}" style="max-width:100%; border-radius:8px;"><br>`); 
+        }
+        
+        function injectGambarOpsi(idx) {
+            const url = prompt("Masukkan Nama File Gambar untuk Opsi Ini (Cth: opsi_a.png)");
+            if(url) injectHTML(`opsi-teks-${idx}`, `<img src="assets/${url.replace('assets/', '')}" style="max-width:100%; border-radius:8px;">`);
+        }
+
+        // === ENGINE COMPILER & PUBLISHER (KUNCI KESUKSESAN INDEX.HTML) ===
+        async function simpanKeDatabaseAdmin(isPublish) {
+            tangkapStateSoalAdmin();
+            arrSoalAdmin.forEach((s, idx) => s.id_soal = idx + 1); 
+            
+            Swal.fire({ title: 'Menyimpan Data...', text: isPublish ? 'Mempublish ke halaman siswa secara instan...' : 'Menyimpan sebagai draft...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            try {
+                // 1. Simpan selalu ke raw database Admin (Draft Aman)
+                await db.ref('soal/' + activePaketId).set(arrSoalAdmin);
+                
+                if(isPublish) {
+                    // 2. COMPILE UNTUK INDEX.HTML DARI MEMORI
+                    const config = globalPaketData[activePaketId];
+                    let petunjukArray = Array.isArray(config.petunjuk) ? config.petunjuk : (config.petunjuk || "").split('\n');
+                    let isSistemPoinAktif = config.sistem_poin !== false;
+                    
+                    let compiledSoal = arrSoalAdmin.map(s => {
+                        let bobot = 1; // Default jika off
+                        if(isSistemPoinAktif && config.kategori_poin && config.kategori_poin[s.tingkat_kesulitan]) {
+                            bobot = config.kategori_poin[s.tingkat_kesulitan];
+                        }
+                        
+                        let stimObj = { tampil: false };
+                        if(s.id_stimulus && masterStimulus[s.id_stimulus]) {
+                            stimObj = { tampil: true, konten: masterStimulus[s.id_stimulus] };
+                        }
+
+                        return {
+                            id: s.id_soal,
+                            tipe: s.tipe,
+                            poin: bobot,
+                            stimulus: stimObj,
+                            pertanyaan: s.pertanyaan,
+                            opsi: s.opsi,
+                            kunci: s.kunci,
+                            label_pgk: s.label_pgk || ["Benar", "Salah"], // PERBAIKAN: Suntik ke JSON
+                            ragu: false 
+                        };
+                    });
+
+                    let publishedData = {
+                        id: activePaketId,
+                        judul: config.judul,
+                        mapel: config.mapel || "",
+                        waktu: config.durasi_menit,
+                        waktu_buka: config.waktu_buka || "",
+                        waktu_tutup: config.waktu_tutup || "",
+                        sistem_poin: isSistemPoinAktif,
+                        base_poin: config.base_poin || 100,
+                        url_pembahasan: config.url_pembahasan || "", // PERBAIKAN: Suntik Pembahasan
+                        petunjuk: petunjukArray,
+                        soal: compiledSoal
+                    };
+
+                    await db.ref('published_soal/' + activePaketId).set(publishedData);
+                    await db.ref('paket_ujian/' + activePaketId).update({ status: 'aktif' });
+                    
+                    globalPaketData[activePaketId].status = 'aktif';
+                    document.getElementById('detail-badge-status').innerText = 'PUBLISHED';
+                    document.getElementById('detail-badge-status').className = 'badge aktif';
+                    document.getElementById('toggle-status').checked = true;
+                    document.getElementById('float-status-text').innerText = 'Status: PUBLISHED';
+                    document.getElementById('float-status-text').style.color = 'var(--success)';
+                    
+                    Swal.fire('Berhasil!', 'Soal berhasil di-publish dan siap dikerjakan siswa.', 'success');
+                } else {
+                    await db.ref('paket_ujian/' + activePaketId).update({ status: 'hidden' });
+                    
+                    globalPaketData[activePaketId].status = 'hidden';
+                    document.getElementById('detail-badge-status').innerText = 'DRAFT';
+                    document.getElementById('detail-badge-status').className = 'badge hidden';
+                    document.getElementById('toggle-status').checked = false;
+                    document.getElementById('float-status-text').innerText = 'Status: DRAFT';
+                    document.getElementById('float-status-text').style.color = 'var(--danger)';
+                    
+                    Swal.fire('Disimpan', 'Soal disimpan sebagai draft (belum bisa diakses siswa).', 'info');
+                }
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error Database', 'Gagal menyimpan. Pastikan Rule Database Firebase "published_soal" sudah diizinkan (write).', 'error');
+            }
+        }
+
+        // === IMPORT / EXPORT NEW JSON FORMAT ===
+        function downloadFormatJSON() {
+            tangkapStateSoalAdmin(); arrSoalAdmin.forEach((s, idx) => s.id_soal = idx + 1);
+            const config = globalPaketData[activePaketId];
+            
+            let exportObj = {
+                id_paket: activePaketId,
+                judul: config.judul, mapel: config.mapel || "", durasi_menit: config.durasi_menit,
+                waktu_buka: config.waktu_buka || "", waktu_tutup: config.waktu_tutup || "",
+                sistem_poin: config.sistem_poin !== false, base_poin: config.base_poin || 100,
+                url_pembahasan: config.url_pembahasan || "", // PERBAIKAN: Export Pembahasan
+                petunjuk: Array.isArray(config.petunjuk) ? config.petunjuk : [],
+                kategori_poin: config.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 },
+                bank_stimulus: masterStimulus,
+                soal: arrSoalAdmin
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, null, 4));
+            const a = document.createElement('a'); a.href = dataStr; a.download = `${activePaketId}_admin_backup.json`; document.body.appendChild(a); a.click(); a.remove();
+        }
+
+        function prosesImportJSON(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async e => {
+                try {
+                    let parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.soal) {
+                        Swal.fire({ title: 'Memproses Import...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        
+                        let updates = {};
+                        updates['paket_ujian/' + activePaketId + '/judul'] = parsed.judul || '';
+                        updates['paket_ujian/' + activePaketId + '/mapel'] = parsed.mapel || '';
+                        updates['paket_ujian/' + activePaketId + '/durasi_menit'] = parsed.durasi_menit || 60;
+                        updates['paket_ujian/' + activePaketId + '/waktu_buka'] = parsed.waktu_buka || '';
+                        updates['paket_ujian/' + activePaketId + '/waktu_tutup'] = parsed.waktu_tutup || '';
+                        updates['paket_ujian/' + activePaketId + '/base_poin'] = parsed.base_poin || 100;
+                        updates['paket_ujian/' + activePaketId + '/sistem_poin'] = parsed.sistem_poin !== false;
+                        updates['paket_ujian/' + activePaketId + '/url_pembahasan'] = parsed.url_pembahasan || ''; // PERBAIKAN: Import Pembahasan
+                        updates['paket_ujian/' + activePaketId + '/petunjuk'] = parsed.petunjuk || [];
+                        updates['paket_ujian/' + activePaketId + '/kategori_poin'] = parsed.kategori_poin || { "Standar": 1 };
+                        
+                        await db.ref().update(updates);
+                        if(parsed.bank_stimulus) await db.ref('bank_stimulus/' + activePaketId).set(parsed.bank_stimulus);
+                        else await db.ref('bank_stimulus/' + activePaketId).set(null); 
+                        
+                        await db.ref('soal/' + activePaketId).set(parsed.soal);
+
+                        Swal.fire('Sukses', 'Data JSON berhasil diimpor.', 'success').then(() => { bukaDetailTryout(activePaketId); });
+                    } else throw new Error("Format JSON salah");
+                } catch(err) { Swal.fire('Error', 'File JSON rusak atau tidak sesuai format.', 'error'); }
+                event.target.value = "";
+            }; reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
