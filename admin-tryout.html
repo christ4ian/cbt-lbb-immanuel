@@ -509,7 +509,6 @@
                     try {
                         let rootUpdates = {};
                         
-                        // Termasuk node bank_gambar
                         rootUpdates[`paket_ujian/${id}`] = null;
                         rootUpdates[`soal/${id}`] = null;
                         rootUpdates[`bank_stimulus/${id}`] = null;
@@ -577,7 +576,6 @@
 
             bukaTabTryout('pengaturan', document.querySelector('.tab-btn')); 
             
-            // Load 3 komponen database sekunder
             loadBankStimulus(id); 
             loadBankGambar(id); 
             muatSoalAdmin(id);
@@ -756,9 +754,8 @@
                 return new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        // Bersihkan nama file dari spasi dan karakter aneh untuk dijadikan ID
                         let safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_').split('.')[0]; 
-                        let idGambar = safeName + '_' + Math.floor(Math.random() * 1000); // Mencegah overwrite
+                        let idGambar = safeName + '_' + Math.floor(Math.random() * 1000); 
                         
                         updates[`bank_gambar/${activePaketId}/${idGambar}`] = {
                             nama: file.name,
@@ -1004,7 +1001,8 @@
             if (formValues) {
                 let finalTag = "";
                 if(formValues.type === 'firebase') {
-                    finalTag = `<br><img src="[FIREBASE:${formValues.val}]" style="max-width:100%; border-radius:8px;"><br>`;
+                    // CUKUP INSERT TAG SAJA BIAR BERSIH DI EDITOR
+                    finalTag = `\n[FIREBASE:${formValues.val}]\n`;
                 } else {
                     finalTag = `<br><img src="assets/${formValues.val.replace('assets/', '')}" style="max-width:100%; border-radius:8px;"><br>`;
                 }
@@ -1015,12 +1013,24 @@
         // COMPILER - Translate TAG Firebase Base64
         function replaceFirebaseImages(text) {
             if(!text || typeof text !== 'string') return text;
-            return text.replace(/\[FIREBASE:([^\]]+)\]/g, (match, id) => {
+            
+            // 1. Handle kalau tag-nya udah terlanjur masuk di dalam <img src="..."> (dari kode sebelumnya)
+            let processed = text.replace(/<img[^>]*src="\[FIREBASE:([^\]]+)\]"[^>]*>/g, (match, id) => {
                 if (masterGambar[id] && masterGambar[id].base64) {
-                    return masterGambar[id].base64;
+                    return `<img src="${masterGambar[id].base64}" style="max-width:100%; border-radius:8px;" class="compiled-img">`;
+                }
+                return match;
+            });
+
+            // 2. Handle kalau tag-nya berdiri sendiri (versi bersih yang baru)
+            processed = processed.replace(/\[FIREBASE:([^\]]+)\]/g, (match, id) => {
+                if (masterGambar[id] && masterGambar[id].base64) {
+                    return `<br><img src="${masterGambar[id].base64}" style="max-width:100%; border-radius:8px;" class="compiled-img"><br>`;
                 }
                 return match; 
             });
+
+            return processed;
         }
 
         // === ENGINE COMPILER & PUBLISHER (KUNCI KESUKSESAN INDEX.HTML) ===
@@ -1123,7 +1133,7 @@
                 petunjuk: Array.isArray(config.petunjuk) ? config.petunjuk : [],
                 kategori_poin: config.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 },
                 bank_stimulus: masterStimulus,
-                bank_gambar: masterGambar, // Ikut di-export
+                bank_gambar: masterGambar, 
                 soal: arrSoalAdmin
             };
 
