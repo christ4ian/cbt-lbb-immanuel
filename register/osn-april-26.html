@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pendaftaran Try Out OSN-K | LBB Immanuel</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="../register.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        .preview-container { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px; }
+        .preview-box { position: relative; width: 85px; height: 85px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border: 2px solid #e2e8f0; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-remove-foto { position: absolute; top: 4px; right: 4px; background: rgba(231, 76, 60, 0.9); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-remove-foto:hover { background: #c0392b; transform: scale(1.1); }
+    </style>
+</head>
+<body class="bg-body">
+
+    <header class="ujian-header" style="justify-content: center;">
+        <div class="header-left">
+            <div class="logo-small"><i class="fa-solid fa-graduation-cap"></i></div>
+            <div class="siswa-info">
+                <span style="font-size: 1.1rem;">LBB IMMANUEL</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="register-wrapper">
+        <div class="register-card">
+            
+            <div id="layar-form">
+                <h3 style="text-align: center; margin-top: 0; color: var(--text-main); font-family: var(--font-heading);">
+                    Pendaftaran Try Out OSN-K
+                </h3>
+                <hr style="border: 0; border-top: 1px dashed #ddd; margin: 20px 0;">
+
+                <div id="step-1">
+                    <div class="alert-info">
+                        <strong>Petunjuk Umum Pendaftaran:</strong>
+                        <ol>
+                            <li>Try Out OSN terdiri atas Matematika dan IPA (SD & SMP).</li>
+                            <li>Pengerjaan soal bersifat fleksibel dalam rentang 24 jam.</li>
+                            <li>Skor langsung muncul setelah selesai, pembahasan & ranking menyusul.</li>
+                        </ol>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pilih Jalur Pendaftaran <span style="color:red">*</span></label>
+                        <div class="radio-group">
+                            <div class="radio-card" id="btn-gratis" onclick="selectJalur('gratis')">
+                                <i class="fa-solid fa-gift"></i> Gratis
+                            </div>
+                            <div class="radio-card" id="btn-berbayar" onclick="selectJalur('berbayar')">
+                                <i class="fa-solid fa-wallet"></i> Berbayar
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="form-pendaftaran" class="form-section" onsubmit="kirimData(event)">
+                    
+                    <div id="info-jalur" class="alert-info" style="background-color: #fff3cd; border-color: #ffc107; color: #856404;"></div>
+
+                    <div class="form-group">
+                        <label>Nama Siswa <span style="color:red">*</span></label>
+                        <input type="text" id="reg-nama" required placeholder="Masukkan nama lengkap">
+                        <span class="small-note" id="note-nama"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Kelas <span style="color:red">*</span></label>
+                        <input type="number" id="reg-kelas" required min="1" max="12" placeholder="Contoh: 5, 6, 7, atau 8">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Asal Sekolah <span style="color:red">*</span></label>
+                        <input type="text" id="reg-sekolah" required placeholder="Nama sekolah asal">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Asal Kota <span style="color:red">*</span></label>
+                        <input type="text" id="reg-kota" required placeholder="Contoh: Malang">
+                    </div>
+
+                    <div class="form-group">
+                        <label>E-mail <span style="color:red">*</span></label>
+                        <input type="email" id="reg-email" required placeholder="Pastikan email aktif">
+                        <span class="small-note" id="note-email">1 email hanya bisa digunakan 1 anak (tidak bisa lebih).</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nomor Telepon / WhatsApp <span style="color:red">*</span></label>
+                        <input type="tel" id="reg-telp" required placeholder="Contoh: 08123456789">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mata Pelajaran <span style="color:red">*</span></label>
+                        <select id="reg-mapel" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem;">
+                            <option value="">-- Pilih Mata Pelajaran --</option>
+                            <option value="osn-mtk-sd-april-2026">SD Matematika</option>
+                            <option value="osn-ipa-sd-april-2026">SD IPA</option>
+                            <option value="osn-mtk-smp-april-2026">SMP Matematika</option>
+                            <option value="osn-ipa-smp-april-2026">SMP IPA</option>
+                        </select>
+                        <span class="small-note">Apabila mendaftar lebih dari 1 mapel, isi formulir 2 kali.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label id="label-upload">Bukti Persyaratan <span style="color:red">*</span></label>
+                        <div class="file-upload-box" id="box-upload" onclick="document.getElementById('reg-foto').click()" style="cursor: pointer;">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: #007bff; margin-bottom: 15px; display: block;"></i>
+                            <p style="margin: 0; font-size: 0.95rem; color: #007bff; font-weight: bold;">Klik di sini untuk pilih foto</p>
+                            <p style="margin: 5px 0 0; font-size: 0.85rem; color: #666;" id="desc-upload">Bisa pilih lebih dari 1 foto sekaligus</p>
+                            <input type="file" id="reg-foto" accept="image/*" multiple style="display: none;">
+                        </div>
+                        <div class="preview-container" id="tempat-preview"></div>
+                    </div>
+
+                    <button type="submit" class="btn-login" style="margin-top: 25px; width: 100%; padding: 14px; border-radius: 8px; font-size: 1.05rem; font-weight: bold;" id="btn-submit">
+                        KIRIM PENDAFTARAN <i class="fa-solid fa-circle-check" style="margin-left: 5px;"></i>
+                    </button>
+                </form>
+            </div>
+
+            <div id="layar-sukses" style="display: none; text-align: center; padding: 20px 0;">
+                <i class="fa-solid fa-circle-check" style="font-size: 5rem; color: #25D366; margin-bottom: 20px;"></i>
+                <h2 style="margin-top: 0; color: #333;">Pendaftaran Berhasil! 🎉</h2>
+                <p style="color: #666; font-size: 1.05rem; line-height: 1.6; margin-bottom: 30px;">
+                    Data pendaftaran berhasil diverifikasi oleh sistem.<br>
+                    <strong>Langkah Terakhir:</strong> Wajib bergabung ke Grup WhatsApp kami untuk mendapatkan info terbaru.
+                </p>
+
+                <a href="https://chat.whatsapp.com/FasZVaSShwtIN713ZtoxOA" target="_blank" class="btn-wa-huge">
+                    <i class="fa-brands fa-whatsapp" style="font-size: 1.8rem; vertical-align: middle; margin-right: 8px;"></i> 
+                    <span style="vertical-align: middle;">GABUNG GRUP WA</span>
+                </a>
+
+                <button onclick="salinLinkWA()" class="btn-action btn-copy">
+                    <i class="fa-regular fa-copy"></i> Salin Link Grup WA
+                </button>
+
+                <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 35px 0;">
+
+                <button onclick="daftarLagi()" class="btn-action btn-reset">
+                    <i class="fa-solid fa-user-plus"></i> Isi Pendaftaran Siswa Lain
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // INIT FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
+            authDomain: "cbt-lbb-immanuel.firebaseapp.com",
+            databaseURL: "https://cbt-lbb-immanuel-default-rtdb.firebaseio.com",
+            projectId: "cbt-lbb-immanuel",
+            storageBucket: "cbt-lbb-immanuel.firebasestorage.app",
+            messagingSenderId: "79589552415",
+            appId: "1:79589552415:web:20fb83aa055ec156cfc02a"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // CONFIGURASI LINK
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec"; 
+        const LINK_WA = "https://chat.whatsapp.com/FasZVaSShwtIN713ZtoxOA";
+        
+        window.onload = function() {
+            if(localStorage.getItem('statusDaftar_OSN26') === 'sukses') {
+                tampilkanLayarSukses();
+            }
+        };
+
+        function tampilkanLayarSukses() {
+            document.getElementById('layar-form').style.display = 'none';
+            document.getElementById('layar-sukses').style.display = 'block';
+            window.scrollTo(0, 0); 
+        }
+
+        function daftarLagi() {
+            localStorage.removeItem('statusDaftar_OSN26'); 
+            window.location.reload(); 
+        }
+
+        function salinLinkWA() {
+            navigator.clipboard.writeText(LINK_WA).then(() => {
+                Swal.fire({ icon: 'success', title: 'Tersalin!', text: 'Link Grup WA berhasil disalin ke clipboard.', timer: 2000, showConfirmButton: false });
+            });
+        }
+
+        let jalurDipilih = "";
+
+        function selectJalur(jalur) {
+            jalurDipilih = jalur;
+            document.getElementById('btn-gratis').classList.remove('active');
+            document.getElementById('btn-berbayar').classList.remove('active');
+            document.getElementById(`btn-${jalur}`).classList.add('active');
+            document.getElementById('form-pendaftaran').classList.add('active');
+
+            const infoBox = document.getElementById('info-jalur');
+            const noteNama = document.getElementById('note-nama');
+            const labelUpload = document.getElementById('label-upload');
+            const descUpload = document.getElementById('desc-upload');
+
+            if (jalur === 'gratis') {
+                infoBox.innerHTML = `<strong>Syarat Pendaftaran Gratis:</strong><br>1. Follow IG @lbbimmanuel.<br>2. Share poster ke status/grup.<br>3. Tag 3 teman di komentar IG.`;
+                noteNama.innerText = "Pendaftaran gratis maksimal 1 siswa saja!";
+                labelUpload.innerHTML = `Bukti Screenshot Follow, Tag, dan Share <span style="color:red">*</span>`;
+                descUpload.innerText = "Masukkan ketiga foto sekaligus!";
+            } else {
+                infoBox.innerHTML = `<strong>Pendaftaran Berbayar:</strong><br>Biaya Rp15.000/siswa/mapel. Pembayaran via QRIS A.n LBB Immanuel.<br><br>
+                <div style="text-align: center; margin: 15px 0;">
+                    <img src="https://cbt.lbbimmanuel.com/assets/QRIS.jpeg" alt="QRIS LBB Immanuel" style="max-width: 100%; height: auto; border-radius: 8px; border: 2px dashed #007bff; padding: 5px;">
+                </div>
+                <div style="color: #d9534f; font-weight: bold; font-size: 0.9rem; margin-top: 10px;">
+                    * CATATAN: Apabila ingin mendaftar 2 anak, mohon isi formulir ini 2 kali.
+                </div>`;
+                noteNama.innerText = "Kolektif > 5 siswa? Hubungi +62816551929";
+                labelUpload.innerHTML = `Bukti Pembayaran QRIS (15k/siswa) <span style="color:red">*</span>`;
+                descUpload.innerText = "Upload bukti transfer/QRIS yang sah.";
+            }
+        }
+
+        let fileYangDipilih = [];
+
+        document.getElementById('reg-foto').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => { if (file.type.startsWith('image/')) fileYangDipilih.push(file); });
+            renderPreviewFoto();
+            this.value = ''; 
+        });
+
+        function renderPreviewFoto() {
+            const wadah = document.getElementById('tempat-preview');
+            wadah.innerHTML = ''; 
+            fileYangDipilih.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'preview-box';
+                    div.innerHTML = `<img src="${e.target.result}" alt="Preview"><button type="button" class="btn-remove-foto" onclick="hapusFoto(${index})"><i class="fa-solid fa-xmark"></i></button>`;
+                    wadah.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function hapusFoto(index) { fileYangDipilih.splice(index, 1); renderPreviewFoto(); }
+
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > MAX_WIDTH) {
+                        height = Math.round((height * MAX_WIDTH) / width);
+                        width = MAX_WIDTH;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    const base64Data = dataUrl.split(',')[1];
+                    
+                    resolve({ 
+                        name: file.name.split('.')[0] + '.jpg', 
+                        mimeType: 'image/jpeg', 
+                        base64: base64Data 
+                    });
+                };
+            };
+            reader.onerror = error => reject(error);
+        });
+
+        async function kirimData(e) {
+            e.preventDefault(); 
+            const btnSubmit = document.getElementById('btn-submit');
+
+            if(fileYangDipilih.length === 0) {
+                Swal.fire("Peringatan", "Mohon upload bukti persyaratan terlebih dahulu!", "warning");
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = 'MENGIRIM... <i class="fa-solid fa-spinner fa-spin"></i>';
+
+            Swal.fire({
+                title: 'Memproses Pendaftaran',
+                text: 'Sedang mengunggah bukti dan mendaftarkan data...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const filePromises = fileYangDipilih.map(file => toBase64(file));
+                const filesData = await Promise.all(filePromises);
+
+                const dataSiswa = {
+                    nama: document.getElementById('reg-nama').value,
+                    kelas: document.getElementById('reg-kelas').value,
+                    sekolah: document.getElementById('reg-sekolah').value,
+                    kota: document.getElementById('reg-kota').value, // Ambil data kota
+                    email: document.getElementById('reg-email').value,
+                    telp: document.getElementById('reg-telp').value
+                };
+                const paketTarget = document.getElementById('reg-mapel').value;
+
+                const payload = {
+                    action: "register",
+                    paketId: paketTarget, 
+                    jalur: jalurDipilih,
+                    userData: dataSiswa,
+                    files: filesData
+                };
+
+                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.json();
+
+                if(result.status === "success") {
+                    // PENGAMAN JIKA GAS TIDAK KIRIM URL
+                    const buktiUrls = (result.fileUrls && Array.isArray(result.fileUrls)) ? result.fileUrls.join(", ") : "Terkirim ke Telegram";
+                    
+                    // AUTO ROLE "Gratis" atau "Berbayar"
+                    const roleOtomatis = (jalurDipilih === 'gratis') ? 'Gratis' : 'Berbayar';
+                    
+                    // FORMAT KUNCI DATABASE (MENGUBAH . DAN @ DI EMAIL JADI _)
+                    // Contoh: osn-mtk-smp-april-2026_tian_immanuel3l_gmail_com
+                    const emailSanitized = dataSiswa.email.replace(/[@.]/g, '_');
+                    const dbKey = `${paketTarget}_${emailSanitized}`;
+
+                    // SIMPAN KE FIREBASE MENGGUNAKAN .SET() PADA KUNCI SPESIFIK (BUKAN .PUSH() LAGI)
+                    // Hapus approval, langsung masuk sebagai data matang
+                    await db.ref('pendaftaran/' + dbKey).set({
+                        email: dataSiswa.email,
+                        id_paket: paketTarget,
+                        kelas: dataSiswa.kelas,
+                        kota: dataSiswa.kota,
+                        nama_siswa: dataSiswa.nama,
+                        role: roleOtomatis,
+                        sekolah: dataSiswa.sekolah,
+                        waktu_daftar: new Date().toISOString(),
+                        
+                        // Ekstra data yang mungkin kamu perlukan di dashboard
+                        telepon: dataSiswa.telp,
+                        jalur: jalurDipilih,
+                        bukti_bayar_url: buktiUrls
+                    });
+
+                    localStorage.setItem('statusDaftar_OSN26', 'sukses');
+                    
+                    Swal.fire({
+                        icon: 'success', title: 'Pendaftaran Berhasil!', text: 'Mengarahkan ke halaman selanjutnya...',
+                        showConfirmButton: false, timer: 1500, timerProgressBar: true, allowOutsideClick: false
+                    }).then(() => {
+                        tampilkanLayarSukses();
+                        window.open(LINK_WA, '_blank');
+                    });
+
+                } else {
+                    throw new Error(result.message);
+                }
+
+            } catch (error) {
+                Swal.fire("Gagal Terkirim", error.message || "Terjadi kesalahan jaringan.", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = 'KIRIM PENDAFTARAN <i class="fa-solid fa-circle-check" style="margin-left: 5px;"></i>';
+            }
+        }
+    </script>
+</body>
+</html>
