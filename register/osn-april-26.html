@@ -180,7 +180,7 @@
         const LINK_WA = "https://chat.whatsapp.com/C0igbTxpE7RBOhliwlAvTT";
         
         window.onload = function() {
-            if(localStorage.getItem('statusDaftar_OSN26') === 'sukses') {
+            if(localStorage.getItem('statusDaftar_OSN_April_26') === 'sukses') {
                 tampilkanLayarSukses();
             }
         };
@@ -192,7 +192,7 @@
         }
 
         function daftarLagi() {
-            localStorage.removeItem('statusDaftar_OSN26'); 
+            localStorage.removeItem('statusDaftar_OSN_April_26'); 
             window.location.reload(); 
         }
 
@@ -370,7 +370,7 @@
                         bukti_bayar_url: buktiUrls
                     });
 
-                    localStorage.setItem('statusDaftar_OSN26', 'sukses');
+                    localStorage.setItem('statusDaftar_OSN_April_26', 'sukses');
                     
                     Swal.fire({
                         icon: 'success', title: 'Pendaftaran Berhasil!', text: 'Mengarahkan ke halaman selanjutnya...',
