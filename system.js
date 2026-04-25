@@ -4,6 +4,8 @@
    - FIXED: Analisis & Pembahasan Tampil SETELAH Waktu Tutup
    - FIXED: Tombol Pembahasan Lenyap Jika Dibatasi Role
    - FIXED: Pesan Notifikasi Siswa Lebih Profesional
+   - NEW FIXED: Admin Bypass Submit Stuck & LocalStorage Camera Cache
+   - NEW FIXED: Real-cam CSS & Mobile Minimize Clean UI
    =========================================================== */
 
 // 1. CONFIG & ANTI-CHEAT
@@ -64,7 +66,11 @@ const app = {
         const base64Data = canvas.toDataURL('image/jpeg', 0.5);
         
         this.capturedImages[momentType] = base64Data;
-        console.log(`📸 Jepretan berhasil diamankan.`);
+        
+        // SIMPAN KE CACHE BROWSER AGAR TIDAK HILANG SAAT REFRESH
+        if (this.sessionId) {
+            localStorage.setItem('cbt_images_' + this.sessionId, JSON.stringify(this.capturedImages));
+        }
     },
 
     // --- INIT ---
@@ -380,6 +386,14 @@ const app = {
             userData: this.userData, sheetRowIndex: this.sheetRowIndex
         }));
 
+        // MUAT CACHE FOTO KALAU HABIS REFRESH
+        const savedImages = localStorage.getItem('cbt_images_' + this.sessionId);
+        if (savedImages) {
+            try { this.capturedImages = JSON.parse(savedImages); } catch(e) {}
+        } else {
+            this.capturedImages = { start: null, mid: null, end: null };
+        }
+
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
         
@@ -685,26 +699,31 @@ const app = {
         this.captureSnapshot('end'); 
         this.stopSecurityProctor();
         
-        if(this.userData && this.userData.isAdmin) {
-            localStorage.removeItem('cbt_active_session'); 
-            return Swal.fire({ title: 'Simulasi Selesai', text: 'Data admin tidak disimpan di database.', icon: 'success' }).then(() => { location.reload(); });
-        }
-        
-        if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet. Pastikan jaringan stabil.', 'error');
-        
         Swal.fire({ title: 'Memproses Nilai...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         const result = this.calculateResult();
 
         let teksDurasi = "Tidak diketahui";
         if (this.currentPaket && this.deadline) {
             const sisaDetik = Math.floor((this.deadline - Date.now()) / 1000);
-            const totalWaktuDetik = this.currentPaket.waktu * 60;
+            const totalWaktuDetik = this.userData.isAdmin ? 999 * 60 : this.currentPaket.waktu * 60;
             let durasiDetik = totalWaktuDetik - sisaDetik;
             if (durasiDetik < 0) durasiDetik = totalWaktuDetik; 
             const menit = Math.floor(durasiDetik / 60);
             const detik = durasiDetik % 60;
             teksDurasi = `${menit} Menit ${detik} Detik`;
         }
+
+        // --- BYPASS ADMIN LOGIC: Tidak nunggu Firebase agar tidak stuck! ---
+        if(this.userData && this.userData.isAdmin) {
+            localStorage.removeItem('cbt_active_session');
+            localStorage.removeItem('cbt_images_' + this.sessionId); // bersihkan cache foto
+            Swal.close();
+            this.tampilkanHalamanHasil(result.skor, teksDurasi, result.detail);
+            Swal.fire({ title: 'Simulasi Selesai', text: 'Data admin tidak dikirim ke database. Menampilkan hasil...', icon: 'success', timer: 2500, showConfirmButton: false });
+            return;
+        }
+        
+        if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet. Pastikan jaringan stabil.', 'error');
 
         db.ref('sessions/' + this.sessionId).update({
             status: 'finished',         
@@ -716,6 +735,7 @@ const app = {
             cheat_count: cheatCount 
         }).then(() => {
             localStorage.removeItem('cbt_active_session');
+            localStorage.removeItem('cbt_images_' + this.sessionId); // Hapus cache foto setelah beres kirim
             Swal.close();
             this.tampilkanHalamanHasil(result.skor, teksDurasi, result.detail);
 
@@ -743,7 +763,6 @@ const app = {
             .then(res => {
                 if(res.status === 'success') {
                     db.ref('sessions/' + this.sessionId).update({ ss_url: "Tersimpan di Telegram" });
-                    // PESAN LEBIH PROFESIONAL
                     if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Bukti keamanan berhasil diverifikasi dan diamankan oleh sistem.';
                 } else {
                     console.error("Error dari GAS:", res.message);
@@ -821,15 +840,15 @@ const app = {
         if (btnBahas) btnBahas.style.display = 'none';
         if (areaRincian) areaRincian.style.display = 'none';
 
-        if (isWaktuTutupLewat) {
+        if (isWaktuTutupLewat || this.userData.isAdmin) { // Admin bebas buka
             // WAKTU UJIAN SUDAH DITUTUP
-            if (priv.lihat_kunci) {
+            if (priv.lihat_kunci || this.userData.isAdmin) {
                 areaRincian.style.display = 'block';
                 areaRincian.innerHTML = `<button class="btn-login" style="background:#2563eb; color:white; width:100%; border:none; padding:14px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 4px 6px rgba(37,99,235,0.2);" onclick="app.bukaPopUpAnalisis()"> <i class="fa-solid fa-table-list"></i> Lihat Analisis Benar/Salah </button>`;
                 this.dataAnalisisDetail = detailJawaban;
             }
 
-            if (priv.akses_pembahasan && btnBahas) {
+            if ((priv.akses_pembahasan || this.userData.isAdmin) && btnBahas) {
                 btnBahas.style.display = 'block'; // Munculkan tombolnya
                 if (this.currentPaket.url_pembahasan) {
                     btnBahas.disabled = false;
@@ -867,27 +886,31 @@ const app = {
         }
 
         // LOGIKA PERINGKAT (TETAP)
-        try {
-            const snap = await db.ref('sessions').orderByChild('paketId').equalTo(this.currentPaket.id).once('value');
-            let allSessions = [];
-            if(snap.exists()) {
-                snap.forEach(child => {
-                    let d = child.val();
-                    if(d.status === 'finished') {
-                        let dMs = (d.finishTime && d.startTime) ? (d.finishTime - d.startTime) : 99999999;
-                        allSessions.push({ skor: parseFloat(d.skor_akhir || 0), durasi: dMs, id: child.key });
-                    }
+        if (!this.userData.isAdmin) {
+            try {
+                const snap = await db.ref('sessions').orderByChild('paketId').equalTo(this.currentPaket.id).once('value');
+                let allSessions = [];
+                if(snap.exists()) {
+                    snap.forEach(child => {
+                        let d = child.val();
+                        if(d.status === 'finished') {
+                            let dMs = (d.finishTime && d.startTime) ? (d.finishTime - d.startTime) : 99999999;
+                            allSessions.push({ skor: parseFloat(d.skor_akhir || 0), durasi: dMs, id: child.key });
+                        }
+                    });
+                }
+                allSessions.sort((a,b) => {
+                    if(b.skor !== a.skor) return b.skor - a.skor;
+                    return a.durasi - b.durasi;
                 });
+                let myRank = allSessions.findIndex(x => x.id === this.sessionId) + 1;
+                document.getElementById('hasil-rank').innerText = myRank ? `#${myRank} dari ${allSessions.length}` : '-';
+            } catch(e) {
+                console.error("Gagal hitung rank", e);
+                document.getElementById('hasil-rank').innerText = "-";
             }
-            allSessions.sort((a,b) => {
-                if(b.skor !== a.skor) return b.skor - a.skor;
-                return a.durasi - b.durasi;
-            });
-            let myRank = allSessions.findIndex(x => x.id === this.sessionId) + 1;
-            document.getElementById('hasil-rank').innerText = myRank ? `#${myRank} dari ${allSessions.length}` : '-';
-        } catch(e) {
-            console.error("Gagal hitung rank", e);
-            document.getElementById('hasil-rank').innerText = "-";
+        } else {
+            document.getElementById('hasil-rank').innerText = "SIMULASI ADMIN";
         }
     },
 
@@ -1049,6 +1072,7 @@ document.addEventListener("visibilitychange", function() {
     }
 });
 
+// --- PERBAIKAN UI KAMERA: ANTI OFF-SCREEN & MINIMIZE BERSIH ---
 app.startSecurityProctor = function() {
     if (document.getElementById('proctor-container')) return;
     Swal.fire({
@@ -1060,27 +1084,72 @@ app.startSecurityProctor = function() {
             navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
                 const style = document.createElement('style');
                 style.innerHTML = `
-                    #proctor-container { position: fixed; bottom: 20px; left: 20px; width: 160px; background: #000; border: 2px solid #333; border-radius: 8px; z-index: 9999; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.5); resize: both; min-width: 130px; max-width: 300px; min-height: 100px; max-height: 250px; }
-                    #proctor-container.minimized { width: 120px !important; height: auto !important; resize: none; }
+                    #proctor-container { position: fixed; bottom: 80px; left: 20px; width: 180px; background: #000; border: 2px solid #333; border-radius: 12px; z-index: 9999; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.6); resize: horizontal; min-width: 140px; max-width: 300px; transition: width 0.3s ease; }
+                    #proctor-container.minimized { width: auto !important; min-width: 90px; resize: none; border-radius: 20px; border: 1px solid #555; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
                     #proctor-container.minimized #proctor-video { display: none; }
-                    .cam-header { background: rgba(0,0,0,0.8); color: white; font-size: 11px; font-family: monospace; padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; border-bottom: 1px solid #444; }
+                    #proctor-container.minimized .cam-header { border-bottom: none; padding: 6px 12px; justify-content: center; background: transparent; }
+                    #proctor-container.minimized #proctor-resize-btn { display: none; }
+                    .cam-header { background: rgba(0,0,0,0.85); color: white; font-size: 11px; font-family: monospace; padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none; border-bottom: 1px solid #444; touch-action: none; }
                     .cam-controls { display: flex; gap: 8px; align-items: center; }
-                    .btn-minimize { cursor: pointer; font-weight: bold; padding: 0 5px; color: #aaa; font-size: 14px; }
-                    .btn-minimize:hover { color: white; }
+                    .btn-minimize { cursor: pointer; font-weight: bold; padding: 0 5px; color: #aaa; font-size: 16px; line-height: 1; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+                    .btn-minimize:hover { color: white; transform: scale(1.1); }
                     .blink-red { color: #ff4757; animation: blinker 1s linear infinite; font-weight: bold; }
                     @keyframes blinker { 50% { opacity: 0; } }
-                    #proctor-video { width: 100%; height: calc(100% - 25px); display: block; transform: scaleX(-1); object-fit: cover; }
-                    @media(max-width: 768px) { #proctor-container { width: 130px; bottom: 10px; left: 10px; } .cam-header { font-size: 10px; } }
+                    #proctor-video { width: 100%; aspect-ratio: 4/3; display: block; transform: scaleX(-1); object-fit: cover; background: #111; }
+                    @media(max-width: 768px) { 
+                        #proctor-container { width: 140px; min-width: 120px; bottom: 85px; left: 10px; resize: horizontal; border-radius: 10px; } 
+                        .cam-header { font-size: 10px; padding: 5px; }
+                        #proctor-container.minimized { min-width: 80px; }
+                        #proctor-container.minimized .cam-header { padding: 5px 10px; }
+                    }
                 `;
                 document.head.appendChild(style);
 
                 const div = document.createElement('div');
                 div.id = 'proctor-container';
-                div.innerHTML = `<div class="cam-header" id="proctor-header"><div class="cam-controls"><span class="blink-red">🔴 REC</span><span id="proctor-timer">00:00:00</span></div><div class="btn-minimize" id="proctor-min" title="Minimize">−</div></div><video id="proctor-video" autoplay muted playsinline></video>`;
+                div.innerHTML = `<div class="cam-header" id="proctor-header"><div class="cam-controls"><span class="blink-red">🔴 REC</span><span id="proctor-timer">00:00:00</span></div><div class="cam-controls"><div class="btn-minimize" id="proctor-resize-btn" title="Ubah Ukuran">⛶</div><div class="btn-minimize" id="proctor-min" title="Toggle Size">−</div></div></div><video id="proctor-video" autoplay muted playsinline disablePictureInPicture></video>`;
                 document.body.appendChild(div);
 
                 document.getElementById('proctor-video').srcObject = stream;
-                document.getElementById('proctor-min').onclick = function() { div.classList.toggle('minimized'); this.innerText = div.classList.contains('minimized') ? '□' : '−'; };
+                
+                div.checkBoundary = function() {
+                    if (!document.body.contains(div)) return;
+                    const winWidth = window.innerWidth;
+                    const winHeight = window.innerHeight;
+                    const elWidth = div.offsetWidth;
+                    const elHeight = div.offsetHeight;
+                    
+                    let currentLeft = div.offsetLeft;
+                    let currentTop = div.offsetTop;
+                    
+                    if (currentLeft < 10) currentLeft = 10;
+                    if (currentLeft + elWidth > winWidth - 10) currentLeft = Math.max(10, winWidth - elWidth - 10);
+                    if (currentTop < 10) currentTop = 10;
+                    if (currentTop + elHeight > winHeight - 10) currentTop = Math.max(10, winHeight - elHeight - 10);
+                    
+                    div.style.left = currentLeft + "px";
+                    div.style.top = currentTop + "px";
+                    div.style.bottom = "auto";
+                    div.style.right = "auto";
+                };
+
+                window.addEventListener('resize', div.checkBoundary);
+                
+                let currentSizeLevel = 0;
+                document.getElementById('proctor-resize-btn').onclick = function() {
+                    currentSizeLevel = (currentSizeLevel + 1) % 3;
+                    const sizes = ['180px', '240px', '140px'];
+                    div.style.width = sizes[currentSizeLevel];
+                    setTimeout(div.checkBoundary, 350); 
+                };
+                
+                // Logika minimize lebih bersih
+                document.getElementById('proctor-min').onclick = function() { 
+                    div.classList.toggle('minimized'); 
+                    this.innerHTML = div.classList.contains('minimized') ? '<i class="fa-solid fa-camera"></i>' : '−'; 
+                    const recText = document.querySelector('.blink-red');
+                    if (recText) recText.style.display = div.classList.contains('minimized') ? 'none' : 'inline';
+                };
 
                 dragElement(div);
 
@@ -1104,7 +1173,10 @@ app.stopSecurityProctor = function() {
     const video = document.getElementById('proctor-video');
     if (video && video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
     const container = document.getElementById('proctor-container');
-    if (container) container.remove();
+    if (container) {
+        if (container.checkBoundary) window.removeEventListener('resize', container.checkBoundary);
+        container.remove();
+    }
     if (app.proctorTimer) clearInterval(app.proctorTimer);
 };
 
@@ -1118,18 +1190,42 @@ function dragElement(elmnt) {
         if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
         else { e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; }
         document.onmouseup = closeDragElement; document.ontouchend = closeDragElement;
-        document.onmousemove = elementDrag; document.ontouchmove = elementDrag;
+        document.addEventListener('touchmove', elementDrag, { passive: false });
+        document.onmousemove = elementDrag; 
     }
+    
     function elementDrag(e) {
         e = e || window.event;
         var clientX, clientY;
-        if(e.type === 'touchmove') { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; } 
+        if(e.type === 'touchmove') { 
+            if (e.cancelable) e.preventDefault();
+            clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; 
+        } 
         else { e.preventDefault(); clientX = e.clientX; clientY = e.clientY; }
         pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
-        elmnt.style.top = (elmnt.offsetTop - pos2) + "px"; elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-        elmnt.style.bottom = "auto"; elmnt.style.right = "auto";
+        
+        let newTop = elmnt.offsetTop - pos2;
+        let newLeft = elmnt.offsetLeft - pos1;
+        
+        const winWidth = window.innerWidth;
+        const winHeight = window.innerHeight;
+        const elWidth = elmnt.offsetWidth;
+        const elHeight = elmnt.offsetHeight;
+        
+        // BOUNDARY: Jangan biarkan keluar layar (diberi margin 10px agar tidak stuck di pojok)
+        if (newLeft < 10) newLeft = 10;
+        if (newLeft + elWidth > winWidth - 10) newLeft = Math.max(10, winWidth - elWidth - 10);
+        if (newTop < 10) newTop = 10;
+        if (newTop + elHeight > winHeight - 10) newTop = Math.max(10, winHeight - elHeight - 10);
+        
+        elmnt.style.top = newTop + "px"; 
+        elmnt.style.left = newLeft + "px";
+        elmnt.style.bottom = "auto"; 
+        elmnt.style.right = "auto";
     }
+    
     function closeDragElement() {
         document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null;
+        document.removeEventListener('touchmove', elementDrag);
     }
 }
