@@ -351,7 +351,7 @@
             const thead = document.getElementById('tabel-header');
             const tbody = document.getElementById('tabel-body');
 
-            let thHTML = `<th>Rank</th><th>Detail</th><th>Nama Peserta</th><th>Asal Sekolah</th><th>Kls</th><th>Skor Akhir</th>`;
+            let thHTML = `<th>Rank</th><th style="min-width: 120px; text-align: center;">Aksi</th><th>Nama Peserta</th><th>Asal Sekolah</th><th>Kls</th><th>Skor Akhir</th>`;
             if(mode === 'irt') thHTML += `<th style="color:var(--primary);">Skor IRT</th>`;
             thHTML += `<th>Durasi</th><th>Cheat</th>`;
             for(let i=1; i<=masterSoal.length; i++) thHTML += `<th style="text-align:center;">Q${i}</th>`;
@@ -363,7 +363,13 @@
                 
                 let tr = `<tr class="${rClass}">
                     <td style="text-align:center; font-size:1.1rem;">${s.rank === 1 ? '🥇' : (s.rank === 2 ? '🥈' : (s.rank === 3 ? '🥉' : s.rank))}</td>
-                    <td><button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" onclick="lihatDetail('${s.id}')"><i class="fa-solid fa-magnifying-glass"></i></button></td>
+                    <td>
+                        <div style="display:flex; justify-content:center; gap:5px;">
+                            <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" title="Lihat Detail & Analisis" onclick="lihatDetail('${s.id}')"><i class="fa-solid fa-magnifying-glass"></i></button>
+                            <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem; color:var(--warning); border-color:#fcd34d;" title="Edit Skor Akhir" onclick="editSkor('${s.id}', ${s.skorAsli})"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem; color:var(--danger); border-color:#fca5a5;" title="Hapus Hasil Ujian" onclick="hapusSesi('${s.id}')"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </td>
                     <td style="font-weight:700;">${s.nama}</td>
                     <td>${s.sekolah}</td>
                     <td style="text-align:center;">${s.kelasStr}</td>
@@ -522,6 +528,50 @@
             });
 
             doc.save(`Ranking_${activePaketId}_${new Date().getTime()}.pdf`);
+        }
+
+        // =======================================================================
+        // 9. MANAJEMEN DATA HASIL (EDIT SKOR & HAPUS SESI)
+        // =======================================================================
+        function editSkor(id, currentScore) {
+            Swal.fire({
+                title: 'Edit Skor Akhir',
+                input: 'number',
+                inputValue: currentScore,
+                inputLabel: 'Masukkan skor baru (misal dikurangi karena curang)',
+                showCancelButton: true,
+                confirmButtonText: 'Simpan Perubahan',
+                inputValidator: (value) => {
+                    if (value === '') return 'Skor tidak boleh kosong!';
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    db.ref('sessions/' + id).update({ skor_akhir: parseFloat(result.value) })
+                        .then(() => {
+                            Swal.fire({icon: 'success', title: 'Berhasil', text: 'Skor berhasil diubah!', timer: 1500, showConfirmButton: false});
+                            loadDataMaster(); // Refresh tabel
+                        });
+                }
+            });
+        }
+
+        function hapusSesi(id) {
+            Swal.fire({
+                title: 'Hapus Hasil Ujian?',
+                text: "Data jawaban dan skor siswa ini akan dihapus secara permanen dari server! (Tindakan ini tidak bisa dibatalkan)",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Ya, Hapus Permanen!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    db.ref('sessions/' + id).remove()
+                        .then(() => {
+                            Swal.fire({icon: 'success', title: 'Terhapus!', text: 'Hasil ujian siswa telah dihapus.', timer: 1500, showConfirmButton: false});
+                            loadDataMaster(); // Refresh tabel
+                        });
+                }
+            });
         }
     </script>
 </body>
