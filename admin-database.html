@@ -557,8 +557,15 @@
         }
 
         function hapusSiswa(id) {
-            Swal.fire({ title: 'Hapus Data?', text: "Data pendaftaran siswa ini akan terhapus permanen.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }).then(r => {
-                if(r.isConfirmed) db.ref('pendaftaran/' + id).remove();
+            const s = masterSiswa.find(x => x.id === id);
+            Swal.fire({ title: 'Hapus Data?', text: "Data pendaftaran beserta riwayat ujian siswa ini akan terhapus permanen.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444' }).then(r => {
+                if(r.isConfirmed) {
+                    db.ref('pendaftaran/' + id).remove();
+                    if(s && s.email) {
+                        const tempSessionId = activePaketId + "_" + s.email.replace(/\./g, '_');
+                        db.ref('sessions/' + tempSessionId).remove();
+                    }
+                }
             });
         }
 
