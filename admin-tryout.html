@@ -261,7 +261,7 @@
                     </div>
 
                     <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid var(--border); display: flex; justify-content: flex-end;">
-                        <button class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem;" onclick="simpanPengaturanTryout()"><i class="fa-solid fa-save"></i> Simpan Konfigurasi</button>
+                        <!-- Tombol lama sudah dihapus, sekarang pakai tombol di floating bar bawah -->
                     </div>
                 </div>
             </div>
@@ -369,21 +369,20 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="floating-bar" id="bottom-floater" style="display: none;">
-                    <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
-                        <div style="width: 45px; height: 45px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.2rem; flex-shrink: 0;">
-                            <i class="fa-solid fa-circle-info"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-dark);" id="float-status-text">Status: DRAFT</div>
-                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Data harus dipublish ke Firebase agar terbaca di halaman siswa.</div>
-                        </div>
+            <div class="floating-bar" id="bottom-floater" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
+                    <div style="width: 45px; height: 45px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.2rem; flex-shrink: 0;">
+                        <i class="fa-solid fa-circle-info"></i>
                     </div>
-                    <div style="display: flex; gap: 12px; justify-content: center;">
-                        <button class="btn btn-outline" style="padding: 12px 20px; font-size: 1rem;" onclick="simpanKeDatabaseAdmin(false)"><i class="fa-solid fa-save"></i> Simpan Draft Saja</button>
-                        <button class="btn btn-publish" onclick="simpanKeDatabaseAdmin(true)"><i class="fa-solid fa-rocket"></i> PUBLISH KE SISTEM</button>
+                    <div>
+                        <div style="font-weight: 800; font-size: 1.1rem; color: var(--text-dark);" id="float-status-text">Status: DRAFT</div>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Gunakan saklar visibilitas di tab Konfigurasi Dasar untuk mengatur tayang/draft.</div>
                     </div>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button class="btn btn-publish" onclick="simpanSemuaData()"><i class="fa-solid fa-save"></i> SIMPAN SEMUA PERUBAHAN</button>
                 </div>
             </div>
         </div>
@@ -576,6 +575,8 @@
 
             bukaTabTryout('pengaturan', document.querySelector('.tab-btn')); 
             
+            document.getElementById('bottom-floater').style.display = 'flex';
+
             loadBankStimulus(id); 
             loadBankGambar(id); 
             muatSoalAdmin(id);
@@ -594,8 +595,6 @@
             if(tabName !== 'soal' && arrSoalAdmin.length > 0) tangkapStateSoalAdmin();
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             el.classList.add('active'); document.getElementById('tab-' + tabName).classList.add('active');
-            
-            document.getElementById('bottom-floater').style.display = (tabName === 'soal') ? 'flex' : 'none';
         }
 
         function toggleStatusSwitch() {
@@ -638,35 +637,6 @@
         }
         function tambahKategoriPoin() { document.getElementById('tabel-kategori-poin').innerHTML += `<tr><td><input type="text" placeholder="Misal: HOTS" class="kat-key"></td><td><input type="number" step="0.25" value="1" class="kat-val"></td><td style="text-align:center;"><button class="btn btn-outline" style="color:var(--danger); padding:8px 12px;" onclick="hapusBarisKategori(this)"><i class="fa-solid fa-trash-can"></i></button></td></tr>`; }
         function hapusBarisKategori(btn) { btn.closest('tr').remove(); }
-
-        function simpanPengaturanTryout() {
-            let newKat = {};
-            document.querySelectorAll('#tabel-kategori-poin tr').forEach(tr => {
-                let k = tr.querySelector('.kat-key').value.trim();
-                let v = parseFloat(tr.querySelector('.kat-val').value) || 1;
-                if(k) newKat[k] = v;
-            });
-            if(Object.keys(newKat).length === 0) newKat = {"Standar": 1};
-
-            let isSistemPoin = document.getElementById('set-sistem-poin').checked;
-            let tBuka = document.getElementById('set-buka').value.replace('T', ' '); if(tBuka.length===16) tBuka+=':00';
-            let tTutup = document.getElementById('set-tutup').value.replace('T', ' '); if(tTutup.length===16) tTutup+=':00';
-            let pArray = document.getElementById('set-petunjuk').value.split('\n').filter(l => l.trim() !== '');
-
-            db.ref('paket_ujian/'+activePaketId).update({
-                judul: document.getElementById('set-judul').value, mapel: document.getElementById('set-mapel').value,
-                durasi_menit: parseInt(document.getElementById('set-durasi').value), waktu: parseInt(document.getElementById('set-durasi').value),
-                base_poin: parseInt(document.getElementById('set-base-poin').value), sistem_poin: isSistemPoin,
-                url_pembahasan: document.getElementById('set-pembahasan').value,
-                waktu_buka: tBuka, waktu_tutup: tTutup, petunjuk: pArray, kategori_poin: newKat
-            }).then(() => {
-                Swal.fire({icon: 'success', title: 'Tersimpan', text: 'Konfigurasi berhasil diperbarui.', timer: 1500, showConfirmButton: false});
-                globalPaketData[activePaketId].kategori_poin = newKat; 
-                globalPaketData[activePaketId].sistem_poin = isSistemPoin;
-                globalPaketData[activePaketId].url_pembahasan = document.getElementById('set-pembahasan').value;
-                updateDropdownKategori(); 
-            });
-        }
 
         // === BANK STIMULUS ===
         let masterStimulus = {};
@@ -833,16 +803,7 @@
             tangkapStateSoalAdmin();
             let targetIdx = activeSoalIdx + arah;
             if (targetIdx < 0 || targetIdx >= arrSoalAdmin.length) return;
-            
-            let temp = arrSoalAdmin[activeSoalIdx];
-            arrSoalAdmin[activeSoalIdx] = arrSoalAdmin[targetIdx];
-            arrSoalAdmin[targetIdx] = temp;
-            
-            arrSoalAdmin.forEach((s, idx) => s.id_soal = idx + 1);
-            
-            activeSoalIdx = targetIdx;
-            renderNavigasiSoal(); 
-            renderSoalAktif(activeSoalIdx);
+            pindahSoal(targetIdx);
         }
 
         function renderSoalAktif(i) {
@@ -1033,32 +994,65 @@
             return processed;
         }
 
-        // === ENGINE COMPILER & PUBLISHER (KUNCI KESUKSESAN INDEX.HTML) ===
-        async function simpanKeDatabaseAdmin(isPublish) {
-            tangkapStateSoalAdmin();
+        // === ENGINE COMPILER & PUBLISHER ===
+        async function simpanSemuaData() {
+            // 1. Tangkap Soal (jika di tab soal atau tidak)
+            if(arrSoalAdmin.length > 0) tangkapStateSoalAdmin();
             arrSoalAdmin.forEach((s, idx) => s.id_soal = idx + 1); 
-            
-            Swal.fire({ title: 'Menyimpan Data...', text: isPublish ? 'Mempublish ke halaman siswa secara instan...' : 'Menyimpan sebagai draft...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            
+
+            // 2. Tangkap Konfigurasi
+            let newKat = {};
+            document.querySelectorAll('#tabel-kategori-poin tr').forEach(tr => {
+                let k = tr.querySelector('.kat-key').value.trim();
+                let v = parseFloat(tr.querySelector('.kat-val').value) || 1;
+                if(k) newKat[k] = v;
+            });
+            if(Object.keys(newKat).length === 0) newKat = {"Standar": 1};
+
+            let isSistemPoin = document.getElementById('set-sistem-poin').checked;
+            let tBuka = document.getElementById('set-buka').value.replace('T', ' '); if(tBuka.length===16) tBuka+=':00';
+            let tTutup = document.getElementById('set-tutup').value.replace('T', ' '); if(tTutup.length===16) tTutup+=':00';
+            let pArray = document.getElementById('set-petunjuk').value.split('\n').filter(l => l.trim() !== '');
+            let mapel = document.getElementById('set-mapel').value;
+            let judul = document.getElementById('set-judul').value;
+            let durasi = parseInt(document.getElementById('set-durasi').value);
+            let basePoin = parseInt(document.getElementById('set-base-poin').value);
+            let urlPem = document.getElementById('set-pembahasan').value;
+
+            Swal.fire({ title: 'Menyimpan...', text: 'Menyimpan konfigurasi dan memperbarui soal ke sistem...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
             try {
-                // 1. Simpan ke raw database (Draft Aman - Tag tidak diganti agar bisa diedit lagi)
-                await db.ref('soal/' + activePaketId).set(arrSoalAdmin);
-                
-                if(isPublish) {
-                    // 2. COMPILE UNTUK INDEX.HTML DARI MEMORI
-                    const config = globalPaketData[activePaketId];
-                    let petunjukArray = Array.isArray(config.petunjuk) ? config.petunjuk : (config.petunjuk || "").split('\n');
-                    let isSistemPoinAktif = config.sistem_poin !== false;
-                    
+                // Update Config ke paket_ujian
+                await db.ref('paket_ujian/'+activePaketId).update({
+                    judul: judul, mapel: mapel, durasi_menit: durasi, waktu: durasi,
+                    base_poin: basePoin, sistem_poin: isSistemPoin, url_pembahasan: urlPem,
+                    waktu_buka: tBuka, waktu_tutup: tTutup, petunjuk: pArray, kategori_poin: newKat
+                });
+
+                // Update cache lokal config
+                if (!globalPaketData[activePaketId]) globalPaketData[activePaketId] = {};
+                globalPaketData[activePaketId].judul = judul;
+                globalPaketData[activePaketId].kategori_poin = newKat;
+                globalPaketData[activePaketId].sistem_poin = isSistemPoin;
+                updateDropdownKategori();
+
+                // Update Soal Raw
+                if (arrSoalAdmin.length > 0) {
+                    await db.ref('soal/' + activePaketId).set(arrSoalAdmin);
+                } else {
+                    await db.ref('soal/' + activePaketId).set(null);
+                }
+
+                // COMPILE UNTUK INDEX.HTML DARI MEMORI
+                if (arrSoalAdmin.length > 0) {
                     let compiledSoal = arrSoalAdmin.map(s => {
                         let bobot = 1; 
-                        if(isSistemPoinAktif && config.kategori_poin && config.kategori_poin[s.tingkat_kesulitan]) {
-                            bobot = config.kategori_poin[s.tingkat_kesulitan];
+                        if(isSistemPoin && newKat[s.tingkat_kesulitan]) {
+                            bobot = newKat[s.tingkat_kesulitan];
                         }
                         
                         let stimObj = { tampil: false };
                         if(s.id_stimulus && masterStimulus[s.id_stimulus]) {
-                            // Replace base64 di dalam wacana stimulus juga
                             stimObj = { tampil: true, konten: replaceFirebaseImages(masterStimulus[s.id_stimulus]) };
                         }
 
@@ -1067,7 +1061,6 @@
                             tipe: s.tipe,
                             poin: bobot,
                             stimulus: stimObj,
-                            // Replace base64 ke dalam pertanyaan dan opsi untuk dirender index.html
                             pertanyaan: replaceFirebaseImages(s.pertanyaan),
                             opsi: s.opsi.map(opt => replaceFirebaseImages(opt)),
                             kunci: s.kunci,
@@ -1078,41 +1071,24 @@
 
                     let publishedData = {
                         id: activePaketId,
-                        judul: config.judul,
-                        mapel: config.mapel || "",
-                        waktu: config.durasi_menit,
-                        waktu_buka: config.waktu_buka || "",
-                        waktu_tutup: config.waktu_tutup || "",
-                        sistem_poin: isSistemPoinAktif,
-                        base_poin: config.base_poin || 100,
-                        url_pembahasan: config.url_pembahasan || "", 
-                        petunjuk: petunjukArray,
+                        judul: judul,
+                        mapel: mapel || "",
+                        waktu: durasi,
+                        waktu_buka: tBuka,
+                        waktu_tutup: tTutup,
+                        sistem_poin: isSistemPoin,
+                        base_poin: basePoin || 100,
+                        url_pembahasan: urlPem || "", 
+                        petunjuk: pArray,
                         soal: compiledSoal
                     };
 
                     await db.ref('published_soal/' + activePaketId).set(publishedData);
-                    await db.ref('paket_ujian/' + activePaketId).update({ status: 'aktif' });
-                    
-                    globalPaketData[activePaketId].status = 'aktif';
-                    document.getElementById('detail-badge-status').innerText = 'PUBLISHED';
-                    document.getElementById('detail-badge-status').className = 'badge aktif';
-                    document.getElementById('toggle-status').checked = true;
-                    document.getElementById('float-status-text').innerText = 'Status: PUBLISHED';
-                    document.getElementById('float-status-text').style.color = 'var(--success)';
-                    
-                    Swal.fire('Berhasil!', 'Soal berhasil di-publish dan siap dikerjakan siswa.', 'success');
                 } else {
-                    await db.ref('paket_ujian/' + activePaketId).update({ status: 'hidden' });
-                    
-                    globalPaketData[activePaketId].status = 'hidden';
-                    document.getElementById('detail-badge-status').innerText = 'DRAFT';
-                    document.getElementById('detail-badge-status').className = 'badge hidden';
-                    document.getElementById('toggle-status').checked = false;
-                    document.getElementById('float-status-text').innerText = 'Status: DRAFT';
-                    document.getElementById('float-status-text').style.color = 'var(--danger)';
-                    
-                    Swal.fire('Disimpan', 'Soal disimpan sebagai draft (belum bisa diakses siswa).', 'info');
+                    await db.ref('published_soal/' + activePaketId).set(null);
                 }
+
+                Swal.fire('Berhasil!', 'Semua perubahan berhasil disimpan. Visibilitas tayang mengikuti pengaturan saklar Anda.', 'success');
             } catch (err) {
                 console.error(err);
                 Swal.fire('Error Database', 'Gagal menyimpan. Pastikan Rule Database Firebase sudah diizinkan (write).', 'error');
@@ -1163,6 +1139,12 @@
                         updates['paket_ujian/' + activePaketId + '/kategori_poin'] = parsed.kategori_poin || { "Standar": 1 };
                         
                         await db.ref().update(updates);
+                        
+                        // FIX: Update local cache manually to prevent race condition when rendering Soal immediately
+                        if (!globalPaketData[activePaketId]) globalPaketData[activePaketId] = {};
+                        globalPaketData[activePaketId].judul = parsed.judul || '';
+                        globalPaketData[activePaketId].kategori_poin = parsed.kategori_poin || { "Standar": 1 };
+                        globalPaketData[activePaketId].sistem_poin = parsed.sistem_poin !== false;
                         if(parsed.bank_stimulus) await db.ref('bank_stimulus/' + activePaketId).set(parsed.bank_stimulus);
                         else await db.ref('bank_stimulus/' + activePaketId).set(null); 
                         
