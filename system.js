@@ -149,19 +149,25 @@ const app = {
         this.currentPaket = PAKET_SOAL[idx];
         Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
 
-        db.ref('pendaftaran').orderByChild('email').equalTo(email).once('value').then(snap => {
+        db.ref('pendaftaran').once('value').then(snap => {
+            let emailFound = false;
+            let studentData = null;
+            let studentKey = null;
+
             if (snap.exists()) {
-                let studentData = null;
-                let studentKey = null;
-                
                 snap.forEach(child => {
                     let data = child.val();
-                    if(data.id_paket === this.currentPaket.id) {
-                        studentData = data;
-                        studentKey = child.key;
+                    if (data.email && data.email.toLowerCase() === email) {
+                        emailFound = true;
+                        if(data.id_paket === this.currentPaket.id) {
+                            studentData = data;
+                            studentKey = child.key;
+                        }
                     }
                 });
+            }
 
+            if (emailFound) {
                 if (studentData) {
                     const safeEmail = email.replace(/\./g, '_');
                     const tempSessionId = this.currentPaket.id + "_" + safeEmail;
@@ -547,8 +553,14 @@ const app = {
     saveRealtime: function() {
         if(this.userData.isAdmin) return;
         if(this.sessionId) {
+            const cleanAnswers = {};
+            for (let key in this.answers) {
+                if (this.answers[key] !== undefined && this.answers[key] !== null) {
+                    cleanAnswers[key] = this.answers[key];
+                }
+            }
             db.ref('sessions/' + this.sessionId).update({
-                answers: this.answers,
+                answers: cleanAnswers,
                 ragu: this.ragu,
                 lastUpdate: firebase.database.ServerValue.TIMESTAMP
             }).catch(err => console.error(err));
@@ -696,6 +708,9 @@ const app = {
     },
 
     submitData: function(force) {
+        if (this.isSubmitting) return;
+        this.isSubmitting = true;
+        if (this.timerInterval) clearInterval(this.timerInterval);
         this.captureSnapshot('end'); 
         this.stopSecurityProctor();
         
@@ -725,10 +740,17 @@ const app = {
         
         if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet. Pastikan jaringan stabil.', 'error');
 
+        const cleanAnswers = {};
+        for (let key in this.answers) {
+            if (this.answers[key] !== undefined && this.answers[key] !== null) {
+                cleanAnswers[key] = this.answers[key];
+            }
+        }
+
         db.ref('sessions/' + this.sessionId).update({
             status: 'finished',         
             skor_akhir: result.skor,    
-            answers: this.answers,      
+            answers: cleanAnswers,      
             finishTime: firebase.database.ServerValue.TIMESTAMP,
             durasi_teks: teksDurasi,
             detail: result.detail,
