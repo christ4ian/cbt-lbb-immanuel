@@ -89,6 +89,7 @@
         <a href="admin-tryout.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Manajemen Try Out</a>
         <a href="admin-database.html" class="nav-item"><i class="fa-solid fa-users"></i> Data Siswa & Role</a>
         <a href="admin-stat.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Statistik & Peringkat</a>
+        <a href="admin-agent.html" class="nav-item"><i class="fa-solid fa-robot"></i> AI Agent</a>
         <div style="flex: 1;"></div>
         <a href="admin-settings.html" class="nav-item active"><i class="fa-solid fa-user-gear"></i> Pengaturan Akun Admin</a>
         <div class="nav-item" style="color: var(--danger); cursor: pointer;" onclick="auth.signOut()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Keluar Sistem</div>
@@ -151,6 +152,25 @@
                     <button class="btn btn-primary" style="background: var(--text-dark);" onclick="updateAccountPassword()"><i class="fa-solid fa-key"></i> Update Password</button>
                 </div>
             </div>
+
+            <div class="card">
+                <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 1.3rem; color: var(--text-dark); border-bottom: 2px solid var(--bg-main); padding-bottom: 10px;">
+                    <i class="fa-solid fa-microchip" style="color: #8b5cf6;"></i> Konfigurasi API AI (Gemini)
+                </h3>
+                
+                <div style="background: #eff6ff; color: #1e3a8a; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 20px; font-size: 0.9rem;">
+                    <i class="fa-solid fa-circle-info"></i> Masukkan API Key Gemini Anda di sini. Jangan menyimpan API Key langsung di dalam kode (hardcode) agar tidak terkena blokir otomatis oleh Google jika terunggah ke GitHub publik. Kunci ini akan disimpan dengan aman di penyimpanan lokal browser Anda.
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Gemini API Key</label>
+                    <input type="password" id="gemini-api-key" class="form-control" placeholder="AIzaSy...">
+                </div>
+
+                <div style="text-align: right;">
+                    <button class="btn btn-primary" style="background: #8b5cf6;" onclick="saveGeminiApiKey()"><i class="fa-solid fa-save"></i> Simpan API Key</button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -158,6 +178,7 @@
         <a href="admin-tryout.html" class="bottom-nav-item"><i class="fa-solid fa-folder-open"></i> Try Out</a>
         <a href="admin-database.html" class="bottom-nav-item"><i class="fa-solid fa-users"></i> Siswa</a>
         <a href="admin-stat.html" class="bottom-nav-item"><i class="fa-solid fa-chart-line"></i> Statistik</a>
+        <a href="admin-agent.html" class="bottom-nav-item"><i class="fa-solid fa-robot"></i> AI Agent</a>
         <a href="admin-settings.html" class="bottom-nav-item active"><i class="fa-solid fa-user-gear"></i> Akun</a>
     </nav>
 
@@ -185,6 +206,7 @@
                 currentUser = user;
                 document.getElementById('admin-email').value = user.email;
                 document.getElementById('admin-name').value = user.displayName || '';
+                document.getElementById('gemini-api-key').value = localStorage.getItem('cbt_gemini_key') || '';
             }
         });
 
@@ -254,6 +276,16 @@
                     });
                 }
             });
+        }
+
+        // =======================================================================
+        // 4. FUNGSI SIMPAN GEMINI API KEY
+        // =======================================================================
+        function saveGeminiApiKey() {
+            const key = document.getElementById('gemini-api-key').value.trim();
+            if(!key) return Swal.fire('Peringatan', 'API Key tidak boleh kosong!', 'warning');
+            localStorage.setItem('cbt_gemini_key', key);
+            Swal.fire('Berhasil!', 'Gemini API Key berhasil disimpan di perangkat ini.', 'success');
         }
     </script>
 </body>
