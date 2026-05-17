@@ -180,6 +180,9 @@ const app = {
                             this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role };
                             this.sessionId = tempSessionId;
                             
+                            this.answers = sessionData.answers || {}; 
+                            
+                            Swal.close();
                             let durasiStr = sessionData.durasi_teks || "-";
                             if(durasiStr === "-" && sessionData.startTime && sessionData.finishTime) {
                                 let dMs = sessionData.finishTime - sessionData.startTime;
@@ -220,16 +223,21 @@ const app = {
 
                         if (waktuTutup && now > waktuTutup) {
                             Swal.fire({
-                                title: 'Akses Ditutup',
+                                title: 'Akses Ujian Ditutup',
                                 html: `
                                     <div style="margin-top: 10px;">
-                                        <p style="color: #666;">Mohon maaf, batas waktu akses/login untuk paket soal ini telah berakhir pada:</p>
+                                        <p style="color: #666;">Batas waktu akses/login untuk mengerjakan paket soal ini telah berakhir pada:</p>
                                         <p style="font-weight: bold; color: #dc3545; font-size: 1.1rem; margin-top: 10px;">
                                             ${waktuTutup.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
                                         </p>
+                                        <p style="color: #666; margin-top:10px;">Anda akan diarahkan ke halaman Pembahasan (jika hak akses Anda mengizinkan).</p>
                                     </div>
                                 `,
-                                icon: 'error', confirmButtonText: 'Tutup', confirmButtonColor: '#dc3545'
+                                icon: 'info', confirmButtonText: 'Lanjut ke Pembahasan', confirmButtonColor: '#007bff'
+                            }).then(() => {
+                                this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role };
+                                this.answers = {}; 
+                                this.tampilkanHalamanHasil(0, "Tidak Mengerjakan", []);
                             });
                             return; 
                         }
@@ -402,6 +410,7 @@ const app = {
 
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
+        cheatCount = data.cheatCount || 0;
         
         const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
         this.deadline = data.startTime + (durasiMenit * 60 * 1000);
@@ -554,14 +563,17 @@ const app = {
         if(this.userData.isAdmin) return;
         if(this.sessionId) {
             const cleanAnswers = {};
-            for (let key in this.answers) {
-                if (this.answers[key] !== undefined && this.answers[key] !== null) {
-                    cleanAnswers[key] = this.answers[key];
+            const totalSoal = this.currentPaket.soal.length;
+            for (let i = 0; i < totalSoal; i++) {
+                if (this.answers[i] !== undefined && this.answers[i] !== null) {
+                    cleanAnswers[i] = this.answers[i];
                 }
             }
+            if (Object.keys(cleanAnswers).length === 0) cleanAnswers["empty"] = true;
             db.ref('sessions/' + this.sessionId).update({
                 answers: cleanAnswers,
                 ragu: this.ragu,
+                cheatCount: cheatCount,
                 lastUpdate: firebase.database.ServerValue.TIMESTAMP
             }).catch(err => console.error(err));
         }
@@ -697,11 +709,16 @@ const app = {
         });
 
         let skorAkhir = 0;
-        if (isSistemPoin) {
-            let pembagi = this.currentPaket.base_poin || totalPoinMaksimal;
-            skorAkhir = (totalPoinDiperoleh / pembagi) * 100;
+        
+        let poinDidapat = isSistemPoin ? totalPoinDiperoleh : benarCount;
+        let poinMaksimal = isSistemPoin ? totalPoinMaksimal : totalSoal;
+        
+        if (this.currentPaket.mode_skor === 'asli') {
+            skorAkhir = poinDidapat;
         } else {
-            skorAkhir = (benarCount / totalSoal) * 100;
+            let maxScore = parseFloat(this.currentPaket.base_poin) || 100;
+            let pembagi = poinMaksimal > 0 ? poinMaksimal : 1;
+            skorAkhir = (poinDidapat / pembagi) * maxScore;
         }
         
         return { skor: skorAkhir.toFixed(2), detail: detail };
@@ -722,7 +739,8 @@ const app = {
             const sisaDetik = Math.floor((this.deadline - Date.now()) / 1000);
             const totalWaktuDetik = this.userData.isAdmin ? 999 * 60 : this.currentPaket.waktu * 60;
             let durasiDetik = totalWaktuDetik - sisaDetik;
-            if (durasiDetik < 0) durasiDetik = totalWaktuDetik; 
+            if (durasiDetik < 0) durasiDetik = 0; 
+            if (durasiDetik > totalWaktuDetik) durasiDetik = totalWaktuDetik;
             const menit = Math.floor(durasiDetik / 60);
             const detik = durasiDetik % 60;
             teksDurasi = `${menit} Menit ${detik} Detik`;
@@ -741,11 +759,13 @@ const app = {
         if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet. Pastikan jaringan stabil.', 'error');
 
         const cleanAnswers = {};
-        for (let key in this.answers) {
-            if (this.answers[key] !== undefined && this.answers[key] !== null) {
-                cleanAnswers[key] = this.answers[key];
+        const totalSoal = this.currentPaket.soal.length;
+        for (let i = 0; i < totalSoal; i++) {
+            if (this.answers[i] !== undefined && this.answers[i] !== null) {
+                cleanAnswers[i] = this.answers[i];
             }
         }
+        if (Object.keys(cleanAnswers).length === 0) cleanAnswers["empty"] = true;
 
         db.ref('sessions/' + this.sessionId).update({
             status: 'finished',         
@@ -754,7 +774,7 @@ const app = {
             finishTime: firebase.database.ServerValue.TIMESTAMP,
             durasi_teks: teksDurasi,
             detail: result.detail,
-            cheat_count: cheatCount 
+            cheatCount: cheatCount 
         }).then(() => {
             localStorage.removeItem('cbt_active_session');
             localStorage.removeItem('cbt_images_' + this.sessionId); // Hapus cache foto setelah beres kirim
@@ -1090,6 +1110,7 @@ document.addEventListener("visibilitychange", function() {
     const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
     if (document.visibilityState === 'hidden' && isLagiUjian) {
         cheatCount++;
+        if (typeof app !== 'undefined' && app.saveRealtime) app.saveRealtime();
         Swal.fire({ title: 'Hayo Ketahuan! 👀', text: 'Kamu terdeteksi pindah tab atau keluar dari layar ujian. Jangan nyontek ya, kerjakan dengan jujur!', icon: 'warning', confirmButtonColor: '#d33', confirmButtonText: 'Iya, janji jujur 🙏' });
     }
 });
