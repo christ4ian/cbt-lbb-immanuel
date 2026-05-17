@@ -114,14 +114,19 @@
                     </div>
                     <div style="flex: 1; min-width: 250px;">
                         <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; display: block;">Algoritma Peringkat:</label>
-                        <select id="select-algo" class="form-control" style="font-weight: 700; background: #eff6ff; color: var(--primary);" onchange="jalankanAlgoritma()">
+                        <select id="select-algo" class="form-control" style="font-weight: 700; background: #eff6ff; color: var(--primary);" onchange="toggleOSNOptions(); jalankanAlgoritma()">
                             <option value="standar">Standar</option>
                             <option value="tiebreaker">OSN</option>
                             <option value="irt">IRT (Item Response Theory)</option>
                         </select>
+                        <div id="osn-options" style="display:none; margin-top: 8px;">
+                            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-dark); cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="cek-tie-waktu" onchange="jalankanAlgoritma()"> Tie-Breaker Waktu
+                            </label>
+                        </div>
                     </div>
                     <div>
-                        <button class="btn btn-primary" style="padding: 12px 20px;" onclick="modalExportPDF()"><i class="fa-solid fa-file-pdf"></i> Cetak PDF Laporan</button>
+                        <button class="btn btn-primary" style="padding: 12px 20px;" onclick="modalExport()"><i class="fa-solid fa-file-export"></i> Cetak Laporan (PDF/Docx)</button>
                     </div>
                 </div>
             </div>
@@ -155,6 +160,7 @@
 
         let activePaketId = null;
         let activePaketName = "";
+        let activePaketInfo = {}; // Menambahkan variabel untuk paket info
         let masterSoal = [];
         let masterSesi = [];
         let calculatedSiswa = [];
@@ -184,6 +190,10 @@
             tbody.innerHTML = '<tr><td colspan="15" style="text-align:center; padding:30px;"><i class="fa-solid fa-spinner fa-spin"></i> Mengekstrak data jawaban dan menghitung statistik...</td></tr>';
 
             try {
+                // Tarik Paket Ujian
+                const snapPaket = await db.ref('paket_ujian/' + activePaketId).once('value');
+                activePaketInfo = snapPaket.exists() ? snapPaket.val() : {};
+
                 // Tarik Soal (Untuk Kunci & Tingkat Kesulitan)
                 const snapSoal = await db.ref('soal/' + activePaketId).once('value');
                 masterSoal = snapSoal.exists() ? snapSoal.val() : [];
@@ -241,6 +251,11 @@
         // =======================================================================
         // 5. ALGORITMA PERINGKAT (THE BRAIN)
         // =======================================================================
+        function toggleOSNOptions() {
+            const mode = document.getElementById('select-algo').value;
+            document.getElementById('osn-options').style.display = mode === 'tiebreaker' ? 'block' : 'none';
+        }
+
         function jalankanAlgoritma() {
             if(masterSesi.length === 0) return;
             const mode = document.getElementById('select-algo').value;
@@ -275,7 +290,7 @@
                     kelasStr: u.kelas || '-', kelasNum: extractKelasNumber(u.kelas),
                     startTime: sesi.startTime, finishTime: sesi.finishTime, durasiMs: durasiMs, durasiStr: durasiMnt,
                     cheatCount: sesi.cheatCount || 0,
-                    skorAsli: sesi.skor_akhir || 0,
+                    skorAsli: parseFloat(sesi.skor_akhir) || 0,
                     b_sulit: b_sulit, b_sedang: b_sedang, b_mudah: b_mudah, jml_salah: jml_salah,
                     jwbDetails: jwbDetails, irtScore: 0, finalScore: 0
                 };
@@ -283,23 +298,54 @@
 
             // IRT ALGORITHM
             if(mode === 'irt') {
-                let itemStats = masterSoal.map(s => ({ b: 0 }));
+                let itemStats = masterSoal.map(s => ({ b: 0, bobot: (activePaketInfo && activePaketInfo.sistem_poin && s.poin !== undefined) ? s.poin : 1 }));
                 calculatedSiswa.forEach(s => {
                     s.jwbDetails.forEach((d, i) => { if(d.isBenar) itemStats[i].b++; });
                 });
 
+                let maxPossibleScore = 100;
+                if(activePaketInfo) {
+                    if (activePaketInfo.mode_skor === 'asli') {
+                        let totalPoinMaksimal = 0;
+                        if (activePaketInfo.sistem_poin) {
+                            masterSoal.forEach(soal => totalPoinMaksimal += (soal.poin !== undefined ? soal.poin : 1));
+                        } else {
+                            totalPoinMaksimal = masterSoal.length;
+                        }
+                        maxPossibleScore = totalPoinMaksimal;
+                    } else {
+                        maxPossibleScore = parseFloat(activePaketInfo.base_poin) || 100;
+                    }
+                }
+
                 let N = calculatedSiswa.length;
+                let sumWeights = 0;
+
+                // 1. Hitung pembobotan per soal yg baru (berdasarkan jumlah benar / total siswa yg membuka soal)
                 itemStats.forEach(item => {
                     let p = item.b / N; 
-                    item.difficulty = 1 - p; // Makin sedikit yg jawab benar, difficulty mendekati 1
+                    let difficulty = 1 - p; 
+                    
+                    // Supaya soal mudah (banyak dijawab benar) tidak bernilai 0, kita pakai base bobot
+                    // Bobot baru = Bobot Asli + Bonus Kesulitan (Maksimal 2x lipat dari bobot asli)
+                    item.new_weight = item.bobot * (1 + difficulty);
+                    sumWeights += item.new_weight;
                 });
 
+                // 2. Buat Poin per soal sedemikian rupa sehingga Total Semua Poin = Skor Maksimal
+                itemStats.forEach(item => {
+                    item.final_poin = (item.new_weight / sumWeights) * maxPossibleScore;
+                });
+
+                // 3. Beri poin masing-masing ke siswa jika jawaban benar
                 calculatedSiswa.forEach(s => {
-                    let rawIrt = 0;
-                    s.jwbDetails.forEach((d, i) => { if(d.isBenar) rawIrt += itemStats[i].difficulty; });
-                    // Normalisasi sederhana (dikalikan 10 biar skornya kelihatan besar)
-                    s.irtScore = parseFloat((rawIrt * 10).toFixed(2)); 
-                    s.finalScore = parseFloat(((s.skorAsli + s.irtScore) / 2).toFixed(2));
+                    let irt = 0;
+                    s.jwbDetails.forEach((d, i) => { 
+                        if(d.isBenar) irt += itemStats[i].final_poin; 
+                    });
+                    
+                    s.irtScore = parseFloat(irt.toFixed(2));
+                    s.finalScore = s.irtScore;
                 });
             } else {
                 // Untuk Standar & Tie-Breaker
@@ -318,7 +364,11 @@
                     if(b.b_sedang !== a.b_sedang) return b.b_sedang - a.b_sedang;
                     if(b.b_mudah !== a.b_mudah) return b.b_mudah - a.b_mudah;
                     if(a.kelasNum !== b.kelasNum) return a.kelasNum - b.kelasNum; // Kelas lebih muda (kecil) menang
-                    return a.durasiMs - b.durasiMs; // Tie breaker terakhir kecepatan
+                    
+                    if(document.getElementById('cek-tie-waktu') && document.getElementById('cek-tie-waktu').checked) {
+                        return a.durasiMs - b.durasiMs; // Tie breaker terakhir kecepatan
+                    }
+                    return 0; // Rank Sama
                 } else {
                     // STANDAR / IRT (Kalo sama persis ya kecepatan)
                     return a.durasiMs - b.durasiMs;
@@ -333,6 +383,11 @@
                     let isTie = (s.finalScore === prev.finalScore);
                     if(mode === 'tiebreaker') {
                         isTie = isTie && (s.jml_salah === prev.jml_salah) && (s.b_sulit === prev.b_sulit) && (s.b_sedang === prev.b_sedang) && (s.b_mudah === prev.b_mudah) && (s.kelasNum === prev.kelasNum);
+                        if(document.getElementById('cek-tie-waktu') && document.getElementById('cek-tie-waktu').checked) {
+                            isTie = isTie && (s.durasiMs === prev.durasiMs);
+                        }
+                    } else {
+                        isTie = isTie && (s.durasiMs === prev.durasiMs);
                     }
                     if(!isTie) currentRank = i + 1;
                 }
@@ -351,8 +406,12 @@
             const thead = document.getElementById('tabel-header');
             const tbody = document.getElementById('tabel-body');
 
-            let thHTML = `<th>Rank</th><th style="min-width: 120px; text-align: center;">Aksi</th><th>Nama Peserta</th><th>Asal Sekolah</th><th>Kls</th><th>Skor Akhir</th>`;
-            if(mode === 'irt') thHTML += `<th style="color:var(--primary);">Skor IRT</th>`;
+            let thHTML = `<th>Rank</th><th style="min-width: 120px; text-align: center;">Aksi</th><th>Nama Peserta</th><th>Asal Sekolah</th><th>Kls</th>`;
+            if(mode === 'irt') {
+                thHTML += `<th>Skor Mentah</th><th style="color:var(--primary);">Skor IRT (Akhir)</th>`;
+            } else {
+                thHTML += `<th>Skor Akhir</th>`;
+            }
             thHTML += `<th>Durasi</th><th>Cheat</th>`;
             for(let i=1; i<=masterSoal.length; i++) thHTML += `<th style="text-align:center;">Q${i}</th>`;
             thead.innerHTML = thHTML;
@@ -372,10 +431,14 @@
                     </td>
                     <td style="font-weight:700;">${s.nama}</td>
                     <td>${s.sekolah}</td>
-                    <td style="text-align:center;">${s.kelasStr}</td>
-                    <td style="font-weight:900; color:var(--primary); font-size:1.1rem;">${s.finalScore}</td>`;
+                    <td style="text-align:center;">${s.kelasStr}</td>`;
                 
-                if(mode === 'irt') tr += `<td style="font-weight:bold; color:var(--success);">${s.irtScore}</td>`;
+                if(mode === 'irt') {
+                    tr += `<td>${s.skorAsli}</td>`;
+                    tr += `<td style="font-weight:900; color:var(--primary); font-size:1.1rem;">${s.irtScore}</td>`;
+                } else {
+                    tr += `<td style="font-weight:900; color:var(--primary); font-size:1.1rem;">${s.finalScore}</td>`;
+                }
                 
                 tr += `<td>${s.durasiStr}</td><td style="color:${s.cheatCount>0?'var(--danger)':'#ccc'}; font-weight:bold;">${s.cheatCount}</td>`;
 
@@ -427,36 +490,51 @@
         // =======================================================================
         // 8. EXPORT CETAK PDF (AUTO-TABLE ADVANCED)
         // =======================================================================
-        function modalExportPDF() {
+        function modalExport() {
             if(calculatedSiswa.length === 0) return Swal.fire('Kosong', 'Pilih paket dan jalankan algoritma dulu.', 'warning');
 
+            let isIrt = document.getElementById('select-algo').value === 'irt';
+
             Swal.fire({
-                title: 'Konfigurasi Cetak PDF',
+                title: 'Konfigurasi Cetak Laporan',
                 html: `
-                    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:10px; text-align:left;">Pilih kolom yang ingin ditampilkan di laporan PDF:</p>
+                    <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:10px; text-align:left;">Pilih kolom yang ingin ditampilkan di laporan:</p>
                     <div class="export-grid">
                         <label class="chk-row"><input type="checkbox" id="pdf-nama" checked disabled> Nama Peserta (Wajib)</label>
-                        <label class="chk-row"><input type="checkbox" id="pdf-skor" checked disabled> Skor Akhir (Wajib)</label>
+                        <label class="chk-row"><input type="checkbox" id="pdf-skor" checked disabled> ${isIrt ? 'Skor Mentah' : 'Skor Akhir'} (Wajib)</label>
+                        ${isIrt ? '<label class="chk-row"><input type="checkbox" id="pdf-irt" checked> Skor IRT</label>' : ''}
                         <label class="chk-row"><input type="checkbox" id="pdf-kls" checked> Kelas</label>
                         <label class="chk-row"><input type="checkbox" id="pdf-sek" checked> Asal Sekolah</label>
                         <label class="chk-row"><input type="checkbox" id="pdf-wkt" checked> Durasi Pengerjaan</label>
                         <label class="chk-row"><input type="checkbox" id="pdf-breakdown" checked> Rincian Benar (Sulit/Sedang/Mudah)</label>
                         <label class="chk-row"><input type="checkbox" id="pdf-email"> Email Login</label>
                         <label class="chk-row"><input type="checkbox" id="pdf-q"> Detail Q1 - Qn (B/S)</label>
+                    </div>
+                    <div style="margin-top: 15px; text-align: left;">
+                        <label style="font-size: 0.9rem; font-weight: 600;">Format Laporan:</label>
+                        <select id="export-format" class="form-control" style="margin-top: 5px;">
+                            <option value="pdf">PDF Document (.pdf)</option>
+                            <option value="word">Word Document (.doc)</option>
+                        </select>
                     </div>`,
-                width: '600px', showCancelButton: true, confirmButtonText: 'Generate & Cetak PDF',
+                width: '600px', showCancelButton: true, confirmButtonText: 'Generate & Cetak',
                 preConfirm: () => {
                     return {
+                        irt: isIrt ? document.getElementById('pdf-irt').checked : false,
                         kls: document.getElementById('pdf-kls').checked,
                         sek: document.getElementById('pdf-sek').checked,
                         wkt: document.getElementById('pdf-wkt').checked,
                         brk: document.getElementById('pdf-breakdown').checked,
                         eml: document.getElementById('pdf-email').checked,
-                        qq: document.getElementById('pdf-q').checked
+                        qq: document.getElementById('pdf-q').checked,
+                        fmt: document.getElementById('export-format').value
                     };
                 }
             }).then(res => {
-                if(res.isConfirmed) eksekusiCetakPDF(res.value);
+                if(res.isConfirmed) {
+                    if (res.value.fmt === 'pdf') eksekusiCetakPDF(res.value);
+                    else eksekusiCetakWord(res.value);
+                }
             });
         }
 
@@ -479,7 +557,9 @@
             if(cfg.kls) headRow1.push({content: 'Kls', rowSpan: cfg.brk ? 2 : 1});
             if(cfg.sek) headRow1.push({content: 'Asal Sekolah', rowSpan: cfg.brk ? 2 : 1});
             
-            headRow1.push({content: 'Skor', rowSpan: cfg.brk ? 2 : 1});
+            let isIrtMode = document.getElementById('select-algo').value === 'irt';
+            headRow1.push({content: isIrtMode ? 'Skor Mentah' : 'Skor', rowSpan: cfg.brk ? 2 : 1});
+            if(cfg.irt) headRow1.push({content: 'Skor IRT', rowSpan: cfg.brk ? 2 : 1});
             if(cfg.wkt) headRow1.push({content: 'Waktu', rowSpan: cfg.brk ? 2 : 1});
 
             // Ini logika Header Bertingkat khas OSN
@@ -502,7 +582,10 @@
                 if(cfg.eml) row.push(s.email);
                 if(cfg.kls) row.push(s.kelasStr);
                 if(cfg.sek) row.push(s.sekolah);
-                row.push(s.finalScore.toString());
+                
+                row.push(isIrtMode ? s.skorAsli.toString() : s.finalScore.toString());
+                if(cfg.irt) row.push(s.irtScore.toString());
+                
                 if(cfg.wkt) row.push(s.durasiStr);
                 
                 if(cfg.brk) { row.push(s.b_sulit.toString(), s.b_sedang.toString(), s.b_mudah.toString()); }
@@ -528,6 +611,85 @@
             });
 
             doc.save(`Ranking_${activePaketId}_${new Date().getTime()}.pdf`);
+        }
+
+        function eksekusiCetakWord(cfg) {
+            let tableHTML = `<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 10pt; text-align: left;">`;
+            
+            let isIrtMode = document.getElementById('select-algo').value === 'irt';
+            let head1 = `<tr><th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">Rank</th><th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">Nama Siswa</th>`;
+            if(cfg.eml) head1 += `<th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">Email</th>`;
+            if(cfg.kls) head1 += `<th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">Kls</th>`;
+            if(cfg.sek) head1 += `<th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">Asal Sekolah</th>`;
+            
+            head1 += `<th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">${isIrtMode ? 'Skor Mentah' : 'Skor'}</th>`;
+            if(cfg.irt) head1 += `<th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">Skor IRT</th>`;
+            
+            if(cfg.wkt) head1 += `<th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white;">Waktu</th>`;
+
+            let head2 = '';
+            if(cfg.brk) {
+                head1 += `<th colspan="3" style="background-color: #2563eb; color: white; text-align: center;">Soal Dijawab Benar</th>`;
+                head2 = `<tr><th style="background-color: #2563eb; color: white; text-align: center;">Sulit</th><th style="background-color: #2563eb; color: white; text-align: center;">Sedang</th><th style="background-color: #2563eb; color: white; text-align: center;">Mudah</th></tr>`;
+            }
+
+            if(cfg.qq) {
+                let maxQ = Math.min(masterSoal.length, 30);
+                for(let i=1; i<=maxQ; i++) head1 += `<th rowspan="${cfg.brk ? 2 : 1}" style="background-color: #2563eb; color: white; text-align: center;">Q${i}</th>`;
+            }
+            head1 += `</tr>`;
+            
+            tableHTML += `<thead>${head1}${head2}</thead><tbody>`;
+
+            calculatedSiswa.forEach(s => {
+                let tr = `<tr>`;
+                tr += `<td style="text-align: center; font-weight: bold;">${s.rank}</td>`;
+                tr += `<td>${s.nama}</td>`;
+                if(cfg.eml) tr += `<td>${s.email}</td>`;
+                if(cfg.kls) tr += `<td>${s.kelasStr}</td>`;
+                if(cfg.sek) tr += `<td>${s.sekolah}</td>`;
+                
+                tr += `<td style="font-weight: bold;">${isIrtMode ? s.skorAsli : s.finalScore}</td>`;
+                if(cfg.irt) tr += `<td style="font-weight: bold;">${s.irtScore}</td>`;
+                
+                if(cfg.wkt) tr += `<td>${s.durasiStr}</td>`;
+                
+                if(cfg.brk) {
+                    tr += `<td style="text-align: center;">${s.b_sulit}</td><td style="text-align: center;">${s.b_sedang}</td><td style="text-align: center;">${s.b_mudah}</td>`;
+                }
+
+                if(cfg.qq) {
+                    let maxQ = Math.min(masterSoal.length, 30);
+                    for(let i=0; i<maxQ; i++) {
+                        let d = s.jwbDetails[i];
+                        tr += `<td style="text-align: center;">${!d.jwb ? '-' : (d.isBenar ? 'B' : 'S')}</td>`;
+                    }
+                }
+                tr += `</tr>`;
+                tableHTML += tr;
+            });
+
+            tableHTML += `</tbody></table>`;
+
+            let headerDoc = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'><title>Export Word</title></head><body>
+            <h2 style="font-family: Arial, sans-serif; text-align: center;">PENGUMUMAN HASIL TRY OUT (RANKING)</h2>
+            <p style="font-family: Arial, sans-serif;">
+                <b>Paket Ujian:</b> ${activePaketName}<br>
+                <b>Algoritma:</b> ${document.getElementById('select-algo').options[document.getElementById('select-algo').selectedIndex].text}<br>
+                <b>Tanggal:</b> ${new Date().toLocaleString('id-ID')}
+            </p>
+            ${tableHTML}
+            </body></html>`;
+
+            let blob = new Blob(['\ufeff', headerDoc], { type: 'application/msword' });
+            let url = URL.createObjectURL(blob);
+            let link = document.createElement('a');
+            link.href = url;
+            link.download = `Ranking_${activePaketId}_${new Date().getTime()}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // =======================================================================
