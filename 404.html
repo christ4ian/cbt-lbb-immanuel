@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>404 - Halaman Tidak Ditemukan</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/style.css">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Open Sans', sans-serif;
+            overflow: auto; /* Allow scroll for 404 page */
+            padding: 20px;
+        }
+
+        .error-container {
+            background: white;
+            max-width: 600px;
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            text-align: center;
+            position: relative;
+        }
+
+        .error-header {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            padding: 50px 20px;
+            color: white;
+            position: relative;
+        }
+
+        .error-header::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: white;
+            border-top-left-radius: 50% 100%;
+            border-top-right-radius: 50% 100%;
+        }
+
+        .error-header h1 {
+            font-family: 'Nunito', sans-serif;
+            font-size: 6rem;
+            font-weight: 800;
+            margin: 0;
+            line-height: 1;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .error-header p {
+            font-size: 1.2rem;
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .error-body {
+            padding: 40px 30px;
+        }
+
+        .error-body h2 {
+            font-family: 'Nunito', sans-serif;
+            color: #2c3e50;
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .error-body p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #007bff 0%, #0069d9 100%);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-family: 'Nunito', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        /* Math Joke Section */
+        .math-joke {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px dashed #ced4da;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            text-align: left;
+        }
+
+        .math-joke i {
+            font-size: 2rem;
+            color: #adb5bd;
+        }
+        
+        .math-joke p {
+            margin: 0;
+            color: #495057;
+            font-size: 0.95rem;
+        }
+
+        .floating-icon {
+            font-size: 3rem;
+            color: rgba(255,255,255,0.2);
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="error-container">
+        <div class="error-header">
+            <i class="fa-solid fa-ghost floating-icon"></i>
+            <h1>404</h1>
+            <p>Oops! Salah Alamat Nih</p>
+        </div>
+
+        <div class="error-body">
+            <h2>Halaman Tidak Ditemukan</h2>
+            <p>Maaf, halaman atau URL ujian yang Anda cari sepertinya tidak ada, sudah dipindah, atau Anda salah mengetikkan alamat link.</p>
+            
+            <a href="/" class="btn-home">
+                <i class="fa-solid fa-house"></i> Kembali ke Beranda
+            </a>
+
+            <!-- Math Joke -->
+            <div class="math-joke">
+                <i class="fa-solid fa-calculator"></i>
+                <p>Sama seperti <strong>&radic;(-1)</strong>, halaman yang kamu cari ini hanyalah sebuah imajinasi...</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
