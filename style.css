@@ -757,12 +757,14 @@ h4 {
     margin-bottom: 25px;
     color: #212529;
 }
-.soal-text img {
-    max-width: 100%;
-    height: auto;
+.soal-text img,
+#panel-stimulus img {
+    max-width: 480px !important; /* Batasi lebar di laptop/desktop agar tidak terlalu besar */
+    height: auto !important;
     border-radius: 8px;
     border: 1px solid #eee;
-    margin: 10px 0;
+    margin: 15px auto !important; /* Rata tengah agar rapi */
+    display: block;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 .soal-text p { margin-top: 0; }
@@ -1246,6 +1248,13 @@ h4 {
     }
     
     .soal-text { font-size: 1rem; }
+    
+    /* Biar di HP gambar stimulus dan soal tampil lebar penuh agar jelas */
+    .soal-text img,
+    #panel-stimulus img {
+        max-width: 100% !important;
+        margin: 10px auto !important;
+    }
 }
 
 /* ========================================= */
@@ -1434,11 +1443,11 @@ h4 {
 }
 
 .zoomed img {
-    max-width: 95%;
-    max-height: 95%;
-    object-fit: contain;
-    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
-    border: 3px solid white;
+    max-width: 95% !important;
+    max-height: 95% !important;
+    object-fit: contain !important;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5) !important;
+    border: 3px solid white !important;
 }
 /* ========================================= */
 /* FIX MATHJAX OVERFLOW (RUMUS KEPANJANGAN)  */
@@ -1456,12 +1465,27 @@ mjx-container {
     overflow-x: auto !important; /* Nyalain fitur scroll geser kiri-kanan */
     overflow-y: hidden !important;
     padding: 5px 0; /* Biar scrollbar-nya ga nabrak huruf */
+    font-size: 1.15em !important; /* Menyelaraskan MathJax agar ikut membesar bersama text size */
 }
 
 /* Khusus untuk rumus yang bentuknya block (tengah-tengah) */
 mjx-container[display="true"] {
     display: block !important;
-    margin: 10px 0;
+    margin: 12px 0 !important;
+    padding: 8px 0 !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    text-align: center !important; /* Rata tengah di desktop */
+    -webkit-overflow-scrolling: touch; /* Scrolling lancar di iOS */
+}
+
+/* Di HP (mobile), rumus display mode diratakan ke kiri agar bisa digeser dari awal rumus tanpa terpotong di kiri */
+@media (max-width: 768px) {
+    mjx-container[display="true"] {
+        text-align: left !important;
+        padding-left: 5px !important;
+    }
 }
 
 /* Custom Scrollbar khusus buat area rumus di HP biar estetik */
