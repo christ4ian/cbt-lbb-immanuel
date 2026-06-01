@@ -14,6 +14,8 @@
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';</script>
 
     <style>
         :root {
@@ -42,12 +44,23 @@
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .main-content { padding-bottom: 80px; } 
-            .container { height: calc(100vh - 65px - 80px); padding: 15px; }
+            .container { height: calc(100vh - 65px - 80px); padding: 0 !important; gap: 0 !important; }
             .bottom-nav { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid var(--border); z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom); }
             .bottom-nav-item { flex: 1; text-align: center; padding: 12px 5px; color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none;}
             .bottom-nav-item i { font-size: 1.3rem; margin-bottom: 2px;}
             .bottom-nav-item.active { color: var(--primary); }
+            
+            .chat-history-sidebar { display: none !important; position: absolute; z-index: 100; height: 100%; top: 0; left: 0; width: 85%; max-width: 320px; border-radius: 0; box-shadow: 5px 0 25px rgba(0,0,0,0.15); border-right: 1px solid var(--border); }
+            .chat-history-sidebar.active-mobile { display: flex !important; }
+            .chat-wrapper { border: none; border-radius: 0; box-shadow: none; }
+            .chat-input-area { padding: 12px 15px; }
+            .chat-header { padding: 12px 15px; }
+            .chat-messages { padding: 15px; }
+            .btn-toggle-history { display: flex !important; }
         }
+        .btn-toggle-history { display: none; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid var(--border); color: var(--text-dark); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 1rem; }
+        .mobile-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); z-index: 95; backdrop-filter: blur(2px); }
+        .mobile-overlay.active { display: block; }
 
         /* KOMPONEN UI */
         .btn { padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -99,6 +112,23 @@
         pre { background: #f0f4f9; color: #1f1f1f; padding: 15px; border-radius: 8px; overflow-x: auto; margin: 10px 0; font-size: 0.85rem; border: 1px solid #e5e7eb; }
         code { font-family: 'Consolas', monospace; }
         .msg-ai p code { background: #f0f4f9; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; border: 1px solid #e5e7eb;}
+        
+        .chat-history-sidebar { width: 300px; background: white; border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow); flex-shrink: 0; }
+        .chat-history-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; transition: 0.2s; }
+        .chat-history-item:hover { background: #f8fafc; }
+        .chat-history-item.active { background: #eff6ff; border-left: 3px solid var(--primary); }
+        .chat-title { font-weight: 600; font-size: 0.9rem; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-date { font-size: 0.75rem; color: var(--text-muted); }
+        .chat-actions { display: none; align-items: center; gap: 8px; margin-top: 5px; }
+        .chat-history-item:hover .chat-actions { display: flex; }
+        
+        .attachment-badge { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; color: #475569; position: relative; }
+        .attachment-badge .remove { cursor: pointer; color: var(--danger); font-weight: bold; }
+        
+        @media (max-width: 992px) {
+            .container { flex-direction: column !important; }
+            .chat-history-sidebar { width: 100%; height: 200px; flex-shrink: 0; }
+        }
 
     </style>
 </head>
@@ -106,6 +136,7 @@
 
     <aside class="sidebar">
         <div class="brand"><i class="fa-solid fa-layer-group"></i> Master Admin</div>
+        <a href="admin-home.html" class="nav-item"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="admin-tryout.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Manajemen Try Out</a>
         <a href="admin-database.html" class="nav-item"><i class="fa-solid fa-users"></i> Data Siswa & Nilai</a>
         <a href="admin-stat.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Statistik & Peringkat</a>
@@ -118,38 +149,67 @@
     </aside>
 
     <main class="main-content">
+        <style>
+            .mobile-settings-btn { display: none; color: var(--text-muted); font-size: 1.25rem; text-decoration: none; transition: 0.2s; padding: 5px; }
+            .mobile-settings-btn:hover { color: var(--primary); }
+            @media (max-width: 768px) { .mobile-settings-btn { display: block; } }
+        </style>
         <nav class="top-navbar">
             <div style="font-weight: 800; color: var(--text-dark); font-size: 1.1rem;">CBT AI Agent Workspace</div>
+            <a href="admin-settings.html" class="mobile-settings-btn" title="Pengaturan Akun"><i class="fa-solid fa-user-gear"></i></a>
         </nav>
 
-        <div class="container">
-            <div class="chat-wrapper">
+        <div class="container" style="display: flex; gap: 20px; padding: 20px; flex-direction: row; height: calc(100vh - 65px); position: relative;">
+            
+            <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileHistory()"></div>
+            <!-- Sidebar Riwayat Obrolan -->
+            <div class="chat-history-sidebar">
+                <div style="padding: 15px; border-bottom: 1px solid var(--border); display: flex; gap: 10px;">
+                    <button class="btn btn-outline" style="flex: 1; border-color: var(--primary); color: var(--primary); font-size: 0.85rem;" onclick="createNewChat()">
+                        <i class="fa-solid fa-plus"></i> Chat Baru
+                    </button>
+                    <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 8px 12px;" onclick="clearAllChats()" title="Hapus Semua Riwayat">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                <div id="chat-history-list" style="flex: 1; overflow-y: auto;">
+                    <!-- List of chats loaded from local storage -->
+                </div>
+            </div>
+
+            <div class="chat-wrapper" style="flex: 1;">
                 <div class="chat-header">
                     <div style="display: flex; align-items: center; gap: 12px;">
+                        <button class="btn-toggle-history" onclick="toggleMobileHistory()"><i class="fa-solid fa-bars"></i></button>
                         <i class="fa-solid fa-sparkles" style="color: #1a73e8; font-size: 1.4rem;"></i> 
                         <div>
-                            <div style="font-size: 1.1rem; margin-bottom: 2px;">CBT AI Agent</div>
-                            <div style="font-size: 0.75rem; font-weight: 500; color: #64748b;">Powered by Gemini</div>
+                            <div style="font-size: 1.1rem; margin-bottom: 2px;" id="current-chat-title">Sesi Baru</div>
+                            <div style="font-size: 0.75rem; font-weight: 500; color: #64748b;">Powered by Gemini 3.1 Pro</div>
                         </div>
                     </div>
-                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger);" onclick="clearChat()">
-                        <i class="fa-solid fa-trash-can"></i> Bersihkan Obrolan
-                    </button>
                 </div>
                 
                 <div class="chat-messages" id="chat-messages">
                     <!-- Default Greeting Will Be Loaded by JS if empty -->
                 </div>
 
-                <div class="chat-input-area">
-                    <textarea id="chat-input" class="chat-input" placeholder="Tuliskan perintah atau pertanyaan Anda di sini..." rows="1" oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
-                    <button class="btn-send" id="btn-send" onclick="handleSend()"><i class="fa-solid fa-paper-plane"></i></button>
+                <div class="chat-input-area" style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding: 15px 25px;">
+                    <div id="attachment-preview" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                    <div style="display: flex; gap: 10px; align-items: flex-end; width: 100%;">
+                        <input type="file" id="chat-attachment" style="display:none;" multiple accept="image/*,application/pdf,text/plain" onchange="handleAttachment(event)">
+                        <button class="btn btn-outline" style="background: transparent; color: #64748b; font-size: 1.2rem; border: none; box-shadow: none; padding: 10px; margin-bottom: 5px; flex-shrink: 0;" onclick="document.getElementById('chat-attachment').click()" title="Lampirkan File">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+                        <textarea id="chat-input" class="chat-input" placeholder="Tuliskan instruksi atau lampirkan dokumen soal..." rows="1" oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
+                        <button class="btn-send" id="btn-send" style="margin-bottom: 5px;" onclick="handleSend()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
     <nav class="bottom-nav">
+        <a href="admin-home.html" class="bottom-nav-item"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="admin-tryout.html" class="bottom-nav-item"><i class="fa-solid fa-folder-open"></i> Try Out</a>
         <a href="admin-database.html" class="bottom-nav-item"><i class="fa-solid fa-users"></i> Siswa</a>
         <a href="admin-stat.html" class="bottom-nav-item"><i class="fa-solid fa-chart-line"></i> Statistik</a>
@@ -157,6 +217,7 @@
     </nav>
 
     <script>
+        
         // =======================================================================
         // 1. INISIALISASI FIREBASE
         // =======================================================================
@@ -169,98 +230,183 @@
         // =======================================================================
         // 2. GEMINI API SETUP
         // =======================================================================
-        // Menggunakan flash-latest karena lebih mendukung function calling dengan baik daripada flash-lite yang mungkin fiturnya dipangkas, tapi kita ikuti instruksi
-        const GEMINI_MODEL = "gemini-1.5-flash-latest"; // fallback ke standar terbaru jika 3.1 belum ready rest apinya.
-        const ACTUAL_MODEL = "gemini-3.1-flash-lite";
+        const ACTUAL_MODEL = "gemini-3.1-flash-lite"; // "gemini-1.5-flash-latest"
 
+        // Context & Sessions
         let chatHistory = [];
+        let allChats = [];
+        let currentChatId = null;
+        let pendingAttachments = [];
         
         // System instruction
         const systemInstruction = {
             parts: [{
                 text: "Kamu adalah CBT AI Agent, asisten super cerdas untuk Master Admin dari sistem Computer Based Test. " +
-                      "Tugasmu adalah membantu mengelola data ujian dan melihat statistik siswa. " +
+                      "Tugasmu adalah membantu mengelola data ujian, soal, dan melihat statistik/sesi siswa. " +
                       "Gunakan fungsi (tools) yang disediakan untuk membaca data dari database atau melakukan update. " +
-                      "Selalu jelaskan apa yang akan kamu lakukan atau apa hasil pemikirannya ke dalam pesanmu sebelum memberikan jawaban akhir. " +
-                      "Kamu dapat mengeksekusi multi-tool calls jika perlu. Jika pengguna meminta untuk 'mengubah ujian tryout mei', kamu harus mencari id tryout mei menggunakan get_all_tryout, lalu memanggil update_tryout. " +
-                      "Untuk menambah atau menghapus siswa, kamu HARUS menggunakan tool add_siswa atau delete_siswa. Jangan pernah berasumsi aksi ini akan jalan tanpa persetujuan Admin karena sistem otomatis akan memunculkan prompt ke Admin. " +
-                      "Jawab dalam bahasa Indonesia yang ramah, profesional, dan gunakan pemformatan Markdown (bold, tabel, list) agar rapi."
+                      "Selalu jelaskan apa yang akan kamu lakukan ke dalam pesanmu sebelum memberikan jawaban akhir. " +
+                      "PENTING: Jika Admin meminta untuk mengecek durasi ujian, waktu pengerjaan, atau nilai siswa yang sudah selesai, GUNAKAN tool get_sessions_by_paket untuk membaca data sesinya terlebih dahulu. Setelah mendapatkan sessionId, kamu bisa menggunakan tool update_session untuk mengedit waktu pengerjaan atau nilai (membutuhkan persetujuan). " +
+                      "Untuk menambah/menghapus siswa dan tryout, kamu HARUS menggunakan tool. " +
+                      "Jika Admin ingin membuat, mengubah, atau menghapus jadwal pendaftaran yang muncul di halaman Blogger, gunakan alat get_registration_events, create_registration_event, update_registration_event, dan delete_registration_event." +
+                      "Jika Admin melampirkan file (PDF/Gambar) dan meminta ekstraksi soal, bacalah file tersebut dan JAWABLAH DENGAN BLOK KODE JSON (```json [array objek soal] ```). Setiap soal wajib memiliki field: tipe (pg/pgk), tingkat_kesulitan (Mudah/Sedang/Sulit), pertanyaan, opsi (array), dan kunci. JANGAN gunakan tool untuk import soal, cukup balas dengan output JSON saja."
             }]
         };
 
         const toolsConfig = [{
             functionDeclarations: [
-                {
-                    name: "get_all_tryout",
-                    description: "Mengambil daftar semua tryout / paket ujian beserta id, judul, status, waktu buka, waktu tutup, dan durasi."
-                },
-                {
-                    name: "get_tryout_details",
-                    description: "Mengambil semua rincian tentang suatu paket tryout spesifik.",
-                    parameters: {
-                        type: "OBJECT",
-                        properties: { id: { type: "STRING", description: "ID dari paket tryout" } },
-                        required: ["id"]
-                    }
-                },
+                { name: "get_all_tryout", description: "Mengambil daftar semua tryout / paket ujian beserta id, judul, status, dll." },
+                { name: "get_tryout_details", description: "Mengambil rincian tryout.", parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] } },
                 {
                     name: "update_tryout",
-                    description: "Melakukan update/perubahan pengaturan pada suatu paket tryout. Bisa mengubah status, waktu buka, waktu tutup, judul, dll.",
+                    description: "Update paket tryout.",
                     parameters: {
                         type: "OBJECT",
                         properties: {
-                            id: { type: "STRING", description: "ID paket ujian yang akan diubah" },
+                            id: { type: "STRING" },
                             updates: {
                                 type: "OBJECT",
                                 properties: {
-                                    status: { type: "STRING", description: "aktif atau hidden" },
-                                    waktu_buka: { type: "STRING", description: "Waktu buka dengan format YYYY-MM-DD HH:mm:ss" },
-                                    waktu_tutup: { type: "STRING", description: "Waktu tutup dengan format YYYY-MM-DD HH:mm:ss" },
-                                    judul: { type: "STRING", description: "Judul tryout" },
-                                    durasi_menit: { type: "INTEGER", description: "Durasi ujian dalam menit" },
-                                    mapel: { type: "STRING", description: "Mata Pelajaran dari tryout (contoh: Matematika, IPA, dsb)" },
-                                    sistem_poin: { type: "BOOLEAN", description: "Mengatur apakah soal menggunakan sistem poin berdasarkan tingkat kesulitan (true/false)." },
-                                    petunjuk: { type: "ARRAY", items: { type: "STRING" }, description: "Daftar petunjuk atau aturan ujian per poin. Mendukung tag HTML sederhana." }
+                                    status: { type: "STRING" }, waktu_buka: { type: "STRING" }, waktu_tutup: { type: "STRING" },
+                                    judul: { type: "STRING" }, durasi_menit: { type: "INTEGER" }, mapel: { type: "STRING" },
+                                    sistem_poin: { type: "BOOLEAN" }, petunjuk: { type: "ARRAY", items: { type: "STRING" } }
                                 }
                             }
-                        },
-                        required: ["id", "updates"]
+                        }, required: ["id", "updates"]
                     }
                 },
                 {
-                    name: "get_siswa_stats",
-                    description: "Mengambil daftar ringkasan statistik siswa (cheat count, skor akhir, durasi pengerjaan, paket yang dikerjakan) dari seluruh sesi ujian."
+                    name: "create_tryout",
+                    description: "Membuat paket ujian baru.",
+                    parameters: { type: "OBJECT", properties: { judul: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "INTEGER" } }, required: ["judul"] }
+                },
+                {
+                    name: "delete_tryout",
+                    description: "Menghapus paket ujian.",
+                    parameters: { type: "OBJECT", properties: { id: { type: "STRING" } }, required: ["id"] }
+                },
+                {
+                    name: "get_soal_by_tryout",
+                    description: "Mengambil semua soal dalam suatu tryout.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" } }, required: ["id_paket"] }
+                },
+                {
+                    name: "get_soal_detail",
+                    description: "Membaca detail satu soal spesifik berdasarkan ID.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" }, id_soal: { type: "STRING", description: "Bisa berupa index atau ID string" } }, required: ["id_paket", "id_soal"] }
+                },
+                {
+                    name: "delete_soal_by_id",
+                    description: "Menghapus satu soal dari suatu tryout.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" }, id_soal: { type: "STRING" } }, required: ["id_paket", "id_soal"] }
+                },
+                {
+                    name: "get_bank_stimulus",
+                    description: "Mendapatkan daftar semua stimulus/wacana dari suatu paket tryout.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" } }, required: ["id_paket"] }
+                },
+                {
+                    name: "create_stimulus",
+                    description: "Membuat stimulus/wacana baru untuk paket tryout.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" }, id_stimulus: { type: "STRING", description: "ID unik (tanpa spasi)" }, konten: { type: "STRING", description: "Isi teks wacana/stimulus, boleh HTML" } }, required: ["id_paket", "id_stimulus", "konten"] }
+                },
+                {
+                    name: "delete_stimulus",
+                    description: "Menghapus stimulus tertentu dari paket tryout.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" }, id_stimulus: { type: "STRING" } }, required: ["id_paket", "id_stimulus"] }
+                },
+
+                { name: "get_siswa_stats", description: "Mengambil statistik siswa." },
+                { name: "get_global_stats", description: "Mengambil statistik global sistem (total siswa, total paket, sesi aktif)." },
+                {
+                    name: "get_sessions_by_paket",
+                    description: "Mengambil daftar seluruh sesi pengerjaan siswa pada paket tryout tertentu, termasuk skor, durasi, dll.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" } }, required: ["id_paket"] }
+                },
+                {
+                    name: "update_session",
+                    description: "Memperbarui data sesi pengerjaan siswa (seperti skor atau durasi pengerjaan).",
+                    parameters: { 
+                        type: "OBJECT", 
+                        properties: { 
+                            sessionId: { type: "STRING", description: "ID Sesi unik" },
+                            updates: { type: "OBJECT", properties: { skor_akhir: { type: "NUMBER" }, waktu_pengerjaan_detik: { type: "NUMBER" }, waktu_selesai: { type: "STRING" } }, description: "Field yang ingin diupdate sesuai struktur database" }
+                        }, 
+                        required: ["sessionId", "updates"] 
+                    }
                 },
                 {
                     name: "get_all_siswa_pendaftaran",
-                    description: "Mengambil daftar seluruh siswa yang sudah terdaftar di suatu paket tryout tertentu.",
+                    description: "Mengambil daftar seluruh siswa pada paket tertentu.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" } }, required: ["id_paket"] }
+                },
+                {
+                    name: "get_roles",
+                    description: "Mengambil daftar role pada suatu paket.",
                     parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" } }, required: ["id_paket"] }
                 },
                 {
                     name: "add_siswa",
-                    description: "Menambahkan pendaftaran siswa baru secara manual ke sebuah paket tryout. (Aksi ini membutuhkan persetujuan/konfirmasi dari Admin).",
+                    description: "Menambahkan siswa baru ke paket tryout.",
                     parameters: { 
                         type: "OBJECT", 
                         properties: { 
-                            id_paket: { type: "STRING", description: "ID dari paket tryout" }, 
-                            nama_siswa: { type: "STRING", description: "Nama lengkap siswa" }, 
-                            email: { type: "STRING", description: "Email valid siswa" }, 
-                            sekolah: { type: "STRING", description: "Asal sekolah (opsional)" } 
-                        }, 
-                        required: ["id_paket", "nama_siswa", "email"] 
+                            id_paket: { type: "STRING" }, nama_siswa: { type: "STRING" }, email: { type: "STRING" }, 
+                            sekolah: { type: "STRING" }, telepon: { type: "STRING" }, kelas: { type: "STRING" }, kota: { type: "STRING" }, role: { type: "STRING" }
+                        }, required: ["id_paket", "nama_siswa", "email"] 
+                    }
+                },
+                {
+                    name: "update_siswa_info",
+                    description: "Mengubah data siswa yang sudah ada.",
+                    parameters: { 
+                        type: "OBJECT", 
+                        properties: { 
+                            id_paket: { type: "STRING" }, email: { type: "STRING" },
+                            updates: { type: "OBJECT", properties: { nama_siswa: { type: "STRING" }, telepon: { type: "STRING" }, sekolah: { type: "STRING" }, kelas: { type: "STRING" }, kota: { type: "STRING" }, role: { type: "STRING" } } }
+                        }, required: ["id_paket", "email", "updates"] 
                     }
                 },
                 {
                     name: "delete_siswa",
-                    description: "Menghapus pendaftaran siswa secara permanen dari sebuah paket tryout beserta riwayat ujiannya. (Aksi ini membutuhkan persetujuan Admin).",
+                    description: "Menghapus pendaftaran siswa.",
+                    parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" }, email: { type: "STRING" } }, required: ["id_paket", "email"] }
+                },
+                {
+                    name: "get_registration_events",
+                    description: "Mendapatkan daftar semua event pendaftaran di Blogger yang tersedia (aktif/tutup/mendatang)."
+                },
+                {
+                    name: "create_registration_event",
+                    description: "Membuat jadwal pendaftaran baru di Blogger.",
                     parameters: { 
                         type: "OBJECT", 
                         properties: { 
-                            id_paket: { type: "STRING", description: "ID dari paket tryout" }, 
-                            email: { type: "STRING", description: "Email siswa yang akan dihapus" } 
-                        }, 
-                        required: ["id_paket", "email"] 
+                            id_event: { type: "STRING", description: "ID unik event, misal: osn_juli_26" },
+                            nama_event: { type: "STRING" },
+                            tanggal_buka: { type: "STRING", description: "Format datetime-local, misal: 2026-07-01T00:00" },
+                            tanggal_tutup: { type: "STRING" },
+                            paket_ujian: { 
+                                type: "ARRAY", 
+                                items: { type: "OBJECT", properties: { id: { type: "STRING" }, nama: { type: "STRING" } } }
+                            }
+                        }, required: ["id_event", "nama_event", "tanggal_buka", "tanggal_tutup", "paket_ujian"] 
                     }
+                },
+                {
+                    name: "update_registration_event",
+                    description: "Mengubah data jadwal pendaftaran yang sudah ada.",
+                    parameters: { 
+                        type: "OBJECT", 
+                        properties: { 
+                            id_event: { type: "STRING" },
+                            updates: { type: "OBJECT", properties: { nama_event: { type: "STRING" }, tanggal_buka: { type: "STRING" }, tanggal_tutup: { type: "STRING" } } }
+                        }, required: ["id_event", "updates"] 
+                    }
+                },
+                {
+                    name: "delete_registration_event",
+                    description: "Menghapus event pendaftaran yang sudah tidak terpakai.",
+                    parameters: { type: "OBJECT", properties: { id_event: { type: "STRING" } }, required: ["id_event"] }
                 }
             ]
         }];
@@ -274,13 +420,9 @@
                     const snap = await db.ref('paket_ujian').once('value');
                     const data = snap.val() || {};
                     let result = Object.keys(data).map(key => ({
-                        id: key,
-                        judul: data[key].judul || "-",
-                        mapel: data[key].mapel || "(Kosong)",
-                        status: data[key].status || "hidden",
-                        waktu_buka: data[key].waktu_buka || "-",
-                        waktu_tutup: data[key].waktu_tutup || "-",
-                        durasi_menit: data[key].durasi_menit || 60
+                        id: key, judul: data[key].judul || "-", mapel: data[key].mapel || "(Kosong)",
+                        status: data[key].status || "hidden", waktu_buka: data[key].waktu_buka || "-",
+                        waktu_tutup: data[key].waktu_tutup || "-", durasi_menit: data[key].durasi_menit || 60
                     }));
                     return result;
                 } 
@@ -292,8 +434,75 @@
                     const { id, updates } = args;
                     if(!id || !updates) return { error: "ID atau updates tidak valid." };
                     await db.ref('paket_ujian/' + id).update(updates);
-                    // Jika status berubah, kita mungkin perlu update published_soal (tapi abaikan dulu, biarkan admin update manual dr editor nanti atau asumsi ini update config dasar)
+                    await compileAndPublishTryout(id);
                     return { success: true, message: "Berhasil update tryout " + id, updatedData: updates };
+                }
+                else if (name === "create_tryout") {
+                    const id = 'tryout_' + Date.now();
+                    const newData = {
+                        judul: args.judul, mapel: args.mapel || "-", durasi_menit: args.durasi_menit || 60,
+                        status: "hidden", waktu_buat: new Date().toISOString()
+                    };
+                    await db.ref('paket_ujian/' + id).set(newData);
+                    return { success: true, message: "Paket berhasil dibuat.", id: id };
+                }
+                else if (name === "delete_tryout") {
+                    const result = await Swal.fire({
+                        title: "AI Membutuhkan Izin", text: `Agen AI ingin MENGHAPUS tryout ${args.id}. Lanjutkan?`,
+                        icon: "error", showCancelButton: true, confirmButtonText: "Ya, Hapus", confirmButtonColor: "#ef4444"
+                    });
+                    if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin." };
+                    await db.ref('paket_ujian/' + args.id).remove();
+                    return { success: true, message: "Tryout dihapus." };
+                }
+                else if (name === "get_soal_by_tryout") {
+                    const snap = await db.ref('soal/' + args.id_paket).once('value');
+                    return snap.val() || { message: "Belum ada soal" };
+                }
+                else if (name === "get_soal_detail") {
+                    const snap = await db.ref('soal/' + args.id_paket).once('value');
+                    const soalArr = snap.val() || [];
+                    let target = Array.isArray(soalArr) ? soalArr.find(s => s.id_soal == args.id_soal) : soalArr[args.id_soal];
+                    return target || { error: "Soal tidak ditemukan." };
+                }
+                else if (name === "delete_soal_by_id") {
+                    const result = await Swal.fire({
+                        title: "AI Membutuhkan Izin", text: `Agen AI ingin MENGHAPUS soal ID ${args.id_soal} dari tryout ${args.id_paket}. Lanjutkan?`,
+                        icon: "error", showCancelButton: true, confirmButtonText: "Ya, Hapus", confirmButtonColor: "#ef4444"
+                    });
+                    if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin." };
+                    
+                    const snap = await db.ref('soal/' + args.id_paket).once('value');
+                    let soalArr = snap.val() || [];
+                    if(!Array.isArray(soalArr)) soalArr = Object.values(soalArr);
+                    const idx = soalArr.findIndex(s => s.id_soal == args.id_soal);
+                    if(idx > -1) {
+                        soalArr.splice(idx, 1);
+                        await db.ref('soal/' + args.id_paket).set(soalArr);
+                        await compileAndPublishTryout(args.id_paket);
+                        return { success: true, message: "Soal berhasil dihapus." };
+                    }
+                    return { error: "Soal tidak ditemukan untuk dihapus." };
+                }
+                else if (name === "get_bank_stimulus") {
+                    const snap = await db.ref('paket_ujian/' + args.id_paket + '/bank_stimulus').once('value');
+                    return snap.val() || { message: "Belum ada stimulus" };
+                }
+                else if (name === "create_stimulus") {
+                    await db.ref('paket_ujian/' + args.id_paket + '/bank_stimulus/' + args.id_stimulus).set(args.konten);
+                    await compileAndPublishTryout(args.id_paket);
+                    return { success: true, message: "Stimulus berhasil dibuat." };
+                }
+                else if (name === "delete_stimulus") {
+                    const result = await Swal.fire({
+                        title: "AI Membutuhkan Izin", text: `Agen AI ingin MENGHAPUS stimulus ${args.id_stimulus} dari tryout ${args.id_paket}. Lanjutkan?`,
+                        icon: "error", showCancelButton: true, confirmButtonText: "Ya, Hapus", confirmButtonColor: "#ef4444"
+                    });
+                    if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin." };
+                    
+                    await db.ref('paket_ujian/' + args.id_paket + '/bank_stimulus/' + args.id_stimulus).remove();
+                    await compileAndPublishTryout(args.id_paket);
+                    return { success: true, message: "Stimulus berhasil dihapus." };
                 }
                 else if (name === "get_siswa_stats") {
                     const snapSesi = await db.ref('sessions').once('value');
@@ -303,60 +512,109 @@
                         let s = sesiData[k];
                         if (s.status === 'finished') {
                             result.push({
-                                nama: s.userData?.nama || "Anonim",
-                                email: s.userData?.email || "-",
-                                paketId: s.paketId,
-                                cheatCount: s.cheatCount || 0,
-                                skor_akhir: s.skor_akhir || 0,
-                                waktu_mulai: s.startTime ? new Date(s.startTime).toISOString() : null,
-                                waktu_selesai: s.finishTime ? new Date(s.finishTime).toISOString() : null
+                                nama: s.userData?.nama || "Anonim", email: s.userData?.email || "-",
+                                paketId: s.paketId, cheatCount: s.cheatCount || 0, skor_akhir: s.skor_akhir || 0
                             });
                         }
                     });
                     return result;
                 }
+                else if (name === "get_global_stats") {
+                    const s_paket = await db.ref('paket_ujian').once('value');
+                    const s_pend = await db.ref('pendaftaran').once('value');
+                    return { total_paket: s_paket.numChildren(), total_pendaftaran: s_pend.numChildren() };
+                }
+                else if (name === "get_sessions_by_paket") {
+                    const snap = await db.ref('sessions').orderByChild('paketId').equalTo(args.id_paket).once('value');
+                    const sesiData = snap.val() || {};
+                    let result = [];
+                    Object.keys(sesiData).forEach(k => {
+                        let s = sesiData[k];
+                        delete s.jawaban_siswa; // Hemat token
+                        result.push({ sessionId: k, ...s });
+                    });
+                    return result;
+                }
+                else if (name === "update_session") {
+                    const result = await Swal.fire({
+                        title: "AI Membutuhkan Izin", 
+                        text: `Agen AI ingin mengubah data sesi ${args.sessionId} dengan pembaruan: ${JSON.stringify(args.updates)}. Lanjutkan?`,
+                        icon: "warning", showCancelButton: true, confirmButtonText: "Ya, Ubah", confirmButtonColor: "#f59e0b"
+                    });
+                    if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin." };
+                    
+                    await db.ref('sessions/' + args.sessionId).update(args.updates);
+                    return { success: true, message: "Data sesi berhasil diperbarui." };
+                }
                 else if (name === "get_all_siswa_pendaftaran") {
                     const snap = await db.ref('pendaftaran').orderByChild('id_paket').equalTo(args.id_paket).once('value');
-                    if(!snap.exists()) return { error: "Belum ada siswa yang mendaftar di paket ini." };
-                    let list = [];
-                    snap.forEach(c => { list.push(c.val()); });
-                    return list;
+                    if(!snap.exists()) return { error: "Belum ada siswa." };
+                    let list = []; snap.forEach(c => { list.push(c.val()); }); return list;
+                }
+                else if (name === "get_roles") {
+                    const snap = await db.ref('paket_ujian/' + args.id_paket + '/roles').once('value');
+                    return snap.val() || { message: "Belum ada role." };
                 }
                 else if (name === "add_siswa") {
                     const result = await Swal.fire({
-                        title: "AI Membutuhkan Izin",
-                        text: `Agen AI ingin MENAMBAHKAN siswa bernama ${args.nama_siswa} (${args.email}) ke paket ${args.id_paket}. Izinkan aksi ini?`,
-                        icon: "warning", showCancelButton: true, confirmButtonText: "Izinkan", cancelButtonText: "Tolak", confirmButtonColor: "#10b981"
+                        title: "AI Membutuhkan Izin", text: `Agen AI ingin MENAMBAHKAN siswa ${args.nama_siswa} ke ${args.id_paket}. Izinkan?`,
+                        icon: "warning", showCancelButton: true, confirmButtonText: "Izinkan", confirmButtonColor: "#10b981"
                     });
-                    if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin. Laporkan ke user bahwa admin tidak memberi izin." };
+                    if (!result.isConfirmed) return { error: "Ditolak Admin." };
                     
-                    const idAman = args.email.replace(/[^a-zA-Z0-9]/g, '_'); 
-                    const customId = `${args.id_paket}_${idAman}`;
+                    const customId = args.id_paket + "_" + args.email.replace(/[^a-zA-Z0-9]/g, '_');
                     await db.ref('pendaftaran/' + customId).set({
-                        id_paket: args.id_paket,
-                        nama_siswa: args.nama_siswa,
-                        email: args.email,
-                        sekolah: args.sekolah || "-",
+                        id_paket: args.id_paket, nama_siswa: args.nama_siswa, email: args.email,
+                        telepon: args.telepon || "-", sekolah: args.sekolah || "-",
+                        kelas: args.kelas || "-", kota: args.kota || "-", role: args.role || "",
                         waktu_daftar: new Date().toISOString()
                     });
                     return { success: true, message: `Siswa ${args.nama_siswa} berhasil ditambahkan.` };
                 }
+                else if (name === "update_siswa_info") {
+                    const customId = args.id_paket + "_" + args.email.replace(/[^a-zA-Z0-9]/g, '_');
+                    await db.ref('pendaftaran/' + customId).update(args.updates);
+                    return { success: true, message: "Berhasil update siswa." };
+                }
                 else if (name === "delete_siswa") {
                     const result = await Swal.fire({
-                        title: "AI Membutuhkan Izin",
-                        text: `Agen AI ingin MENGHAPUS pendaftaran siswa dengan email ${args.email} dari paket ${args.id_paket}. Tindakan ini tidak dapat dikembalikan. Izinkan?`,
-                        icon: "error", showCancelButton: true, confirmButtonText: "Ya, Hapus", cancelButtonText: "Tolak", confirmButtonColor: "#ef4444"
+                        title: "AI Membutuhkan Izin", text: `Agen AI ingin MENGHAPUS ${args.email} dari ${args.id_paket}. Izinkan?`,
+                        icon: "error", showCancelButton: true, confirmButtonText: "Hapus", confirmButtonColor: "#ef4444"
                     });
-                    if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin. Laporkan ke user bahwa admin tidak memberi izin." };
+                    if (!result.isConfirmed) return { error: "Ditolak Admin." };
                     
-                    const idAman = args.email.replace(/[^a-zA-Z0-9]/g, '_'); 
-                    const customId = `${args.id_paket}_${idAman}`;
+                    const customId = args.id_paket + "_" + args.email.replace(/[^a-zA-Z0-9]/g, '_');
                     await db.ref('pendaftaran/' + customId).remove();
+                    await db.ref('sessions/' + args.id_paket + "_" + args.email.replace(/\./g, '_')).remove();
+                    return { success: true, message: "Berhasil dihapus." };
+                }
+                else if (name === "get_registration_events") {
+                    const snap = await db.ref('settings/registration_events').once('value');
+                    return snap.val() || { message: "Belum ada event pendaftaran." };
+                }
+                else if (name === "create_registration_event") {
+                    const data = {
+                        nama_event: args.nama_event,
+                        tanggal_buka: args.tanggal_buka,
+                        tanggal_tutup: args.tanggal_tutup,
+                        paket_ujian: args.paket_ujian
+                    };
+                    await db.ref('settings/registration_events/' + args.id_event).set(data);
+                    return { success: true, message: `Event pendaftaran ${args.nama_event} berhasil dibuat.` };
+                }
+                else if (name === "update_registration_event") {
+                    await db.ref('settings/registration_events/' + args.id_event).update(args.updates);
+                    return { success: true, message: "Pendaftaran berhasil diperbarui." };
+                }
+                else if (name === "delete_registration_event") {
+                    const result = await Swal.fire({
+                        title: "Konfirmasi Penghapusan", text: `Agen AI ingin MENGHAPUS Event Pendaftaran ID: ${args.id_event}. Izinkan?`,
+                        icon: "error", showCancelButton: true, confirmButtonText: "Hapus", confirmButtonColor: "#ef4444"
+                    });
+                    if (!result.isConfirmed) return { error: "Ditolak Admin." };
                     
-                    const tempSessionId = args.id_paket + "_" + args.email.replace(/\./g, '_');
-                    await db.ref('sessions/' + tempSessionId).remove();
-                    
-                    return { success: true, message: `Siswa dengan email ${args.email} berhasil dihapus dari paket ${args.id_paket}.` };
+                    await db.ref('settings/registration_events/' + args.id_event).remove();
+                    return { success: true, message: "Event pendaftaran berhasil dihapus." };
                 }
                 return { error: "Fungsi tidak dikenali." };
             } catch (err) {
@@ -365,120 +623,262 @@
         }
 
         // =======================================================================
-        // 4. UI CHAT HANDLER
+        // 4. UI CHAT & SESSIONS HANDLER
         // =======================================================================
         const chatBox = document.getElementById('chat-messages');
         const chatInput = document.getElementById('chat-input');
         const btnSend = document.getElementById('btn-send');
+        const chatTitleEl = document.getElementById('current-chat-title');
+        
+        function toggleMobileHistory() {
+            document.querySelector('.chat-history-sidebar').classList.toggle('active-mobile');
+            document.getElementById('mobile-overlay').classList.toggle('active');
+        }
 
         chatInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-            }
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
         });
 
-        function appendMessage(role, htmlContent, id = null) {
-            const div = document.createElement('div');
-            div.className = 'msg-bubble ' + (role === 'user' ? 'msg-user' : 'msg-ai');
-            if (id) div.id = id;
-
-            // Gemini style wrapper for AI messages
-            if (role === 'ai') {
-                div.innerHTML = `
-                    <div style="display:flex; gap: 15px; align-items: flex-start; width: 100%;">
-                        <i class="fa-solid fa-sparkles" style="color: #1a73e8; font-size: 1.2rem; margin-top: 2px;"></i>
-                        <div style="flex: 1; width: 100%; overflow: hidden;">${htmlContent}</div>
-                    </div>
-                `;
-            } else {
-                div.innerHTML = htmlContent;
+        // --- ATTACHMENTS ---
+        async function handleAttachment(e) {
+            const files = e.target.files;
+            if(!files || files.length === 0) return;
+            
+            for(let i=0; i<files.length; i++) {
+                const file = files[i];
+                const base64 = await fileToBase64(file);
+                const isImage = file.type.startsWith('image/');
+                const isPDF = file.type === 'application/pdf';
+                
+                let mimeType = file.type;
+                if(mimeType === '') { mimeType = 'text/plain'; } // fallback
+                
+                pendingAttachments.push({ file: file, base64: base64, mimeType: mimeType });
+                
+                const badge = document.createElement('div');
+                badge.className = 'attachment-badge';
+                badge.style.display = 'inline-flex';
+                badge.style.alignItems = 'center';
+                badge.style.gap = '8px';
+                
+                let previewHtml = '';
+                if(isImage) {
+                    previewHtml = `<img src="data:${mimeType};base64,${base64}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px;">`;
+                } else if(isPDF) {
+                    previewHtml = `<i class="fa-solid fa-file-pdf" style="font-size: 20px; color: #ef4444;"></i>`;
+                } else {
+                    previewHtml = `<i class="fa-solid fa-file-lines" style="font-size: 20px; color: #64748b;"></i>`;
+                }
+                
+                badge.innerHTML = `${previewHtml} <div style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem;">${file.name}</div>
+                                  <span class="remove" onclick="removeAttachment(${pendingAttachments.length - 1}, this)"><i class="fa-solid fa-xmark"></i></span>`;
+                document.getElementById('attachment-preview').appendChild(badge);
             }
-
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return div; // Return element so we can update it (e.g. thinking indicator)
+            document.getElementById('attachment-preview').style.display = 'flex';
+            e.target.value = '';
         }
 
-        // --- LOCAL STORAGE HANDLING ---
-        function saveChat() {
-            localStorage.setItem('cbt_agent_history', JSON.stringify(chatHistory));
+        function removeAttachment(index, btnElement) {
+            pendingAttachments.splice(index, 1);
+            btnElement.parentElement.remove();
+            if(pendingAttachments.length === 0) {
+                document.getElementById('attachment-preview').style.display = 'none';
+            }
         }
 
-        function clearChat() {
-            Swal.fire({
-                title: 'Hapus Riwayat?',
-                text: "Riwayat obrolan AI ini akan dibersihkan.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Ya, Bersihkan!'
-            }).then((result) => {
-                if (result.isConfirmed) {
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // --- SESSION MANAGEMENT ---
+        function loadAllChats() {
+            const saved = localStorage.getItem('cbt_agent_chats');
+            if (saved) {
+                try { allChats = JSON.parse(saved); } catch (e) { allChats = []; }
+            } else {
+                // Migrasi dari sistem lama jika ada
+                const oldSaved = localStorage.getItem('cbt_agent_history');
+                if(oldSaved) {
+                    allChats = [{ id: 'chat_' + Date.now(), title: 'Migrasi Chat Lama', history: JSON.parse(oldSaved), updatedAt: Date.now() }];
                     localStorage.removeItem('cbt_agent_history');
-                    chatHistory = [];
-                    chatBox.innerHTML = '';
-                    appendDefaultGreeting();
+                }
+            }
+            
+            if(allChats.length > 0) {
+                switchChat(allChats[0].id);
+            } else {
+                createNewChat();
+            }
+            renderChatHistoryList();
+        }
+
+        function saveAllChats() {
+            try {
+                // Strip heavy base64 data to prevent LocalStorage QuotaExceededError (5MB limit)
+                const compactChats = JSON.parse(JSON.stringify(allChats));
+                compactChats.forEach(c => {
+                    c.history.forEach(msg => {
+                        if(msg.parts) {
+                            msg.parts.forEach(p => {
+                                if(p.inlineData && p.inlineData.data) {
+                                    p.inlineData.data = "[base64_omitted]";
+                                }
+                            });
+                        }
+                    });
+                });
+                localStorage.setItem('cbt_agent_chats', JSON.stringify(compactChats));
+            } catch (e) {
+                console.error("Gagal save ke local storage:", e);
+            }
+            renderChatHistoryList();
+        }
+
+        function renderChatHistoryList() {
+            const list = document.getElementById('chat-history-list');
+            list.innerHTML = '';
+            
+            // Sort by recent
+            allChats.sort((a,b) => b.updatedAt - a.updatedAt);
+            
+            allChats.forEach(c => {
+                const d = new Date(c.updatedAt);
+                list.innerHTML += `
+                    <div class="chat-history-item ${c.id === currentChatId ? 'active' : ''}" onclick="switchChat('${c.id}')">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div class="chat-title" title="${c.title}"><i class="fa-regular fa-message"></i> ${c.title}</div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div class="chat-date">${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                            <div class="chat-actions">
+                                <button style="background:none; border:none; color:var(--danger); cursor:pointer;" onclick="deleteChat('${c.id}', event)"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function createNewChat() {
+            const newChat = { id: 'chat_' + Date.now(), title: 'Sesi Baru', history: [], updatedAt: Date.now() };
+            allChats.unshift(newChat);
+            switchChat(newChat.id);
+        }
+
+        function switchChat(id) {
+            const c = allChats.find(x => x.id === id);
+            if(!c) return;
+            currentChatId = id;
+            chatHistory = c.history;
+            chatTitleEl.innerText = c.title;
+            chatBox.innerHTML = '';
+            
+            document.querySelector('.chat-history-sidebar').classList.remove('active-mobile');
+            document.getElementById('mobile-overlay').classList.remove('active');
+            
+            if(chatHistory.length === 0) {
+                appendDefaultGreeting();
+            } else {
+                chatHistory.forEach(msg => {
+                    if (msg.role === 'user') {
+                        if (msg.parts && msg.parts[0] && msg.parts[0].text) {
+                            appendMessage('user', msg.parts[0].text.replace(/\n/g, '<br>'));
+                        }
+                    } else if (msg.role === 'model') {
+                        if (msg.parts) {
+                            let combinedText = "";
+                            msg.parts.forEach(p => { if (p.text) combinedText += p.text + "\n"; });
+                            if (combinedText.trim() !== "") appendMessage('ai', marked.parse(combinedText));
+                        }
+                    }
+                });
+            }
+            renderChatHistoryList();
+        }
+
+        function saveCurrentChat() {
+            const c = allChats.find(x => x.id === currentChatId);
+            if(c) {
+                c.history = chatHistory;
+                c.updatedAt = Date.now();
+                // Set title based on first user message if title is default
+                if(c.title === 'Sesi Baru') {
+                    const firstUser = chatHistory.find(m => m.role === 'user');
+                    if(firstUser && firstUser.parts && firstUser.parts[0].text) {
+                        let t = firstUser.parts[0].text;
+                        c.title = t.length > 30 ? t.substring(0, 30) + '...' : t;
+                        chatTitleEl.innerText = c.title;
+                    }
+                }
+            }
+            saveAllChats();
+        }
+
+        function deleteChat(id, event) {
+            if(event) event.stopPropagation();
+            allChats = allChats.filter(x => x.id !== id);
+            saveAllChats();
+            if(currentChatId === id) {
+                if(allChats.length > 0) switchChat(allChats[0].id);
+                else createNewChat();
+            }
+        }
+        
+        function clearAllChats() {
+            Swal.fire({
+                title: 'Hapus Semua Sesi?', text: "Seluruh riwayat chat akan dihapus.",
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Ya, Bersihkan!'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    allChats = [];
+                    saveAllChats();
+                    createNewChat();
                 }
             });
         }
 
         function appendDefaultGreeting() {
             appendMessage('ai', `<b>Halo, Master Admin!</b> 👋<br>
-                Saya adalah AI Agent yang bertugas membantu Anda mengelola sistem CBT ini. 
-                Saya bisa membantu Anda melakukan berbagai hal, seperti:
+                Saya adalah AI Agent untuk sistem CBT. Anda bisa:
                 <ul style="margin-top: 10px; margin-left: 20px;">
-                    <li>Melakukan <b>bulk setting</b> (misal: "ubah semua ujian bulan Mei menjadi aktif").</li>
-                    <li>Memberikan <b>insight data</b> (misal: "siapa siswa dengan jumlah kecurangan terbanyak?").</li>
-                    <li>Menjelaskan detail spesifik dari suatu paket ujian.</li>
-                </ul>
-                Apa yang bisa saya bantu hari ini?`);
+                    <li>Melakukan <b>bulk setting</b> (misal: "ubah ujian mei jadi aktif").</li>
+                    <li>Mengelola data siswa.</li>
+                    <li><b>Import Soal Otomatis:</b> Lampirkan file (PDF, gambar, TXT) soal dan minta saya memasukkannya ke ID Tryout tertentu.</li>
+                </ul>`);
         }
 
-        function loadChat() {
-            const saved = localStorage.getItem('cbt_agent_history');
-            if (saved) {
-                try {
-                    chatHistory = JSON.parse(saved);
-                    // Re-render bubbles
-                    chatHistory.forEach(msg => {
-                        if (msg.role === 'user') {
-                            if (msg.parts && msg.parts[0] && msg.parts[0].text) {
-                                appendMessage('user', msg.parts[0].text.replace(/\n/g, '<br>'));
-                            }
-                        } else if (msg.role === 'model') {
-                            if (msg.parts) {
-                                let combinedText = "";
-                                msg.parts.forEach(p => {
-                                    if (p.text) combinedText += p.text + "\\n";
-                                });
-                                if (combinedText.trim() !== "") {
-                                    appendMessage('ai', marked.parse(combinedText));
-                                }
-                            }
-                        }
-                    });
-                } catch (e) {
-                    console.error("Gagal load history", e);
-                    appendDefaultGreeting();
-                }
+        function appendMessage(role, htmlContent, id = null) {
+            const div = document.createElement('div');
+            div.className = 'msg-bubble ' + (role === 'user' ? 'msg-user' : 'msg-ai');
+            if (id) div.id = id;
+
+            if (role === 'ai') {
+                div.innerHTML = `<div style="display:flex; gap: 15px; align-items: flex-start; width: 100%;">
+                        <i class="fa-solid fa-sparkles" style="color: #1a73e8; font-size: 1.2rem; margin-top: 2px;"></i>
+                        <div style="flex: 1; width: 100%; overflow: hidden;">${htmlContent}</div>
+                    </div>`;
             } else {
-                appendDefaultGreeting();
+                div.innerHTML = htmlContent;
             }
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div;
         }
 
         // Jalankan saat load
-        window.addEventListener('DOMContentLoaded', loadChat);
+        window.addEventListener('DOMContentLoaded', loadAllChats);
 
         function showLoading() {
             const div = document.createElement('div');
-            div.className = 'typing-indicator';
-            div.id = 'loading-indicator';
+            div.className = 'typing-indicator'; div.id = 'loading-indicator';
             div.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
-
         function removeLoading() {
             const el = document.getElementById('loading-indicator');
             if(el) el.remove();
@@ -486,43 +886,74 @@
 
         async function handleSend() {
             const text = chatInput.value.trim();
-            if (!text) return;
+            if (!text && pendingAttachments.length === 0) return;
 
-            chatInput.value = '';
-            chatInput.style.height = '';
-            btnSend.disabled = true;
-            chatInput.disabled = true;
+            chatInput.value = ''; chatInput.style.height = '';
+            btnSend.disabled = true; chatInput.disabled = true;
 
-            appendMessage('user', text.replace(/\n/g, '<br>'));
-            chatHistory.push({ role: 'user', parts: [{ text }] });
-            saveChat();
+            let userContentHtml = text.replace(/\n/g, '<br>');
+            let userParts = [];
+            
+            if(text) userParts.push({ text: text });
+            
+            if(pendingAttachments.length > 0) {
+                userContentHtml += '<div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">';
+                pendingAttachments.forEach(att => {
+                    userParts.push({ inlineData: { data: att.base64, mimeType: att.mimeType } });
+                    
+                    if(att.mimeType.startsWith('image/')) {
+                        userContentHtml += `<img src="data:${att.mimeType};base64,${att.base64}" style="max-width: 180px; max-height: 180px; border-radius: 8px; border: 1px solid #cbd5e1; object-fit: cover;">`;
+                    } else if(att.mimeType === 'application/pdf') {
+                        userContentHtml += `<div style="display:inline-flex; align-items:center; gap:8px; background:#f1f5f9; padding:8px 12px; border-radius:8px; border: 1px solid #cbd5e1;"><i class="fa-solid fa-file-pdf" style="color:#ef4444; font-size: 1.2rem;"></i> <span style="font-size:0.8rem; font-weight:600;">${att.file.name}</span></div>`;
+                    } else {
+                        userContentHtml += `<div style="display:inline-flex; align-items:center; gap:8px; background:#f1f5f9; padding:8px 12px; border-radius:8px; border: 1px solid #cbd5e1;"><i class="fa-solid fa-file-lines" style="color:#64748b; font-size: 1.2rem;"></i> <span style="font-size:0.8rem; font-weight:600;">${att.file.name}</span></div>`;
+                    }
+                });
+                userContentHtml += '</div>';
+            }
+
+            appendMessage('user', userContentHtml);
+            chatHistory.push({ role: 'user', parts: userParts });
+            saveCurrentChat();
+            
+            // clear attachments
+            pendingAttachments = [];
+            document.getElementById('attachment-preview').innerHTML = '';
+            document.getElementById('attachment-preview').style.display = 'none';
 
             await processGeminiCall();
 
-            btnSend.disabled = false;
-            chatInput.disabled = false;
+            btnSend.disabled = false; chatInput.disabled = false;
             chatInput.focus();
-            saveChat(); // Save final state after process
+            saveCurrentChat();
         }
 
-        // Fungsi pemrosesan loop (karena agent mungkin manggil fungsi lebih dari 1 kali sebelum jawab final)
         async function processGeminiCall() {
             const currentApiKey = localStorage.getItem('cbt_gemini_key') || "";
             if(!currentApiKey) {
                 appendMessage('ai', 'API Key belum dikonfigurasi. Silakan masuk ke menu <b>Pengaturan Akun Admin</b> untuk mengatur Gemini API Key.');
-                removeLoading();
-                return;
+                removeLoading(); return;
             }
-
             showLoading();
 
             try {
+                // CONTEXT WINDOW: Batasi ke 30 pesan terakhir agar token tidak bengkak
+                let limitedHistory = JSON.parse(JSON.stringify(chatHistory.length > 30 ? chatHistory.slice(chatHistory.length - 30) : chatHistory));
+                // Remove base64 omitted string so API won't crash
+                limitedHistory.forEach(msg => {
+                    if (msg.parts) {
+                        msg.parts = msg.parts.filter(p => !(p.inlineData && p.inlineData.data === "[base64_omitted]"));
+                    }
+                });
+                // Clean up empty parts just in case
+                limitedHistory = limitedHistory.filter(msg => msg.parts && msg.parts.length > 0);
+
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${ACTUAL_MODEL}:generateContent?key=${currentApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         systemInstruction: systemInstruction,
-                        contents: chatHistory,
+                        contents: limitedHistory,
                         tools: toolsConfig,
                         generationConfig: { temperature: 0.2 }
                     })
@@ -531,27 +962,17 @@
                 const data = await response.json();
                 removeLoading();
 
-                if (data.error) {
-                    appendMessage('ai', 'Error dari server: ' + data.error.message);
-                    return;
-                }
-
-                if (!data.candidates || data.candidates.length === 0) {
-                    appendMessage('ai', 'Tidak ada respons dari AI.');
-                    return;
-                }
+                if (data.error) { appendMessage('ai', 'Error dari server: ' + data.error.message); return; }
+                if (!data.candidates || data.candidates.length === 0) { appendMessage('ai', 'Tidak ada respons dari AI.'); return; }
 
                 const responseMessage = data.candidates[0].content;
                 const parts = responseMessage.parts;
                 
-                // Add AI's raw response to history
                 chatHistory.push(responseMessage);
-                saveChat();
+                saveCurrentChat();
 
                 let isFunctionCall = false;
                 let textToDisplay = "";
-
-                // Cek jika ada call tool
                 const hasFunctionCalls = parts.some(p => p.functionCall);
                 const groupThinkId = 'think-group-' + Date.now() + Math.floor(Math.random() * 1000);
                 
@@ -560,15 +981,11 @@
                         <details class="think-block" id="${groupThinkId}" open>
                             <summary><i class="fa-solid fa-gears fa-spin" style="color: #3b82f6;"></i> <span id="title-${groupThinkId}">Mengeksekusi alat...</span></summary>
                             <div id="content-${groupThinkId}" style="display:flex; flex-direction:column; gap:12px;"></div>
-                        </details>
-                    `);
+                        </details>`);
                 }
 
-                // Process parts (could be mixed text and function calls)
                 for (const part of parts) {
-                    if (part.text) {
-                        textToDisplay += part.text + "\n";
-                    }
+                    if (part.text) { textToDisplay += part.text + "\n"; }
                     if (part.functionCall) {
                         isFunctionCall = true;
                         const fnName = part.functionCall.name;
@@ -576,68 +993,188 @@
                         
                         const contentDiv = document.getElementById('content-' + groupThinkId);
                         if (contentDiv) {
-                            contentDiv.innerHTML += `
-                                <div>
-                                    <div style="font-weight: 700; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-bolt" style="color: #f59e0b; margin-right: 5px;"></i>${fnName}</div>
-                                    <div style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4;">${JSON.stringify(fnArgs, null, 2)}</div>
-                                </div>`;
+                            contentDiv.innerHTML += `<div><div style="font-weight: 700; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-bolt" style="color: #f59e0b; margin-right: 5px;"></i>${fnName}</div><div style="color: #94a3b8; font-size: 0.8rem; line-height: 1.4;">${JSON.stringify(fnArgs, null, 2)}</div></div>`;
                         }
 
-                        // Eksekusi fungsi
                         const result = await executeTool(fnName, fnArgs);
-
-                        // Masukkan balasan fungsi ke history
                         chatHistory.push({
                             role: 'user',
-                            parts: [{
-                                functionResponse: {
-                                    name: fnName,
-                                    response: { result: result }
-                                }
-                            }]
+                            parts: [{ functionResponse: { name: fnName, response: { result: result } } }]
                         });
-                        saveChat();
+                        saveCurrentChat();
                     }
                 }
 
-                // Tutup details block setelah selesai jalan semua, agar rapi "kehide" (collapse)
                 if (hasFunctionCalls) {
                     const groupThinkEl = document.getElementById(groupThinkId);
                     if (groupThinkEl) {
                         groupThinkEl.removeAttribute('open');
                         const icon = groupThinkEl.querySelector('summary i');
-                        if (icon) {
-                            icon.classList.remove('fa-spin', 'fa-gears');
-                            icon.classList.add('fa-check-circle');
-                            icon.style.color = 'var(--success)';
-                        }
+                        if (icon) { icon.classList.remove('fa-spin', 'fa-gears'); icon.classList.add('fa-check-circle'); icon.style.color = 'var(--success)'; }
                         const title = document.getElementById('title-' + groupThinkId);
                         if (title) title.innerText = "Selesai eksekusi";
                     }
                 }
 
                 if (textToDisplay.trim() !== "") {
-                    // Coba parse block <think> jika model mereply dengan raw think, jadikan collapsible
-                    let formatted = textToDisplay.replace(/<think>([\s\S]*?)<\/think>/gi, (match, p1) => {
-                        return `<details class="think-block"><summary><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> Pemikiran Agent</summary><div>${p1.trim()}</div></details>`;
-                    });
-                    
-                    // Markdown parser
-                    formatted = marked.parse(formatted);
-                    appendMessage('ai', formatted);
+                    let jsonStr = extractJSON(textToDisplay);
+                    if(jsonStr) {
+                        let cleanText = textToDisplay.replace(jsonStr, '').replace(/```json|```/g, '').trim();
+                        if(!cleanText) cleanText = 'Ekstraksi soal berhasil!';
+                        
+                        let ui = `<div style="display:flex; flex-direction:column; gap:10px; align-items:center; text-align:center; background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #bfdbfe; margin-top: 15px;">
+                            <i class="fa-solid fa-circle-check" style="font-size:3rem; color:#10b981;"></i>
+                            <div style="font-weight:600; color:#065f46; font-size:1.05rem;">${cleanText}</div>
+                            <div style="font-size:0.85rem; color:#4b5563; margin-bottom:5px;">Ditemukan soal beserta format jawaban yang siap disimpan.</div>
+                            <textarea id="temp-json-extract" style="display:none;">${jsonStr.replace(/</g, '&lt;')}</textarea>
+                            <button class="btn btn-primary" onclick="terapkanJSONAgen(document.getElementById('temp-json-extract').value)" style="font-size: 0.9rem; padding: 10px 16px; width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.3); background: #10b981; border:none; transition:0.2s;"><i class="fa-solid fa-check-double"></i> Terapkan ke Tryout</button>
+                        </div>`;
+                        appendMessage('ai', ui);
+                    } else {
+                        let formatted = textToDisplay.replace(/<think>([\s\S]*?)<\/think>/gi, (match, p1) => {
+                            return `<details class="think-block"><summary><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> Pemikiran Agent</summary><div>${p1.trim()}</div></details>`;
+                        });
+                        formatted = marked.parse(formatted);
+                        appendMessage('ai', formatted);
+                    }
                 }
 
-                // Jika ada pemanggilan fungsi, biarkan model memberikan jawaban final setelah mendapat data
-                if (isFunctionCall) {
-                    await processGeminiCall();
-                }
+                if (isFunctionCall) { await processGeminiCall(); }
 
             } catch (err) {
-                removeLoading();
-                appendMessage('ai', 'Gagal menghubungi server AI: ' + err.message);
-                console.error(err);
+                removeLoading(); appendMessage('ai', 'Gagal menghubungi server AI: ' + err.message); console.error(err);
             }
         }
-    </script>
+
+        function extractJSON(str) {
+            let match = str.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if(!match) {
+                const start = str.indexOf('[');
+                const end = str.lastIndexOf(']');
+                if(start !== -1 && end !== -1 && end > start) {
+                    match = [str.substring(start, end + 1)];
+                }
+            }
+            if(match) {
+                try {
+                    let parsed = JSON.parse(match[0]);
+                    if(Array.isArray(parsed) && parsed.length > 0 && parsed[0].pertanyaan) {
+                        return match[0];
+                    }
+                } catch(e) {}
+            }
+            return null;
+        }
+
+        async function terapkanJSONAgen(jsonStr) {
+            try {
+                const soalArray = JSON.parse(jsonStr);
+                
+                const snap = await db.ref('paket_ujian').once('value');
+                const data = snap.val() || {};
+                const options = {};
+                Object.keys(data).forEach(k => {
+                    options[k] = data[k].judul || k;
+                });
+                
+                if(Object.keys(options).length === 0) {
+                    Swal.fire('Error', 'Belum ada paket tryout. Buat paket dulu.', 'error');
+                    return;
+                }
+                
+                const { value: id_paket } = await Swal.fire({
+                    title: 'Pilih Tryout Tujuan',
+                    text: `Ditemukan ${soalArray.length} soal. Ke paket mana soal ini akan dimasukkan?`,
+                    input: 'select',
+                    inputOptions: options,
+                    inputPlaceholder: 'Pilih Paket Tryout',
+                    showCancelButton: true,
+                    confirmButtonText: 'Simpan',
+                    cancelButtonText: 'Batal'
+                });
+                
+                if (id_paket) {
+                    Swal.fire({title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() }});
+                    const ref = db.ref('soal/' + id_paket);
+                    
+                    const existSnap = await ref.once('value');
+                    let existSoal = existSnap.val() || [];
+                    if(!Array.isArray(existSoal)) existSoal = Object.values(existSoal);
+                    
+                    let mergedSoal = existSoal.concat(soalArray);
+                    mergedSoal.forEach((s, idx) => s.id_soal = idx + 1);
+                    
+                    await ref.set(mergedSoal);
+                    await compileAndPublishTryout(id_paket);
+                    
+                    Swal.fire('Sukses', `Berhasil menambahkan ${soalArray.length} soal ke paket ${options[id_paket]}.`, 'success');
+                    
+                    appendMessage('ai', `✅ Berhasil mengimpor ${soalArray.length} soal ke paket **${options[id_paket]}**.`);
+                    chatHistory.push({ role: 'model', parts: [{ text: `Berhasil mengimpor ${soalArray.length} soal ke paket ${id_paket}.` }] });
+                    saveCurrentChat();
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Gagal memproses JSON: ' + err.message, 'error');
+            }
+        }
+
+        async function compileAndPublishTryout(id_paket) {
+            try {
+                const snapPaket = await db.ref('paket_ujian/' + id_paket).once('value');
+                const p = snapPaket.val();
+                if(!p) return;
+                
+                const snapSoal = await db.ref('soal/' + id_paket).once('value');
+                const s = snapSoal.val() || [];
+
+                if (s.length > 0 && p.status === 'aktif') {
+                    let compiledSoal = s.map(soal => {
+                        let bobot = 1; 
+                        if(p.sistem_poin !== false && p.kategori_poin && p.kategori_poin[soal.tingkat_kesulitan]) {
+                            bobot = p.kategori_poin[soal.tingkat_kesulitan];
+                        }
+                        
+                        let stimObj = { tampil: false };
+                        if(soal.id_stimulus && p.bank_stimulus && p.bank_stimulus[soal.id_stimulus]) {
+                            stimObj = { tampil: true, konten: p.bank_stimulus[soal.id_stimulus] };
+                        }
+
+                        return {
+                            id: soal.id_soal || 's_' + Math.random().toString(36).substr(2, 9),
+                            tipe: soal.tipe || 'pg',
+                            poin: bobot,
+                            stimulus: stimObj,
+                            pertanyaan: soal.pertanyaan || '',
+                            opsi: Array.isArray(soal.opsi) ? soal.opsi : [],
+                            kunci: soal.kunci,
+                            label_pgk: soal.label_pgk || ["Benar", "Salah"], 
+                            ragu: false 
+                        };
+                    });
+
+                    let publishedData = {
+                        id: id_paket,
+                        judul: p.judul || "",
+                        mapel: p.mapel || "",
+                        waktu: p.durasi_menit || 60,
+                        waktu_buka: p.waktu_buka || "",
+                        waktu_tutup: p.waktu_tutup || "",
+                        sistem_poin: p.sistem_poin !== false,
+                        mode_skor: p.mode_skor || "asli",
+                        base_poin: p.base_poin || 100,
+                        url_pembahasan: p.url_pembahasan || "", 
+                        petunjuk: p.petunjuk || [],
+                        soal: compiledSoal
+                    };
+
+                    await db.ref('published_soal/' + id_paket).set(publishedData);
+                } else {
+                    await db.ref('published_soal/' + id_paket).set(null);
+                }
+            } catch (e) {
+                console.error("Gagal compile published_soal", e);
+            }
+        }
+</script>
 </body>
 </html>
