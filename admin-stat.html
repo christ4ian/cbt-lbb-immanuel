@@ -86,6 +86,7 @@
 
     <aside class="sidebar">
         <div class="brand"><i class="fa-solid fa-layer-group"></i> Master Admin</div>
+        <a href="admin-home.html" class="nav-item"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="admin-tryout.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Manajemen Try Out</a>
         <a href="admin-database.html" class="nav-item"><i class="fa-solid fa-users"></i> Data Siswa & Nilai</a>
         <a href="admin-stat.html" class="nav-item active"><i class="fa-solid fa-chart-line"></i> Statistik & Peringkat</a>
@@ -98,8 +99,14 @@
     </aside>
 
     <main class="main-content">
+        <style>
+            .mobile-settings-btn { display: none; color: var(--text-muted); font-size: 1.25rem; text-decoration: none; transition: 0.2s; padding: 5px; }
+            .mobile-settings-btn:hover { color: var(--primary); }
+            @media (max-width: 768px) { .mobile-settings-btn { display: block; } }
+        </style>
         <nav class="top-navbar">
-            <div style="font-weight: 800; color: var(--text-dark); font-size: 1.1rem;">CBT Ranking Engine</div>
+            <div style="font-weight: 800; color: var(--text-dark); font-size: 1.1rem;">CBT Statistics & Rank</div>
+            <a href="admin-settings.html" class="mobile-settings-btn" title="Pengaturan Akun"><i class="fa-solid fa-user-gear"></i></a>
         </nav>
 
         <div class="container">
@@ -144,6 +151,7 @@
     </main>
 
     <nav class="bottom-nav">
+        <a href="admin-home.html" class="bottom-nav-item"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="admin-tryout.html" class="bottom-nav-item"><i class="fa-solid fa-folder-open"></i> Try Out</a>
         <a href="admin-database.html" class="bottom-nav-item"><i class="fa-solid fa-users"></i> Siswa</a>
         <a href="admin-stat.html" class="bottom-nav-item active"><i class="fa-solid fa-chart-line"></i> Statistik</a>
@@ -205,6 +213,9 @@
                 const snapSesi = await db.ref('sessions').orderByChild('paketId').equalTo(activePaketId).once('value');
                 const rawSesi = snapSesi.exists() ? snapSesi.val() : {};
 
+                // JALANKAN AUTO-SWEEP UJIAN MENGGANTUNG
+                await autoSweepOngoingSessions(rawSesi, activePaketInfo, masterSoal);
+
                 masterSesi = [];
                 Object.keys(rawSesi).forEach(key => {
                     let s = rawSesi[key];
@@ -223,8 +234,95 @@
         }
 
         // =======================================================================
-        // 4. MESIN EVALUATOR KUNCI JAWABAN
+        // 4. MESIN EVALUATOR KUNCI JAWABAN & AUTO-SWEEP
         // =======================================================================
+        async function autoSweepOngoingSessions(rawSesi, paketInfo, arrSoal) {
+            if(!paketInfo || !arrSoal || arrSoal.length === 0) return;
+            
+            let serverTimeOffset = 0;
+            await db.ref('.info/serverTimeOffset').once('value').then(s => serverTimeOffset = s.val() || 0);
+            let serverTime = Date.now() + serverTimeOffset;
+
+            let durasiMenit = parseInt(paketInfo.waktu) || 120;
+            let toleranceMs = 15 * 60 * 1000; // Toleransi 15 Menit agar tidak menendang siswa aktif
+
+            let isSistemPoin = paketInfo.sistem_poin === true;
+            let totalPoinMaksimal = 0;
+            if (isSistemPoin) {
+                arrSoal.forEach(soal => totalPoinMaksimal += (soal.poin !== undefined ? soal.poin : 1));
+            } else {
+                totalPoinMaksimal = arrSoal.length;
+            }
+
+            let updates = {};
+            let sweptCount = 0;
+
+            for (let key of Object.keys(rawSesi)) {
+                let s = rawSesi[key];
+                if (s.status === 'ongoing' && s.startTime) {
+                    let deadlineMs = s.startTime + (durasiMenit * 60 * 1000);
+                    if (serverTime > (deadlineMs + toleranceMs)) {
+                        // SAPU BERSIH! Waktu batas + 15 menit sudah berlalu
+                        let ans = s.answers || {};
+                        let benarCount = 0;
+                        let totalPoinDiperoleh = 0;
+                        let detail = [];
+
+                        arrSoal.forEach((soal, i) => {
+                            let jwb = ans[i];
+                            let isBenar = evalJawaban(jwb, soal);
+                            let poinMaksSoalIni = soal.poin !== undefined ? soal.poin : 1; 
+
+                            if (!jwb) detail.push("KOSONG");
+                            else detail.push(isBenar ? "BENAR" : "SALAH");
+
+                            if (isBenar) {
+                                benarCount++;
+                                if (isSistemPoin) totalPoinDiperoleh += poinMaksSoalIni;
+                            }
+                        });
+
+                        let skorAkhir = 0;
+                        let poinDidapat = isSistemPoin ? totalPoinDiperoleh : benarCount;
+                        let pembagi = totalPoinMaksimal > 0 ? totalPoinMaksimal : 1;
+
+                        if (paketInfo.mode_skor === 'asli') {
+                            skorAkhir = poinDidapat;
+                        } else {
+                            let maxScore = parseFloat(paketInfo.base_poin) || 100;
+                            skorAkhir = (poinDidapat / pembagi) * maxScore;
+                        }
+
+                        let durasiStr = `${durasiMenit} Menit 0 Detik`; // Anggap full time karena menggantung
+
+                        updates[`sessions/${key}/status`] = 'finished';
+                        updates[`sessions/${key}/skor_akhir`] = skorAkhir.toFixed(2);
+                        updates[`sessions/${key}/finishTime`] = deadlineMs; 
+                        updates[`sessions/${key}/detail`] = detail;
+                        updates[`sessions/${key}/durasi_teks`] = durasiStr;
+                        updates[`sessions/${key}/lastUpdate`] = serverTime;
+                        
+                        sweptCount++;
+                        // Ubah object di memory agar langsung ter-load di tabel Admin tanpa refresh
+                        s.status = 'finished';
+                        s.skor_akhir = skorAkhir.toFixed(2);
+                        s.finishTime = deadlineMs;
+                        s.durasi_teks = durasiStr;
+                        s.detail = detail;
+                    }
+                }
+            }
+
+            if (sweptCount > 0) {
+                await db.ref().update(updates);
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'success',
+                    title: `Auto-Sweep: ${sweptCount} ujian menggantung telah ditutup paksa!`,
+                    showConfirmButton: false, timer: 5000
+                });
+            }
+        }
+
         function evalJawaban(jwbSiswa, soal) {
             if(!jwbSiswa) return false;
             if(soal.tipe === 'pg') return jwbSiswa === soal.kunci;
