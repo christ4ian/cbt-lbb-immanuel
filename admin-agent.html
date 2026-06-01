@@ -200,6 +200,9 @@
                         <button class="btn btn-outline" style="background: transparent; color: #64748b; font-size: 1.2rem; border: none; box-shadow: none; padding: 10px; margin-bottom: 5px; flex-shrink: 0;" onclick="document.getElementById('chat-attachment').click()" title="Lampirkan File">
                             <i class="fa-solid fa-paperclip"></i>
                         </button>
+                        <button class="btn btn-outline" style="background: transparent; color: #f59e0b; font-size: 1.2rem; border: none; box-shadow: none; padding: 10px; margin-bottom: 5px; flex-shrink: 0;" onclick="handleUndo()" title="Urungkan Perubahan Terakhir">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
                         <textarea id="chat-input" class="chat-input" placeholder="Tuliskan instruksi atau lampirkan dokumen soal..." rows="1" oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"></textarea>
                         <button class="btn-send" id="btn-send" style="margin-bottom: 5px;" onclick="handleSend()"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
@@ -248,6 +251,8 @@
                       "PENTING: Jika Admin meminta untuk mengecek durasi ujian, waktu pengerjaan, atau nilai siswa yang sudah selesai, GUNAKAN tool get_sessions_by_paket untuk membaca data sesinya terlebih dahulu. Setelah mendapatkan sessionId, kamu bisa menggunakan tool update_session untuk mengedit waktu pengerjaan atau nilai (membutuhkan persetujuan). " +
                       "Untuk menambah/menghapus siswa dan tryout, kamu HARUS menggunakan tool. " +
                       "Jika Admin ingin membuat, mengubah, atau menghapus jadwal pendaftaran yang muncul di halaman Blogger, gunakan alat get_registration_events, create_registration_event, update_registration_event, dan delete_registration_event." +
+                      "Jika Admin meminta untuk memasang link pembahasan, masukkan ke parameter url_pembahasan pada alat update_tryout (JANGAN DIMASUKKAN KE petunjuk). " +
+                      "Jika Admin ingin membatalkan/mengurungkan perintah yang baru ia berikan karena kamu salah/ngawur, gunakan alat undo_last_action. " +
                       "Jika Admin melampirkan file (PDF/Gambar) dan meminta ekstraksi soal, bacalah file tersebut dan JAWABLAH DENGAN BLOK KODE JSON (```json [array objek soal] ```). Setiap soal wajib memiliki field: tipe (pg/pgk), tingkat_kesulitan (Mudah/Sedang/Sulit), pertanyaan, opsi (array), dan kunci. JANGAN gunakan tool untuk import soal, cukup balas dengan output JSON saja."
             }]
         };
@@ -263,21 +268,22 @@
                         type: "OBJECT",
                         properties: {
                             id: { type: "STRING" },
-                            updates: {
-                                type: "OBJECT",
-                                properties: {
-                                    status: { type: "STRING" }, waktu_buka: { type: "STRING" }, waktu_tutup: { type: "STRING" },
-                                    judul: { type: "STRING" }, durasi_menit: { type: "INTEGER" }, mapel: { type: "STRING" },
-                                    sistem_poin: { type: "BOOLEAN" }, petunjuk: { type: "ARRAY", items: { type: "STRING" } }
-                                }
+                            updates: { 
+                                type: "OBJECT", 
+                                properties: { judul: { type: "STRING" }, status: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "NUMBER" }, url_pembahasan: { type: "STRING", description: "URL dokumen atau Google Drive untuk pembahasan" } } 
                             }
-                        }, required: ["id", "updates"]
+                        },
+                        required: ["id", "updates"]
                     }
                 },
                 {
                     name: "create_tryout",
-                    description: "Membuat paket ujian baru.",
-                    parameters: { type: "OBJECT", properties: { judul: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "INTEGER" } }, required: ["judul"] }
+                    description: "Membuat paket tryout baru.",
+                    parameters: { 
+                        type: "OBJECT", 
+                        properties: { judul: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "NUMBER" }, url_pembahasan: { type: "STRING" } }, 
+                        required: ["judul"] 
+                    }
                 },
                 {
                     name: "delete_tryout",
@@ -407,16 +413,58 @@
                     name: "delete_registration_event",
                     description: "Menghapus event pendaftaran yang sudah tidak terpakai.",
                     parameters: { type: "OBJECT", properties: { id_event: { type: "STRING" } }, required: ["id_event"] }
+                },
+                {
+                    name: "undo_last_action",
+                    description: "Mengurungkan (rollback) perintah manipulasi database terakhir yang kamu lakukan."
                 }
             ]
         }];
+
+        // =======================================================================
+        // 2B. UNDO STATE MANAGEMENT
+        // =======================================================================
+        let undoStack = [];
+        async function saveStateToUndoStack(path, description) {
+            try {
+                const snap = await db.ref(path).once('value');
+                undoStack.push({ path: path, data: snap.val(), description: description });
+                if (undoStack.length > 10) undoStack.shift();
+            } catch (e) {
+                console.error("Failed to save state", e);
+            }
+        }
+
+        async function handleUndo() {
+            if (undoStack.length === 0) {
+                Swal.fire("Info", "Tidak ada aksi untuk di-undo (diurungkan).", "info");
+                return { error: "Tidak ada aksi untuk di-undo" };
+            }
+            const lastAction = undoStack.pop();
+            try {
+                await db.ref(lastAction.path).set(lastAction.data);
+                if (lastAction.path.includes('paket_ujian/') || lastAction.path.includes('soal/')) {
+                    const parts = lastAction.path.split('/');
+                    const id = parts[1];
+                    if (id) await compileAndPublishTryout(id);
+                }
+                Swal.fire("Diurungkan", `Berhasil membatalkan: ${lastAction.description}`, "success");
+                return { success: true, message: "Aksi berhasil diurungkan: " + lastAction.description };
+            } catch (e) {
+                console.error(e);
+                return { error: "Gagal melakukan undo: " + e.message };
+            }
+        }
 
         // =======================================================================
         // 3. IMPLEMENTASI TOOLS (JS FUNCTIONS)
         // =======================================================================
         async function executeTool(name, args) {
             try {
-                if (name === "get_all_tryout") {
+                if (name === "undo_last_action") {
+                    return await handleUndo();
+                }
+                else if (name === "get_all_tryout") {
                     const snap = await db.ref('paket_ujian').once('value');
                     const data = snap.val() || {};
                     let result = Object.keys(data).map(key => ({
@@ -433,6 +481,7 @@
                 else if (name === "update_tryout") {
                     const { id, updates } = args;
                     if(!id || !updates) return { error: "ID atau updates tidak valid." };
+                    await saveStateToUndoStack('paket_ujian/' + id, 'Update Tryout ' + id);
                     await db.ref('paket_ujian/' + id).update(updates);
                     await compileAndPublishTryout(id);
                     return { success: true, message: "Berhasil update tryout " + id, updatedData: updates };
@@ -452,6 +501,7 @@
                         icon: "error", showCancelButton: true, confirmButtonText: "Ya, Hapus", confirmButtonColor: "#ef4444"
                     });
                     if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin." };
+                    await saveStateToUndoStack('paket_ujian/' + args.id, 'Hapus Tryout ' + args.id);
                     await db.ref('paket_ujian/' + args.id).remove();
                     return { success: true, message: "Tryout dihapus." };
                 }
@@ -477,6 +527,7 @@
                     if(!Array.isArray(soalArr)) soalArr = Object.values(soalArr);
                     const idx = soalArr.findIndex(s => s.id_soal == args.id_soal);
                     if(idx > -1) {
+                        await saveStateToUndoStack('soal/' + args.id_paket, 'Hapus Soal ' + args.id_soal);
                         soalArr.splice(idx, 1);
                         await db.ref('soal/' + args.id_paket).set(soalArr);
                         await compileAndPublishTryout(args.id_paket);
