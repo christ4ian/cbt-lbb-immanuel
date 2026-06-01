@@ -10,6 +10,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -86,6 +87,7 @@
 
     <aside class="sidebar">
         <div class="brand"><i class="fa-solid fa-layer-group"></i> Master Admin</div>
+        <a href="admin-home.html" class="nav-item"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="admin-tryout.html" class="nav-item"><i class="fa-solid fa-folder-open"></i> Manajemen Try Out</a>
         <a href="admin-database.html" class="nav-item"><i class="fa-solid fa-users"></i> Data Siswa & Role</a>
         <a href="admin-stat.html" class="nav-item"><i class="fa-solid fa-chart-line"></i> Statistik & Peringkat</a>
@@ -96,8 +98,14 @@
     </aside>
 
     <main class="main-content">
+        <style>
+            .mobile-settings-btn { display: none; color: var(--text-muted); font-size: 1.25rem; text-decoration: none; transition: 0.2s; padding: 5px; }
+            .mobile-settings-btn:hover { color: var(--primary); }
+            @media (max-width: 768px) { .mobile-settings-btn { display: block; } }
+        </style>
         <nav class="top-navbar">
             <div style="font-weight: 800; color: var(--text-dark); font-size: 1.1rem;">CBT Admin Settings</div>
+            <a href="admin-settings.html" class="mobile-settings-btn" title="Pengaturan Akun"><i class="fa-solid fa-user-gear"></i></a>
         </nav>
 
         <div class="container">
@@ -172,14 +180,16 @@
                 </div>
             </div>
         </div>
+
+
     </main>
 
     <nav class="bottom-nav">
+        <a href="admin-home.html" class="bottom-nav-item"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="admin-tryout.html" class="bottom-nav-item"><i class="fa-solid fa-folder-open"></i> Try Out</a>
         <a href="admin-database.html" class="bottom-nav-item"><i class="fa-solid fa-users"></i> Siswa</a>
         <a href="admin-stat.html" class="bottom-nav-item"><i class="fa-solid fa-chart-line"></i> Statistik</a>
         <a href="admin-agent.html" class="bottom-nav-item"><i class="fa-solid fa-robot"></i> AI Agent</a>
-        <a href="admin-settings.html" class="bottom-nav-item active"><i class="fa-solid fa-user-gear"></i> Akun</a>
     </nav>
 
     <script>
@@ -195,8 +205,10 @@
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
+        const db = firebase.database();
 
         let currentUser = null;
+        let listPaketUjian = [];
 
         // CEK LOGIN
         auth.onAuthStateChanged(user => { 
@@ -287,6 +299,7 @@
             localStorage.setItem('cbt_gemini_key', key);
             Swal.fire('Berhasil!', 'Gemini API Key berhasil disimpan di perangkat ini.', 'success');
         }
+
     </script>
 </body>
 </html>
