@@ -212,13 +212,13 @@
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: space-around; margin-bottom: 25px; background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #bfdbfe; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Peringkat Sementara</div>
+            <div style="display: flex; justify-content: space-around; margin-bottom: 25px; background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #bfdbfe; flex-wrap: nowrap; gap: 10px; align-items: center;">
+                <div style="flex: 1; text-align: center;">
+                    <div id="label-peringkat" style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Peringkat Sementara</div>
                     <div id="hasil-rank" style="font-size: 1.8rem; font-weight: 800; color: #0f172a; margin-top: 5px;"><i class="fa-solid fa-spinner fa-spin"></i></div>
                 </div>
-                <div style="width: 1px; background: #bfdbfe; min-height: 40px;"></div>
-                <div>
+                <div style="width: 1px; background: #bfdbfe; height: 60px;"></div>
+                <div style="flex: 1; text-align: center;">
                     <div style="font-size: 0.85rem; color: #2563eb; font-weight: 600;">Durasi Pengerjaan</div>
                     <div id="hasil-durasi" style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-top: 10px;">-</div>
                 </div>
@@ -244,6 +244,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         window.PAKET_SOAL = window.PAKET_SOAL || [];
