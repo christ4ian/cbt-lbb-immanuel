@@ -29,6 +29,14 @@ const ADMIN_EMAIL = "admin@lbbimmanuel.com";
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+let serverTimeOffset = 0;
+db.ref('.info/serverTimeOffset').on('value', snap => {
+    serverTimeOffset = snap.val() || 0;
+});
+function getServerTime() {
+    return Date.now() + serverTimeOffset;
+}
+
 const app = {
     // STATE
     currentPaket: null,
@@ -46,12 +54,12 @@ const app = {
     // Config
     deadline: 0,
 
-    // --- PENYIMPANAN FOTO INTEL ---
+    // --- PENYIMPANAN BUKTI KEAMANAN ---
     capturedImages: { start: null, mid: null, end: null },
 
     captureSnapshot: function(momentType) {
         if (this.capturedImages[momentType]) return; 
-        if (this.userData && this.userData.isAdmin) return;
+        if (this.userData && (this.userData.isAdmin || this.userData.email === ADMIN_EMAIL)) return;
 
         const video = document.getElementById('proctor-video');
         if (!video || !video.srcObject) return;
@@ -121,6 +129,85 @@ const app = {
                 select.add(opt);
             });
         }
+    },
+
+    unduhKartuDariCBT: function() {
+        if (!window.jspdf) {
+            return Swal.fire("Error", "Library PDF belum termuat, silakan tunggu sebentar.", "error");
+        }
+        const dataPeserta = window.tempKartuCBT;
+        if (!dataPeserta) return;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a5' });
+
+        doc.setFillColor(248, 250, 252); doc.rect(0, 0, 210, 148, 'F');
+        doc.setFillColor(30, 58, 138); doc.rect(0, 0, 210, 35, 'F');
+        doc.setFillColor(239, 68, 68); doc.rect(0, 35, 210, 3, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22); doc.setFont("helvetica", "bold");
+        doc.text("KARTU PESERTA UJIAN", 105, 18, { align: "center" });
+        doc.setFontSize(11); doc.setFont("helvetica", "normal");
+        doc.text("LBB IMMANUEL - COMPUTER BASED TEST (CBT)", 105, 26, { align: "center" });
+
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(10, 45, 190, 90, 5, 5, 'F');
+        doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+        doc.roundedRect(10, 45, 190, 90, 5, 5, 'S');
+
+        doc.setTextColor(30, 58, 138); doc.setFontSize(12); doc.setFont("helvetica", "bold");
+        doc.text("DATA PESERTA", 15, 55);
+        doc.setDrawColor(30, 58, 138); doc.setLineWidth(0.5); doc.line(15, 58, 60, 58);
+
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10); const colLeft = 50;
+        doc.setFont("helvetica", "normal"); doc.text("Nama Lengkap", 15, 68); doc.text(":", 45, 68);
+        doc.setFont("helvetica", "bold"); doc.text(dataPeserta.nama, colLeft, 68);
+        
+        doc.setFont("helvetica", "normal"); doc.text("Asal Sekolah", 15, 78); doc.text(":", 45, 78);
+        doc.setFont("helvetica", "bold"); 
+        let sekolahText = doc.splitTextToSize(dataPeserta.sekolah, 48); doc.text(sekolahText, colLeft, 78);
+        
+        doc.setFont("helvetica", "normal"); doc.text("Kelas / Kota", 15, 88); doc.text(":", 45, 88);
+        doc.setFont("helvetica", "bold"); 
+        let kelasKotaText = doc.splitTextToSize(`${dataPeserta.kelas} / ${dataPeserta.kota}`, 48); doc.text(kelasKotaText, colLeft, 88);
+
+        doc.setFont("helvetica", "normal"); doc.text("Email", 15, 98); doc.text(":", 45, 98);
+        doc.setFont("helvetica", "bold"); 
+        let emailText = doc.splitTextToSize(dataPeserta.email, 48); doc.text(emailText, colLeft, 98);
+
+        doc.setFont("helvetica", "normal"); let nextLeftY = 98 + ((emailText.length - 1) * 5) + 10;
+        doc.text("Jalur Daftar", 15, nextLeftY); doc.text(":", 45, nextLeftY);
+        doc.setFont("helvetica", "bold"); doc.text(dataPeserta.role, colLeft, nextLeftY);
+
+        doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(105, 52, 105, 128);
+
+        doc.setTextColor(30, 58, 138); doc.setFontSize(12); doc.setFont("helvetica", "bold");
+        doc.text("INFORMASI UJIAN", 110, 55);
+        doc.setDrawColor(30, 58, 138); doc.setLineWidth(0.5); doc.line(110, 58, 155, 58);
+
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10); const colRight = 145;
+        doc.setFont("helvetica", "normal"); doc.text("Event Daftar", 110, 68); doc.text(":", 140, 68);
+        doc.setFont("helvetica", "bold"); 
+        let eventText = doc.splitTextToSize(dataPeserta.event, 50); doc.text(eventText, colRight, 68);
+
+        let nextY = 68 + ((eventText.length - 1) * 5) + 10;
+        doc.setFont("helvetica", "normal"); doc.text("Mata Pelajaran", 110, nextY); doc.text(":", 140, nextY);
+        doc.setFont("helvetica", "bold");
+        let mapelText = doc.splitTextToSize(dataPeserta.paket, 50); doc.text(mapelText, colRight, nextY);
+        
+        nextY = nextY + ((mapelText.length - 1) * 5) + 10;
+        doc.setFont("helvetica", "normal"); doc.text("Durasi Waktu", 110, nextY); doc.text(":", 140, nextY);
+        doc.setFont("helvetica", "bold"); doc.text(`${dataPeserta.durasi} Menit`, colRight, nextY);
+
+        doc.setFont("helvetica", "normal"); nextY += 10;
+        doc.text("Jumlah Soal", 110, nextY); doc.text(":", 140, nextY);
+        doc.setFont("helvetica", "bold"); doc.text(`${dataPeserta.jumlahSoal} Butir`, colRight, nextY);
+
+        doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(150, 150, 150);
+        doc.text("Simpan kartu ujian ini sebagai bukti pendaftaran. Segala instruksi teknis akan diumumkan melalui Grup WhatsApp.", 105, 142, { align: "center" });
+
+        doc.save(`Kartu_Peserta_${dataPeserta.nama.replace(/\s+/g, '_')}.pdf`);
     },
 
     // =========================================
@@ -203,6 +290,19 @@ const app = {
                         const waktuTutup = strTutup ? new Date(strTutup) : null;
 
                         if (waktuBuka && now < waktuBuka) {
+                            window.tempKartuCBT = {
+                                nama: studentData.nama_siswa || "-",
+                                email: email,
+                                sekolah: studentData.sekolah || "-",
+                                kelas: studentData.kelas || "-",
+                                kota: studentData.kota || "-",
+                                role: studentData.role || "-",
+                                event: "Try Out CBT",
+                                paket: this.currentPaket.judul || "-",
+                                durasi: this.currentPaket.waktu || 120,
+                                jumlahSoal: this.currentPaket.soal ? this.currentPaket.soal.length : 0
+                            };
+
                             Swal.fire({
                                 title: 'Anda Terdaftar!',
                                 html: `
@@ -214,9 +314,12 @@ const app = {
                                                 ${waktuBuka.toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })} WIB
                                             </span>
                                         </div>
+                                        <button onclick="app.unduhKartuDariCBT()" style="margin-top:5px; background:#2563eb; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; width:100%; font-weight:bold; font-size:1rem;">
+                                            <i class="fa-solid fa-file-pdf"></i> Download Kartu Peserta
+                                        </button>
                                     </div>
                                 `,
-                                icon: 'success', confirmButtonText: 'Mengerti', confirmButtonColor: '#007bff'
+                                icon: 'success', showConfirmButton: false, showCloseButton: true
                             });
                             return;
                         }
@@ -352,7 +455,7 @@ const app = {
 
     startUjian: function() {
         if (this.userData && this.userData.isAdmin) {
-            const dummyData = { startTime: Date.now(), answers: {}, ragu: {}, status: 'ongoing' };
+            const dummyData = { startTime: getServerTime(), answers: {}, ragu: {}, status: 'ongoing' };
             this.restoreSession(dummyData); 
             return; 
         }
@@ -360,7 +463,7 @@ const app = {
         if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
         Swal.fire({ title: 'Memulai Ujian...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-        const currentTime = Date.now();
+        const currentTime = getServerTime();
         db.ref('sessions/' + this.sessionId).once('value').then(snap => {
             if (!snap.exists()) {
                 const newSession = {
@@ -415,7 +518,7 @@ const app = {
         const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
         this.deadline = data.startTime + (durasiMenit * 60 * 1000);
 
-        if (Date.now() >= this.deadline && !this.userData.isAdmin) {
+        if (getServerTime() >= this.deadline && !this.userData.isAdmin) {
             return this.submitData(true);
         }
 
@@ -639,7 +742,7 @@ const app = {
         this.timerInterval = setInterval(() => {
             if (!timerDisplay) return; 
 
-            const sekarang = Date.now();
+            const sekarang = getServerTime();
             const sisaDetik = Math.floor((this.deadline - sekarang) / 1000);
 
             if (sisaDetik <= 0) {
@@ -736,7 +839,7 @@ const app = {
 
         let teksDurasi = "Tidak diketahui";
         if (this.currentPaket && this.deadline) {
-            const sisaDetik = Math.floor((this.deadline - Date.now()) / 1000);
+            const sisaDetik = Math.floor((this.deadline - getServerTime()) / 1000);
             const totalWaktuDetik = this.userData.isAdmin ? 999 * 60 : this.currentPaket.waktu * 60;
             let durasiDetik = totalWaktuDetik - sisaDetik;
             if (durasiDetik < 0) durasiDetik = 0; 
@@ -781,7 +884,7 @@ const app = {
             Swal.close();
             this.tampilkanHalamanHasil(result.skor, teksDurasi, result.detail);
 
-            const statusUpload = document.getElementById('status-upload-intel');
+            const statusUpload = document.getElementById('status-upload-keamanan');
             if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #f59e0b;"></i> Memverifikasi bukti keamanan proctoring...';
 
             fetch(GOOGLE_SCRIPT_URL, {
@@ -831,12 +934,12 @@ const app = {
         document.getElementById('hasil-nama').innerText = this.userData.nama || this.userData.nama_siswa || "Siswa";
         document.getElementById('hasil-durasi').innerText = teksDurasi;
 
-        let statusBox = document.getElementById('status-upload-intel');
+        let statusBox = document.getElementById('status-upload-keamanan');
         if (!statusBox) {
             const containerSkor = document.getElementById('hasil-skor-wrapper');
             if (containerSkor) {
                 statusBox = document.createElement('div');
-                statusBox.id = 'status-upload-intel';
+                statusBox.id = 'status-upload-keamanan';
                 statusBox.style.marginTop = '15px';
                 statusBox.style.fontSize = '0.85rem';
                 statusBox.style.fontWeight = 'bold';
@@ -859,6 +962,12 @@ const app = {
         const strTutup = this.currentPaket.waktu_tutup ? this.currentPaket.waktu_tutup.replace(' ', 'T') : null;
         const waktuTutupMs = strTutup ? new Date(strTutup).getTime() : 0;
         const isWaktuTutupLewat = (waktuTutupMs === 0 || now >= waktuTutupMs);
+
+        // ATUR LABEL PERINGKAT
+        const labelPeringkat = document.getElementById('label-peringkat');
+        if (labelPeringkat) {
+            labelPeringkat.innerText = isWaktuTutupLewat ? "Ranking Anda" : "Peringkat Sementara";
+        }
 
         // 1. ATUR SKOR AKHIR
         const divSkor = document.getElementById('hasil-skor');
@@ -1111,12 +1220,14 @@ document.addEventListener("visibilitychange", function() {
     if (document.visibilityState === 'hidden' && isLagiUjian) {
         cheatCount++;
         if (typeof app !== 'undefined' && app.saveRealtime) app.saveRealtime();
-        Swal.fire({ title: 'Hayo Ketahuan! 👀', text: 'Kamu terdeteksi pindah tab atau keluar dari layar ujian. Jangan nyontek ya, kerjakan dengan jujur!', icon: 'warning', confirmButtonColor: '#d33', confirmButtonText: 'Iya, janji jujur 🙏' });
+        Swal.fire({ title: 'Peringatan Sistem ⚠️', text: 'Anda terdeteksi berpindah tab atau keluar dari layar ujian. Aktivitas ini telah dicatat sebagai pelanggaran oleh sistem.', icon: 'warning', confirmButtonColor: '#d33', confirmButtonText: 'Saya Mengerti' });
     }
 });
 
 // --- PERBAIKAN UI KAMERA: ANTI OFF-SCREEN & MINIMIZE BERSIH ---
 app.startSecurityProctor = function() {
+    const user = this.userData || app.userData || {};
+    if (user.isAdmin || user.email === ADMIN_EMAIL) return;
     if (document.getElementById('proctor-container')) return;
     Swal.fire({
         title: 'Verifikasi Pengawas 👁️',
