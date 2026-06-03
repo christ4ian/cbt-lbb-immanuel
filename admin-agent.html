@@ -156,7 +156,25 @@
         </style>
         <nav class="top-navbar">
             <div style="font-weight: 800; color: var(--text-dark); font-size: 1.1rem;">CBT AI Agent Workspace</div>
-            <a href="admin-settings.html" class="mobile-settings-btn" title="Pengaturan Akun"><i class="fa-solid fa-user-gear"></i></a>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="agent-model-selector" onchange="changeActiveModel()" style="padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.85rem; background: #f8fafc; color: #334155; outline: none; width: 200px;">
+                    <optgroup label="Google Gemini">
+                        <option value="gemini-3.5-flash">Gemini 3.5 Flash (Terpintar & Cepat)</option>
+                        <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (Sangat Cepat)</option>
+                        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (Paling Akurat)</option>
+                        <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                    </optgroup>
+                    <optgroup label="OpenRouter (Koleksi Free/Gratis)">
+                        <option value="openrouter:openai/gpt-oss-120b">GPT-OSS 120B (Sangat Pintar & Agentic)</option>
+                        <option value="openrouter:openai/gpt-oss-20b">GPT-OSS 20B (Cepat & Agentic)</option>
+                        <option value="openrouter:qwen/qwen3-next-80b-a3b-instruct">Qwen3 Next 80B (Stabil untuk Tool/JSON)</option>
+                        <option value="openrouter:nousresearch/hermes-3-405b-instruct">Hermes 3 405B (Model Raksasa)</option>
+                        <option value="openrouter:meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (Populer)</option>
+                        <option value="openrouter:nvidia/nemotron-nano-9b-v2">Nemotron Nano 9B V2</option>
+                    </optgroup>
+                </select>
+                <a href="admin-settings.html" class="mobile-settings-btn" title="Pengaturan Akun"><i class="fa-solid fa-user-gear"></i></a>
+            </div>
         </nav>
 
         <div class="container" style="display: flex; gap: 20px; padding: 20px; flex-direction: row; height: calc(100vh - 65px); position: relative;">
@@ -184,7 +202,7 @@
                         <i class="fa-solid fa-sparkles" style="color: #1a73e8; font-size: 1.4rem;"></i> 
                         <div>
                             <div style="font-size: 1.1rem; margin-bottom: 2px;" id="current-chat-title">Sesi Baru</div>
-                            <div style="font-size: 0.75rem; font-weight: 500; color: #64748b;">Powered by Gemini 3.1 Pro</div>
+                            <div style="font-size: 0.75rem; font-weight: 500; color: #64748b;" id="current-model-label">Powered by AI</div>
                         </div>
                     </div>
                 </div>
@@ -233,7 +251,32 @@
         // =======================================================================
         // 2. GEMINI API SETUP
         // =======================================================================
-        const ACTUAL_MODEL = "gemini-3.1-flash-lite"; // "gemini-1.5-flash-latest"
+        let ACTUAL_MODEL_RAW = localStorage.getItem('cbt_active_model') || "gemini-3.1-flash-lite";
+
+        function changeActiveModel(skipAlert = false) {
+            const selector = document.getElementById('agent-model-selector');
+            ACTUAL_MODEL_RAW = selector.value;
+            localStorage.setItem('cbt_active_model', ACTUAL_MODEL_RAW);
+            
+            // Update subtitle powered by
+            const providerName = ACTUAL_MODEL_RAW.startsWith('openrouter:') ? 'OpenRouter' : 'Google Gemini';
+            const cleanName = ACTUAL_MODEL_RAW.replace('openrouter:', '').replace('groq:', '');
+            
+            let labelElement = document.getElementById('current-model-label');
+            if(labelElement) labelElement.innerText = `Powered by ${providerName} (${cleanName})`;
+            
+            if(!skipAlert) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Model AI Diubah!',
+                    text: `Sekarang menggunakan: ${cleanName}`,
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+        }
 
         // Context & Sessions
         let chatHistory = [];
@@ -253,7 +296,12 @@
                       "Jika Admin ingin membuat, mengubah, atau menghapus jadwal pendaftaran yang muncul di halaman Blogger, gunakan alat get_registration_events, create_registration_event, update_registration_event, dan delete_registration_event." +
                       "Jika Admin meminta untuk memasang link pembahasan, masukkan ke parameter url_pembahasan pada alat update_tryout (JANGAN DIMASUKKAN KE petunjuk). " +
                       "Jika Admin ingin membatalkan/mengurungkan perintah yang baru ia berikan karena kamu salah/ngawur, gunakan alat undo_last_action. " +
-                      "Jika Admin melampirkan file (PDF/Gambar) dan meminta ekstraksi soal, bacalah file tersebut dan JAWABLAH DENGAN BLOK KODE JSON (```json [array objek soal] ```). Setiap soal wajib memiliki field: tipe (pg/pgk), tingkat_kesulitan (Mudah/Sedang/Sulit), pertanyaan, opsi (array), dan kunci. JANGAN gunakan tool untuk import soal, cukup balas dengan output JSON saja."
+                      "Jika Admin melampirkan file (PDF/Gambar) dan meminta ekstraksi soal, bacalah file tersebut dan JAWABLAH DENGAN BLOK KODE JSON (```json [array objek soal] ```). Setiap soal wajib memiliki field: tipe (pg/pgk), tingkat_kesulitan (Mudah/Sedang/Sulit - HURUF KECIL UNTUK NAMA FIELD `tingkat_kesulitan`), pertanyaan, opsi (array), dan kunci. JANGAN gunakan tool untuk import soal, cukup balas dengan output JSON saja. " +
+                      "PENTING (FORMATTING TEKS): Gunakan selalu tag HTML yang valid (seperti `<br>` atau `<p>`) untuk setiap enter/baris baru pada soal, agar teks tidak menyambung saat tampil di web. Kamu juga SANGAT DIANJURKAN menggunakan tag HTML seperti `<ul>`, `<ol>`, `<li>`, `<b>`, `<i>`, atau `<table>` untuk merender bulleting, numbering, tabel, atau teks tebal persis seperti di Microsoft Word. " +
+                      "PENTING (ANTI HALUSINASI ID): JANGAN MENGUBAH / MENEBAK ID Tryout. Jika ada gambar, copy-paste ID yang PERSIS 100% dari data paket untuk URL gambar (contoh: jangan mengubah osk-juni menjadi osn-k-juni secara sepihak). " +
+                      "Jika ada soal bergambar, WAJIB tuliskan tag HTML gambar dengan pola `<img src=\"assets/[ID Tryout]/[ID Tryout]-[Nomor Soal].png\" style=\"max-width:100%;\">`. Ini agar terhubung dengan fitur Crop PDF. " +
+                      "Jika terdapat rumus matematika atau simbol khusus, WAJIB gunakan format MathJax (yaitu gunakan simbol $...$ untuk inline atau $$...$$ untuk blok). " +
+                      "Kamu saat ini sedang berjalan menggunakan model AI: " + ACTUAL_MODEL_RAW + ". Jika ditanya tentang identitasmu atau model AI apa yang kamu gunakan, sebutkan secara eksplisit nama model ini."
             }]
         };
 
@@ -270,7 +318,7 @@
                             id: { type: "STRING" },
                             updates: { 
                                 type: "OBJECT", 
-                                properties: { judul: { type: "STRING" }, status: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "NUMBER" }, url_pembahasan: { type: "STRING", description: "URL dokumen atau Google Drive untuk pembahasan" } } 
+                                properties: { judul: { type: "STRING" }, status: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "NUMBER" }, url_pembahasan: { type: "STRING", description: "URL dokumen atau Google Drive untuk pembahasan" }, waktu_buka: { type: "STRING" }, waktu_tutup: { type: "STRING" }, sistem_poin: { type: "BOOLEAN" }, base_poin: { type: "NUMBER" }, kategori_poin: { type: "OBJECT", properties: { Mudah: { type: "NUMBER" }, Sedang: { type: "NUMBER" }, Sulit: { type: "NUMBER" } }, description: "Bobot poin per tingkat kesulitan jika sistem poin aktif" }, petunjuk: { type: "ARRAY", items: { type: "STRING" } } } 
                             }
                         },
                         required: ["id", "updates"]
@@ -281,7 +329,7 @@
                     description: "Membuat paket tryout baru.",
                     parameters: { 
                         type: "OBJECT", 
-                        properties: { judul: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "NUMBER" }, url_pembahasan: { type: "STRING" } }, 
+                        properties: { id: { type: "STRING", description: "Opsional ID unik, misal osn-ipa-sd-juni-2026" }, judul: { type: "STRING" }, mapel: { type: "STRING" }, durasi_menit: { type: "NUMBER" }, url_pembahasan: { type: "STRING" }, sistem_poin: { type: "BOOLEAN" }, base_poin: { type: "NUMBER" }, kategori_poin: { type: "OBJECT", properties: { Mudah: { type: "NUMBER" }, Sedang: { type: "NUMBER" }, Sulit: { type: "NUMBER" } } }, petunjuk: { type: "ARRAY", items: { type: "STRING" } } }, 
                         required: ["judul"] 
                     }
                 },
@@ -304,6 +352,28 @@
                     name: "delete_soal_by_id",
                     description: "Menghapus satu soal dari suatu tryout.",
                     parameters: { type: "OBJECT", properties: { id_paket: { type: "STRING" }, id_soal: { type: "STRING" } }, required: ["id_paket", "id_soal"] }
+                },
+                {
+                    name: "update_question",
+                    description: "Memperbarui 1 soal spesifik pada tryout tanpa harus menimpa seluruh array soal.",
+                    parameters: { 
+                        type: "OBJECT", 
+                        properties: { 
+                            id_paket: { type: "STRING" }, 
+                            id_soal: { type: "STRING", description: "Index atau ID soal yang akan diupdate" },
+                            data_soal: { 
+                                type: "OBJECT", 
+                                properties: {
+                                    tipe: { type: "STRING" },
+                                    tingkat_kesulitan: { type: "STRING" },
+                                    pertanyaan: { type: "STRING" },
+                                    opsi: { type: "ARRAY", items: { type: "STRING" } },
+                                    kunci: { type: "STRING" }
+                                }
+                            }
+                        }, 
+                        required: ["id_paket", "id_soal", "data_soal"] 
+                    }
                 },
                 {
                     name: "get_bank_stimulus",
@@ -481,17 +551,34 @@
                 else if (name === "update_tryout") {
                     const { id, updates } = args;
                     if(!id || !updates) return { error: "ID atau updates tidak valid." };
+                    
+                    const snap = await db.ref('paket_ujian/' + id).once('value');
+                    const existingData = snap.val() || {};
+                    const isCurrentlyActive = existingData.status === 'aktif';
+                    const isActivating = updates.status === 'aktif';
+                    
+                    if (isCurrentlyActive || isActivating) {
+                        let msg = isActivating ? `Agen AI ingin MENGAKTIFKAN tryout ${id}. Ujian akan langsung dapat diakses siswa. Lanjutkan?` : `Tryout ${id} SEDANG AKTIF. Agen AI ingin melakukan perubahan. Lanjutkan?`;
+                        const result = await Swal.fire({
+                            title: "AI Membutuhkan Izin", text: msg,
+                            icon: "warning", showCancelButton: true, confirmButtonText: "Ya, Izinkan", confirmButtonColor: "#f59e0b"
+                        });
+                        if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin." };
+                    }
+                    
                     await saveStateToUndoStack('paket_ujian/' + id, 'Update Tryout ' + id);
                     await db.ref('paket_ujian/' + id).update(updates);
                     await compileAndPublishTryout(id);
                     return { success: true, message: "Berhasil update tryout " + id, updatedData: updates };
                 }
                 else if (name === "create_tryout") {
-                    const id = 'tryout_' + Date.now();
+                    const id = args.id ? args.id : 'tryout_' + Date.now();
                     const newData = {
                         judul: args.judul, mapel: args.mapel || "-", durasi_menit: args.durasi_menit || 60,
                         status: "hidden", waktu_buat: new Date().toISOString()
                     };
+                    if (args.url_pembahasan) newData.url_pembahasan = args.url_pembahasan;
+                    if (args.petunjuk) newData.petunjuk = args.petunjuk;
                     await db.ref('paket_ujian/' + id).set(newData);
                     return { success: true, message: "Paket berhasil dibuat.", id: id };
                 }
@@ -529,11 +616,39 @@
                     if(idx > -1) {
                         await saveStateToUndoStack('soal/' + args.id_paket, 'Hapus Soal ' + args.id_soal);
                         soalArr.splice(idx, 1);
+                        
+                        if (soalArr.length === 0) {
+                            soalArr.push({ id_soal: 1, tipe: "pg", tingkat_kesulitan: "Mudah", pertanyaan: "<p><i>(Soal kosong, silakan edit)</i></p>", opsi: ["A","B","C","D"], kunci: "A" });
+                        }
+                        
                         await db.ref('soal/' + args.id_paket).set(soalArr);
                         await compileAndPublishTryout(args.id_paket);
                         return { success: true, message: "Soal berhasil dihapus." };
                     }
                     return { error: "Soal tidak ditemukan untuk dihapus." };
+                }
+                else if (name === "update_question") {
+                    const pktSnap = await db.ref('paket_ujian/' + args.id_paket).once('value');
+                    if (pktSnap.val() && pktSnap.val().status === 'aktif') {
+                        const result = await Swal.fire({
+                            title: "AI Membutuhkan Izin", text: `Tryout ${args.id_paket} SEDANG AKTIF. Agen AI ingin MENGUBAH SOAL ID ${args.id_soal}. Lanjutkan?`,
+                            icon: "warning", showCancelButton: true, confirmButtonText: "Ya, Izinkan", confirmButtonColor: "#f59e0b"
+                        });
+                        if (!result.isConfirmed) return { error: "Aksi ditolak oleh Admin." };
+                    }
+                    
+                    const snap = await db.ref('soal/' + args.id_paket).once('value');
+                    let soalArr = snap.val() || [];
+                    if(!Array.isArray(soalArr)) soalArr = Object.values(soalArr);
+                    const idx = soalArr.findIndex(s => s.id_soal == args.id_soal);
+                    if(idx > -1) {
+                        await saveStateToUndoStack('soal/' + args.id_paket, 'Update Soal ' + args.id_soal);
+                        soalArr[idx] = { ...soalArr[idx], ...args.data_soal, id_soal: soalArr[idx].id_soal };
+                        await db.ref('soal/' + args.id_paket).set(soalArr);
+                        await compileAndPublishTryout(args.id_paket);
+                        return { success: true, message: "Soal berhasil diupdate." };
+                    }
+                    return { error: "Soal tidak ditemukan untuk diupdate." };
                 }
                 else if (name === "get_bank_stimulus") {
                     const snap = await db.ref('paket_ujian/' + args.id_paket + '/bank_stimulus').once('value');
@@ -843,7 +958,27 @@
                         if (msg.parts) {
                             let combinedText = "";
                             msg.parts.forEach(p => { if (p.text) combinedText += p.text + "\n"; });
-                            if (combinedText.trim() !== "") appendMessage('ai', marked.parse(combinedText));
+                            if (combinedText.trim() !== "") {
+                                let jsonStr = extractJSON(combinedText);
+                                if(jsonStr) {
+                                    let cleanText = combinedText.replace(jsonStr, '').replace(/```json|```/g, '').trim();
+                                    if(!cleanText) cleanText = 'Ekstraksi soal berhasil!';
+                                    let randomId = 'temp-json-' + Math.random().toString(36).substring(7);
+                                    let ui = `<div style="display:flex; flex-direction:column; gap:10px; align-items:center; text-align:center; background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #bfdbfe; margin-top: 15px;">
+                                        <i class="fa-solid fa-circle-check" style="font-size:3rem; color:#10b981;"></i>
+                                        <div style="font-weight:600; color:#065f46; font-size:1.05rem;">${cleanText}</div>
+                                        <div style="font-size:0.85rem; color:#4b5563; margin-bottom:5px;">Ditemukan soal beserta format jawaban yang siap disimpan.</div>
+                                        <textarea id="${randomId}" style="display:none;">${jsonStr.replace(/</g, '&lt;')}</textarea>
+                                        <button class="btn btn-primary" onclick="terapkanJSONAgen(document.getElementById('${randomId}').value)" style="font-size: 0.9rem; padding: 10px 16px; width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.3); background: #10b981; border:none; transition:0.2s;"><i class="fa-solid fa-check-double"></i> Terapkan ke Tryout</button>
+                                    </div>`;
+                                    appendMessage('ai', ui);
+                                } else {
+                                    let formatted = combinedText.replace(/<think>([\s\S]*?)<\/think>/gi, (match, p1) => {
+                                        return `<details class="think-block"><summary><i class="fa-solid fa-lightbulb" style="color:#f59e0b;"></i> Pemikiran Agent</summary><div>${p1.trim()}</div></details>`;
+                                    });
+                                    appendMessage('ai', marked.parse(formatted));
+                                }
+                            }
                         }
                     }
                 });
@@ -892,6 +1027,8 @@
             });
         }
 
+
+
         function appendDefaultGreeting() {
             appendMessage('ai', `<b>Halo, Master Admin!</b> 👋<br>
                 Saya adalah AI Agent untuk sistem CBT. Anda bisa:
@@ -921,7 +1058,14 @@
         }
 
         // Jalankan saat load
-        window.addEventListener('DOMContentLoaded', loadAllChats);
+        window.addEventListener('DOMContentLoaded', () => {
+            loadAllChats();
+            const selector = document.getElementById('agent-model-selector');
+            if(selector) {
+                selector.value = ACTUAL_MODEL_RAW;
+                changeActiveModel(true); // pass true to skip alert on load
+            }
+        });
 
         function showLoading() {
             const div = document.createElement('div');
@@ -979,10 +1123,97 @@
             saveCurrentChat();
         }
 
+        // Translasi Format Gemini ke OpenAI Chat Completions
+        function translateToolsToOpenAI(geminiTools) {
+            if (!geminiTools || !geminiTools[0] || !geminiTools[0].functionDeclarations) return undefined;
+            return geminiTools[0].functionDeclarations.map(fn => ({
+                type: "function",
+                function: {
+                    name: fn.name,
+                    description: fn.description || "",
+                    parameters: fn.parameters || { type: "object", properties: {} }
+                }
+            }));
+        }
+
+        function translateHistoryToOpenAI(geminiHistory, sysInstruction) {
+            let messages = [];
+            if (sysInstruction && sysInstruction.parts && sysInstruction.parts[0]) {
+                messages.push({ role: "system", content: sysInstruction.parts[0].text });
+            }
+            
+            let callIdCounter = 1;
+            let pendingToolCalls = {};
+
+            geminiHistory.forEach(msg => {
+                const role = msg.role === "model" ? "assistant" : "user";
+                let content = "";
+                let tool_calls = [];
+                let isOnlyToolResponse = true;
+
+                if (msg.parts) {
+                    msg.parts.forEach(part => {
+                        if (!part.functionResponse) isOnlyToolResponse = false;
+                        
+                        if (part.text) {
+                            if(typeof content === 'string') content += part.text;
+                            else content.push({ type: "text", text: part.text });
+                        }
+                        if (part.inlineData) {
+                            if (typeof content === 'string') {
+                                content = content ? [{ type: "text", text: content }] : [];
+                            }
+                            content.push({
+                                type: "image_url",
+                                image_url: { url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}` }
+                            });
+                        }
+                        if (part.functionCall) {
+                            const callId = "call_" + part.functionCall.name + "_" + callIdCounter++;
+                            pendingToolCalls[part.functionCall.name] = callId;
+                            tool_calls.push({
+                                id: callId,
+                                type: "function",
+                                function: {
+                                    name: part.functionCall.name,
+                                    arguments: JSON.stringify(part.functionCall.args || {})
+                                }
+                            });
+                        }
+                        if (part.functionResponse) {
+                            const callId = pendingToolCalls[part.functionResponse.name] || ("call_" + part.functionResponse.name + "_" + callIdCounter++);
+                            messages.push({
+                                role: "tool",
+                                tool_call_id: callId,
+                                name: part.functionResponse.name,
+                                content: JSON.stringify(part.functionResponse.response.result)
+                            });
+                        }
+                    });
+                }
+                
+                if (!isOnlyToolResponse) {
+                    let msgObj = { role: role };
+                    if (content) msgObj.content = content;
+                    if (tool_calls.length > 0) msgObj.tool_calls = tool_calls;
+                    messages.push(msgObj);
+                }
+            });
+            return messages;
+        }
+
         async function processGeminiCall() {
-            const currentApiKey = localStorage.getItem('cbt_gemini_key') || "";
-            if(!currentApiKey) {
-                appendMessage('ai', 'API Key belum dikonfigurasi. Silakan masuk ke menu <b>Pengaturan Akun Admin</b> untuk mengatur Gemini API Key.');
+            // Determine active provider
+            const isGroq = false; // Groq logic removed
+            const isOpenRouter = ACTUAL_MODEL_RAW.startsWith('openrouter:');
+            const isGemini = !isOpenRouter;
+            
+            const modelName = isOpenRouter ? ACTUAL_MODEL_RAW.replace('openrouter:', '') : ACTUAL_MODEL_RAW;
+
+            const apiKey = isOpenRouter ? localStorage.getItem('cbt_openrouter_key') : localStorage.getItem('cbt_gemini_key');
+
+            if(!apiKey) {
+                appendMessage('ai', 'API Key belum dikonfigurasi. Silakan masuk ke menu <b>Pengaturan Akun Admin</b> untuk mengatur API Key untuk provider ini.');
                 removeLoading(); return;
             }
             showLoading();
@@ -999,21 +1230,92 @@
                 // Clean up empty parts just in case
                 limitedHistory = limitedHistory.filter(msg => msg.parts && msg.parts.length > 0);
 
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${ACTUAL_MODEL}:generateContent?key=${currentApiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        systemInstruction: systemInstruction,
-                        contents: limitedHistory,
-                        tools: toolsConfig,
-                        generationConfig: { temperature: 0.2 }
-                    })
-                });
+                let data;
 
-                const data = await response.json();
+                if (isGemini) {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            systemInstruction: systemInstruction,
+                            contents: limitedHistory,
+                            tools: toolsConfig,
+                            generationConfig: { temperature: 0.2 }
+                        })
+                    });
+                    data = await response.json();
+                } else {
+                    const endpoint = 'https://openrouter.ai/api/v1/chat/completions';
+                    
+                    const messages = translateHistoryToOpenAI(limitedHistory, systemInstruction);
+                    const openAITools = translateToolsToOpenAI(toolsConfig);
+                    
+                    const reqBody = {
+                        model: modelName,
+                        messages: messages,
+                        temperature: 0.2
+                    };
+                    
+                    if (openAITools && openAITools.length > 0) {
+                        reqBody.tools = openAITools;
+                        reqBody.tool_choice = "auto";
+                    }
+                    
+                    const headers = {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'CBT LBB Admin'
+                    };
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(reqBody)
+                    });
+                    
+                    const openAIData = await response.json();
+                    
+                    if (openAIData.error) {
+                        data = { error: openAIData.error };
+                    } else {
+                        // Translate OpenAI response to Gemini format
+                        const choice = openAIData.choices[0].message;
+                        let geminiParts = [];
+                        
+                        if (choice.content) {
+                            geminiParts.push({ text: choice.content });
+                        }
+                        
+                        if (choice.tool_calls && choice.tool_calls.length > 0) {
+                            choice.tool_calls.forEach(tc => {
+                                if (tc.type === 'function') {
+                                    let args = {};
+                                    try { args = JSON.parse(tc.function.arguments); } catch(e) {}
+                                    geminiParts.push({
+                                        functionCall: {
+                                            name: tc.function.name,
+                                            args: args
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                        
+                        data = {
+                            candidates: [{
+                                content: {
+                                    role: "model",
+                                    parts: geminiParts
+                                }
+                            }]
+                        };
+                    }
+                }
+
                 removeLoading();
 
-                if (data.error) { appendMessage('ai', 'Error dari server: ' + data.error.message); return; }
+                if (data.error) { appendMessage('ai', 'Error dari server: ' + (data.error.message || JSON.stringify(data.error))); return; }
                 if (!data.candidates || data.candidates.length === 0) { appendMessage('ai', 'Tidak ada respons dari AI.'); return; }
 
                 const responseMessage = data.candidates[0].content;
@@ -1035,6 +1337,7 @@
                         </details>`);
                 }
 
+                let functionResponsesBatch = [];
                 for (const part of parts) {
                     if (part.text) { textToDisplay += part.text + "\n"; }
                     if (part.functionCall) {
@@ -1048,12 +1351,16 @@
                         }
 
                         const result = await executeTool(fnName, fnArgs);
-                        chatHistory.push({
-                            role: 'user',
-                            parts: [{ functionResponse: { name: fnName, response: { result: result } } }]
-                        });
-                        saveCurrentChat();
+                        functionResponsesBatch.push({ functionResponse: { name: fnName, response: { result: result } } });
                     }
+                }
+
+                if (functionResponsesBatch.length > 0) {
+                    chatHistory.push({
+                        role: 'user',
+                        parts: functionResponsesBatch
+                    });
+                    saveCurrentChat();
                 }
 
                 if (hasFunctionCalls) {
@@ -1073,12 +1380,13 @@
                         let cleanText = textToDisplay.replace(jsonStr, '').replace(/```json|```/g, '').trim();
                         if(!cleanText) cleanText = 'Ekstraksi soal berhasil!';
                         
+                        let randomId = 'temp-json-' + Math.random().toString(36).substring(7);
                         let ui = `<div style="display:flex; flex-direction:column; gap:10px; align-items:center; text-align:center; background: #eff6ff; padding: 20px; border-radius: 12px; border: 1px solid #bfdbfe; margin-top: 15px;">
                             <i class="fa-solid fa-circle-check" style="font-size:3rem; color:#10b981;"></i>
                             <div style="font-weight:600; color:#065f46; font-size:1.05rem;">${cleanText}</div>
                             <div style="font-size:0.85rem; color:#4b5563; margin-bottom:5px;">Ditemukan soal beserta format jawaban yang siap disimpan.</div>
-                            <textarea id="temp-json-extract" style="display:none;">${jsonStr.replace(/</g, '&lt;')}</textarea>
-                            <button class="btn btn-primary" onclick="terapkanJSONAgen(document.getElementById('temp-json-extract').value)" style="font-size: 0.9rem; padding: 10px 16px; width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.3); background: #10b981; border:none; transition:0.2s;"><i class="fa-solid fa-check-double"></i> Terapkan ke Tryout</button>
+                            <textarea id="${randomId}" style="display:none;">${jsonStr.replace(/</g, '&lt;')}</textarea>
+                            <button class="btn btn-primary" onclick="terapkanJSONAgen(document.getElementById('${randomId}').value)" style="font-size: 0.9rem; padding: 10px 16px; width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(16,185,129,0.3); background: #10b981; border:none; transition:0.2s;"><i class="fa-solid fa-check-double"></i> Terapkan ke Tryout</button>
                         </div>`;
                         appendMessage('ai', ui);
                     } else {
@@ -1151,6 +1459,10 @@
                     const existSnap = await ref.once('value');
                     let existSoal = existSnap.val() || [];
                     if(!Array.isArray(existSoal)) existSoal = Object.values(existSoal);
+                    
+                    if (existSoal.length === 1 && existSoal[0].pertanyaan && existSoal[0].pertanyaan.includes("Soal kosong, silakan edit")) {
+                        existSoal = [];
+                    }
                     
                     let mergedSoal = existSoal.concat(soalArray);
                     mergedSoal.forEach((s, idx) => s.id_soal = idx + 1);
