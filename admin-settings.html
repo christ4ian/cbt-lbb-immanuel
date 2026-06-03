@@ -163,20 +163,25 @@
 
             <div class="card">
                 <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 1.3rem; color: var(--text-dark); border-bottom: 2px solid var(--bg-main); padding-bottom: 10px;">
-                    <i class="fa-solid fa-microchip" style="color: #8b5cf6;"></i> Konfigurasi API AI (Gemini)
+                    <i class="fa-solid fa-microchip" style="color: #8b5cf6;"></i> Konfigurasi API AI (Multi-Provider)
                 </h3>
                 
                 <div style="background: #eff6ff; color: #1e3a8a; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 20px; font-size: 0.9rem;">
-                    <i class="fa-solid fa-circle-info"></i> Masukkan API Key Gemini Anda di sini. Jangan menyimpan API Key langsung di dalam kode (hardcode) agar tidak terkena blokir otomatis oleh Google jika terunggah ke GitHub publik. Kunci ini akan disimpan dengan aman di penyimpanan lokal browser Anda.
+                    <i class="fa-solid fa-circle-info"></i> Masukkan API Key Anda di sini. Kunci ini akan disimpan dengan aman di penyimpanan lokal (Local Storage) browser Anda.
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Gemini API Key</label>
+                    <label class="form-label">Google Gemini API Key</label>
                     <input type="password" id="gemini-api-key" class="form-control" placeholder="AIzaSy...">
                 </div>
 
+                <div class="form-group">
+                    <label class="form-label">OpenRouter API Key</label>
+                    <input type="password" id="openrouter-api-key" class="form-control" placeholder="sk-or-v1-...">
+                </div>
+
                 <div style="text-align: right;">
-                    <button class="btn btn-primary" style="background: #8b5cf6;" onclick="saveGeminiApiKey()"><i class="fa-solid fa-save"></i> Simpan API Key</button>
+                    <button class="btn btn-primary" style="background: #8b5cf6;" onclick="saveAIApiKeys()"><i class="fa-solid fa-save"></i> Simpan Konfigurasi AI</button>
                 </div>
             </div>
         </div>
@@ -218,7 +223,10 @@
                 currentUser = user;
                 document.getElementById('admin-email').value = user.email;
                 document.getElementById('admin-name').value = user.displayName || '';
+                
+                // Load AI Settings
                 document.getElementById('gemini-api-key').value = localStorage.getItem('cbt_gemini_key') || '';
+                document.getElementById('openrouter-api-key').value = localStorage.getItem('cbt_openrouter_key') || '';
             }
         });
 
@@ -291,13 +299,16 @@
         }
 
         // =======================================================================
-        // 4. FUNGSI SIMPAN GEMINI API KEY
+        // 4. FUNGSI SIMPAN KONFIGURASI AI
         // =======================================================================
-        function saveGeminiApiKey() {
-            const key = document.getElementById('gemini-api-key').value.trim();
-            if(!key) return Swal.fire('Peringatan', 'API Key tidak boleh kosong!', 'warning');
-            localStorage.setItem('cbt_gemini_key', key);
-            Swal.fire('Berhasil!', 'Gemini API Key berhasil disimpan di perangkat ini.', 'success');
+        function saveAIApiKeys() {
+            const geminiKey = document.getElementById('gemini-api-key').value.trim();
+            const orKey = document.getElementById('openrouter-api-key').value.trim();
+            
+            if(geminiKey) localStorage.setItem('cbt_gemini_key', geminiKey);
+            if(orKey) localStorage.setItem('cbt_openrouter_key', orKey);
+            
+            Swal.fire('Berhasil!', 'Konfigurasi API Key berhasil disimpan di perangkat ini.', 'success');
         }
 
     </script>
