@@ -653,7 +653,11 @@
 
             toggleModeSkor();
 
-            renderTabelKategoriPoin(p.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 });
+            let renderKat = p.kategori_poin;
+            if (!renderKat || (Object.keys(renderKat).length === 1 && renderKat["Standar"] !== undefined)) {
+                renderKat = { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 };
+            }
+            renderTabelKategoriPoin(renderKat);
 
             bukaTabTryout('pengaturan', document.querySelector('.tab-btn')); 
             
@@ -1014,8 +1018,17 @@
         }
 
         function copyTagGambar(id) {
-            navigator.clipboard.writeText(`[FIREBASE:${id}]`);
-            Swal.fire({toast:true, position:'top-end', icon:'success', title:'Tag disalin!', text: 'Bisa langsung dipaste di Editor Soal.', showConfirmButton:false, timer:2000});
+            const method = localStorage.getItem('cbt_storage_method') || 'github';
+            let copyText = `[IMG:${id}]`;
+            
+            if (method === 'github') {
+                copyText = `<img src="assets/${activePaketId}/${id}.png" style="max-width:100%; border-radius:8px;">`;
+            } else if (masterGambar[id] && masterGambar[id].url) {
+                copyText = `<img src="${masterGambar[id].url}" style="max-width:100%; border-radius:8px;">`;
+            }
+            
+            navigator.clipboard.writeText(copyText);
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'Teks disalin!', text: 'Bisa langsung dipaste di Editor Soal.', showConfirmButton:false, timer:2000});
         }
 
 
@@ -1023,14 +1036,32 @@
         let arrSoalAdmin = []; let activeSoalIdx = 0;
 
         function updateDropdownKategori() {
-            const dd = document.getElementById('e-kesulitan'); dd.innerHTML = '';
-            let kat = globalPaketData[activePaketId]?.kategori_poin || {"Standar": 1};
+            const dd = document.getElementById('e-kesulitan'); 
+            const prevValue = dd.value; // Simpan value sebelum di-reset
+            dd.innerHTML = '';
+            
+            let kat = globalPaketData[activePaketId]?.kategori_poin;
+            if (!kat || (Object.keys(kat).length === 1 && kat["Standar"] !== undefined)) {
+                kat = {"Mudah": 1, "Sedang": 1.25, "Sulit": 1.5};
+                if (globalPaketData[activePaketId]) globalPaketData[activePaketId].kategori_poin = kat;
+            }
+            
             let isSistemPoin = globalPaketData[activePaketId]?.sistem_poin !== false;
 
             if(isSistemPoin) {
                 Object.keys(kat).forEach(k => { dd.innerHTML += `<option value="${k}">${k} (Bobot: ${kat[k]})</option>`; });
             } else {
                 dd.innerHTML = `<option value="Flat">Poin Rata (Bobot Dinonaktifkan)</option>`;
+            }
+            
+            // Kembalikan value yang tersimpan jika opsi tersebut masih ada
+            if(prevValue) {
+                for(let j=0; j<dd.options.length; j++) {
+                    if(dd.options[j].value === prevValue) {
+                        dd.selectedIndex = j;
+                        break;
+                    }
+                }
             }
         }
 
@@ -1085,9 +1116,33 @@
             }
 
             const ddKesulitan = document.getElementById('e-kesulitan');
-            if(s.tingkat_kesulitan && ddKesulitan.querySelector(`option[value="${s.tingkat_kesulitan}"]`)) {
-                ddKesulitan.value = s.tingkat_kesulitan;
-            } else if (ddKesulitan.options.length > 0) { ddKesulitan.selectedIndex = 0; }
+            let matched = false;
+            
+            // Robust check for AI-generated JSON keys
+            let rawKesulitan = s.tingkat_kesulitan || s.tingkatKesulitan || s.Tingkat_Kesulitan || s['Tingkat Kesulitan'] || "";
+            let valToCheck = rawKesulitan ? String(rawKesulitan).trim().toLowerCase() : "";
+            
+            if(valToCheck) {
+                for (let j = 0; j < ddKesulitan.options.length; j++) {
+                    if (ddKesulitan.options[j].value.trim().toLowerCase() === valToCheck) {
+                        ddKesulitan.selectedIndex = j;
+                        matched = true;
+                        break;
+                    }
+                }
+            }
+            if (!matched && ddKesulitan.options.length > 0) { 
+                // Jika tidak ada yang cocok (AI halusinasi), cek apakah maksud AI adalah salah satu dari default
+                if (valToCheck === "hard" || valToCheck === "sukar") {
+                    for (let j=0; j<ddKesulitan.options.length; j++) if(ddKesulitan.options[j].value.toLowerCase()==="sulit") ddKesulitan.selectedIndex = j;
+                } else if (valToCheck === "medium" || valToCheck === "menengah") {
+                    for (let j=0; j<ddKesulitan.options.length; j++) if(ddKesulitan.options[j].value.toLowerCase()==="sedang") ddKesulitan.selectedIndex = j;
+                } else if (valToCheck === "easy" || valToCheck === "gampang") {
+                    for (let j=0; j<ddKesulitan.options.length; j++) if(ddKesulitan.options[j].value.toLowerCase()==="mudah") ddKesulitan.selectedIndex = j;
+                } else {
+                    ddKesulitan.selectedIndex = 0; 
+                }
+            }
 
             document.getElementById('e-stimulus-id').value = s.id_stimulus || "";
             document.getElementById('e-pertanyaan').value = s.pertanyaan || '';
@@ -1168,7 +1223,7 @@
 
         function tambahSoal() { 
             tangkapStateSoalAdmin(); 
-            let defKesulitan = document.getElementById('e-kesulitan').options.length > 0 ? document.getElementById('e-kesulitan').options[0].value : "Standar";
+            let defKesulitan = document.getElementById('e-kesulitan').options.length > 0 ? document.getElementById('e-kesulitan').options[0].value : "Mudah";
             arrSoalAdmin.push({ id_soal: arrSoalAdmin.length + 1, tipe: 'pg', tingkat_kesulitan: defKesulitan, id_stimulus: "", pertanyaan: "", opsi: ["", ""], kunci: "A", label_pgk: ["Benar", "Salah"] }); 
             pindahSoal(arrSoalAdmin.length - 1); 
         }
@@ -1195,8 +1250,16 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     arrSoalAdmin = [];
-                    activeSoalIdx = 0;
-                    tambahSoal(); // Sisakan 1 soal kosong
+                    activeSoalIdx = -1; // Mencegah tangkapStateSoalAdmin menangkap teks soal lama dari UI
+                    
+                    let defKesulitan = document.getElementById('e-kesulitan').options.length > 0 ? document.getElementById('e-kesulitan').options[0].value : "Mudah";
+                    arrSoalAdmin.push({ 
+                        id_soal: 1, tipe: 'pg', tingkat_kesulitan: defKesulitan, id_stimulus: "", 
+                        pertanyaan: "<p><i>(Soal kosong, silakan edit)</i></p>", 
+                        opsi: ["A", "B", "C", "D"], kunci: "A", label_pgk: ["Benar", "Salah"] 
+                    }); 
+                    
+                    pindahSoal(0);
                     Swal.fire('Terhapus', 'Semua soal berhasil dikosongkan.', 'success');
                 }
             });
@@ -1243,8 +1306,15 @@
             if (formValues) {
                 let finalTag = "";
                 if(formValues.type === 'firebase') {
-                    // CUKUP INSERT TAG SAJA BIAR BERSIH DI EDITOR
-                    finalTag = `\n[FIREBASE:${formValues.val}]\n`;
+                    const method = localStorage.getItem('cbt_storage_method') || 'github';
+                    const id = formValues.val;
+                    if (method === 'github') {
+                        finalTag = `\n<img src="assets/${activePaketId}/${id}.png" style="max-width:100%; border-radius:8px;">\n`;
+                    } else if (masterGambar[id] && masterGambar[id].url) {
+                        finalTag = `\n<img src="${masterGambar[id].url}" style="max-width:100%; border-radius:8px;">\n`;
+                    } else {
+                        finalTag = `\n[IMG:${id}]\n`;
+                    }
                 } else {
                     finalTag = `<br><img src="assets/${formValues.val.replace('assets/', '')}" style="max-width:100%; border-radius:8px;"><br>`;
                 }
@@ -1257,17 +1327,23 @@
             if(!text || typeof text !== 'string') return text;
             
             // 1. Handle kalau tag-nya udah terlanjur masuk di dalam <img src="..."> (dari kode sebelumnya)
-            let processed = text.replace(/<img[^>]*src="\[FIREBASE:([^\]]+)\]"[^>]*>/g, (match, id) => {
+            let processed = text.replace(/<img[^>]*src="\[(?:FIREBASE|IMG):([^\]]+)\]"[^>]*>/g, (match, id) => {
                 if (masterGambar[id] && masterGambar[id].base64) {
                     return `<img src="${masterGambar[id].base64}" style="max-width:100%; border-radius:8px;" class="compiled-img">`;
+                }
+                if (masterGambar[id] && masterGambar[id].url) {
+                    return `<img src="${masterGambar[id].url}" style="max-width:100%; border-radius:8px;" class="compiled-img">`;
                 }
                 return match;
             });
 
             // 2. Handle kalau tag-nya berdiri sendiri (versi bersih yang baru)
-            processed = processed.replace(/\[FIREBASE:([^\]]+)\]/g, (match, id) => {
+            processed = processed.replace(/\[(?:FIREBASE|IMG):([^\]]+)\]/g, (match, id) => {
                 if (masterGambar[id] && masterGambar[id].base64) {
                     return `<br><img src="${masterGambar[id].base64}" style="max-width:100%; border-radius:8px;" class="compiled-img"><br>`;
+                }
+                if (masterGambar[id] && masterGambar[id].url) {
+                    return `<br><img src="${masterGambar[id].url}" style="max-width:100%; border-radius:8px;" class="compiled-img"><br>`;
                 }
                 return match; 
             });
@@ -1288,7 +1364,7 @@
                 let v = parseFloat(tr.querySelector('.kat-val').value) || 1;
                 if(k) newKat[k] = v;
             });
-            if(Object.keys(newKat).length === 0) newKat = {"Standar": 1};
+            if(Object.keys(newKat).length === 0) newKat = {"Mudah": 1, "Sedang": 1.25, "Sulit": 1.5};
 
             let isSistemPoin = document.getElementById('set-sistem-poin').checked;
             let tBuka = document.getElementById('set-buka').value.replace('T', ' '); if(tBuka.length===16) tBuka+=':00';
@@ -1423,14 +1499,14 @@
                         updates['paket_ujian/' + activePaketId + '/sistem_poin'] = parsed.sistem_poin !== false;
                         updates['paket_ujian/' + activePaketId + '/url_pembahasan'] = parsed.url_pembahasan || ''; 
                         updates['paket_ujian/' + activePaketId + '/petunjuk'] = parsed.petunjuk || [];
-                        updates['paket_ujian/' + activePaketId + '/kategori_poin'] = parsed.kategori_poin || { "Standar": 1 };
+                        updates['paket_ujian/' + activePaketId + '/kategori_poin'] = parsed.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 };
                         
                         await db.ref().update(updates);
                         
                         // FIX: Update local cache manually to prevent race condition when rendering Soal immediately
                         if (!globalPaketData[activePaketId]) globalPaketData[activePaketId] = {};
                         globalPaketData[activePaketId].judul = parsed.judul || '';
-                        globalPaketData[activePaketId].kategori_poin = parsed.kategori_poin || { "Standar": 1 };
+                        globalPaketData[activePaketId].kategori_poin = parsed.kategori_poin || { "Mudah": 1, "Sedang": 1.25, "Sulit": 1.5 };
                         globalPaketData[activePaketId].sistem_poin = parsed.sistem_poin !== false;
                         globalPaketData[activePaketId].mode_skor = parsed.mode_skor || 'custom';
                         if(parsed.bank_stimulus) await db.ref('bank_stimulus/' + activePaketId).set(parsed.bank_stimulus);
