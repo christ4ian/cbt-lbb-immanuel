@@ -241,6 +241,18 @@
                         <div class="form-group"><label class="form-label" style="font-weight: 600; font-size: 0.9rem;">Link Grup WA <i class="fa-brands fa-whatsapp" style="color: #25D366;"></i></label><input type="url" id="ev-link-wa" class="form-control" placeholder="https://chat.whatsapp.com/..." style="padding: 10px;"></div>
                         <div class="form-group"><label class="form-label" style="font-weight: 600; font-size: 0.9rem;">Harga (Rp)</label><input type="number" id="ev-harga" class="form-control" placeholder="Contoh: 35000 (0 jika gratis)" style="padding: 10px;" value="0"></div>
                     </div>
+                    
+                    <h4 style="margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: var(--text-dark);">Target Jalur Pendaftaran</h4>
+                    <div style="display: flex; gap: 20px; margin-top: 10px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" id="ev-jalur-reguler" style="width: 18px; height: 18px;" checked>
+                            Jalur Reguler (Umum / Web Blogger)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" id="ev-jalur-kelas" style="width: 18px; height: 18px;">
+                            Jalur Kelas (Peserta Khusus LBB)
+                        </label>
+                    </div>
 
                     <h4 style="margin-top: 15px; border-bottom: 1px solid var(--border); padding-bottom: 8px; color: var(--primary);">Pilihan Mata Pelajaran</h4>
                     <div id="ev-mapel-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;"></div>
@@ -383,6 +395,8 @@
                     document.getElementById('ev-tutup').value = ev.tanggal_tutup || '';
                     document.getElementById('ev-link-wa').value = ev.link_wa || '';
                     document.getElementById('ev-harga').value = ev.harga !== undefined ? ev.harga : '0';
+                    document.getElementById('ev-jalur-reguler').checked = ev.jalur_reguler !== false;
+                    document.getElementById('ev-jalur-kelas').checked = ev.jalur_kelas === true;
                     
                     document.getElementById('btn-hapus-event').style.display = 'inline-flex';
 
@@ -401,6 +415,8 @@
                     document.getElementById('ev-tutup').value = '';
                     document.getElementById('ev-link-wa').value = '';
                     document.getElementById('ev-harga').value = '0';
+                    document.getElementById('ev-jalur-reguler').checked = true;
+                    document.getElementById('ev-jalur-kelas').checked = false;
                     document.getElementById('btn-hapus-event').style.display = 'none';
                     tambahEvMapel(); 
                 }
@@ -449,6 +465,8 @@
             const tutup = document.getElementById('ev-tutup').value;
             const linkWa = document.getElementById('ev-link-wa').value.trim();
             const harga = parseInt(document.getElementById('ev-harga').value) || 0;
+            const jalurReguler = document.getElementById('ev-jalur-reguler').checked;
+            const jalurKelas = document.getElementById('ev-jalur-kelas').checked;
 
             if(!newId || !nama || !buka || !tutup || !linkWa) return Swal.fire('Error', 'Semua form utama (termasuk Link WA) wajib diisi!', 'error');
 
@@ -493,6 +511,7 @@
             const dataToSave = {
                 nama_event: nama, tanggal_buka: buka, tanggal_tutup: tutup,
                 link_wa: linkWa, harga: harga,
+                jalur_reguler: jalurReguler, jalur_kelas: jalurKelas,
                 paket_ujian: paket_ujian, kolom_tambahan: kolom_tambahan
             };
 
