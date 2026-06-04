@@ -991,27 +991,28 @@ const app = {
         if (btnBahas) btnBahas.style.display = 'none';
         if (areaRincian) areaRincian.style.display = 'none';
 
+        // PEMBAHASAN LANGSUNG BISA DIAKSES JIKA ROLE MENGIZINKAN (TANPA NUNGGU DEADLINE)
+        if ((priv.akses_pembahasan || this.userData.isAdmin) && btnBahas) {
+            btnBahas.style.display = 'block'; // Munculkan tombolnya
+            if (this.currentPaket.url_pembahasan) {
+                btnBahas.disabled = false;
+                btnBahas.style.background = '#10b981'; 
+                btnBahas.style.cursor = 'pointer';
+                btnBahas.innerHTML = '<i class="fa-solid fa-download"></i> Download File Pembahasan';
+                btnBahas.onclick = () => { window.open(this.currentPaket.url_pembahasan, '_blank'); };
+            } else {
+                btnBahas.disabled = true;
+                btnBahas.style.background = '#94a3b8';
+                btnBahas.innerHTML = '<i class="fa-solid fa-file-excel"></i> Pembahasan Belum Diunggah Admin';
+            }
+        }
+
         if (isWaktuTutupLewat || this.userData.isAdmin) { // Admin bebas buka
             // WAKTU UJIAN SUDAH DITUTUP
             if (priv.lihat_kunci || this.userData.isAdmin) {
                 areaRincian.style.display = 'block';
                 areaRincian.innerHTML = `<button class="btn-login" style="background:#2563eb; color:white; width:100%; border:none; padding:14px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 4px 6px rgba(37,99,235,0.2);" onclick="app.bukaPopUpAnalisis()"> <i class="fa-solid fa-table-list"></i> Lihat Analisis Benar/Salah </button>`;
                 this.dataAnalisisDetail = detailJawaban;
-            }
-
-            if ((priv.akses_pembahasan || this.userData.isAdmin) && btnBahas) {
-                btnBahas.style.display = 'block'; // Munculkan tombolnya
-                if (this.currentPaket.url_pembahasan) {
-                    btnBahas.disabled = false;
-                    btnBahas.style.background = '#10b981'; 
-                    btnBahas.style.cursor = 'pointer';
-                    btnBahas.innerHTML = '<i class="fa-solid fa-download"></i> Download File Pembahasan';
-                    btnBahas.onclick = () => { window.open(this.currentPaket.url_pembahasan, '_blank'); };
-                } else {
-                    btnBahas.disabled = true;
-                    btnBahas.style.background = '#94a3b8';
-                    btnBahas.innerHTML = '<i class="fa-solid fa-file-excel"></i> Pembahasan Belum Diunggah Admin';
-                }
             }
 
             if(boxNotif) {
@@ -1021,18 +1022,11 @@ const app = {
             }
 
         } else {
-            // WAKTU UJIAN BELUM DITUTUP (HANYA MENUNGGU)
-            if (priv.akses_pembahasan && btnBahas) {
-                btnBahas.style.display = 'block';
-                btnBahas.disabled = true;
-                btnBahas.style.background = '#94a3b8';
-                btnBahas.innerHTML = '<i class="fa-solid fa-clock"></i> Pembahasan Terbuka Setelah Ujian Ditutup';
-            }
-
+            // WAKTU UJIAN BELUM DITUTUP (HANYA MENUNGGU ANALISIS)
             if(boxNotif) {
                 boxNotif.className = 'alert-info';
                 boxNotif.style.background = '#fff3cd'; boxNotif.style.color = '#856404'; boxNotif.style.borderColor = '#ffeeba';
-                boxNotif.innerHTML = '<i class="fa-solid fa-clock"></i> <strong>Menunggu Waktu Ujian Ditutup:</strong><br>Analisis jawaban dan akses pembahasan (jika Role mengizinkan) baru dapat dilihat setelah batas waktu ujian berakhir. Silakan login kembali nanti.';
+                boxNotif.innerHTML = '<i class="fa-solid fa-clock"></i> <strong>Menunggu Waktu Ujian Ditutup:</strong><br>Analisis jawaban (jika Role mengizinkan) baru dapat dilihat setelah batas waktu ujian berakhir. Silakan login kembali nanti.';
             }
         }
 
