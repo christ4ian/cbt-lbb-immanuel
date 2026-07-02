@@ -1538,3 +1538,199 @@ body.swal2-shown {
     padding-right: 0 !important;
     overflow: hidden !important; /* Biar background nggak ketarik */
 }
+
+/* ========================================= */
+/* 11. PUSMENDIK STYLE CBT OVERRIDES         */
+/* ========================================= */
+
+#view-ujian {
+    background: var(--bg-body);
+    padding-bottom: 20px;
+    overflow-y: auto;
+}
+
+#view-ujian .ujian-header {
+    height: 180px;
+    background: var(--primary-dark);
+    align-items: flex-start;
+    padding-top: 20px;
+}
+
+.ujian-main-card {
+    margin: -100px auto 0;
+    width: 95%;
+    max-width: 1200px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 70vh;
+}
+
+.ujian-toolbar-new {
+    border-bottom: 1px solid #eee;
+    padding: 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.tool-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.tool-title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #333;
+    font-family: var(--font-heading);
+}
+
+.tool-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.timer-badge {
+    border: 1px solid #ccc;
+    background: white;
+    color: #333;
+    padding: 8px 15px;
+    border-radius: 20px;
+}
+
+.btn-list-icon-new {
+    background: var(--secondary);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.tool-bottom-row {
+    border-top: 1px dashed #eee;
+    padding-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+
+.tool-bottom-row span {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.font-resizer {
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.ujian-main-card .ujian-wrapper {
+    background: white;
+    padding: 30px;
+    overflow-y: visible; /* Let the wrapper grow */
+    flex: 1;
+}
+
+.ujian-main-card .panel {
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    overflow-y: visible;
+}
+
+.ujian-main-card .panel-kiri {
+    border-right: 1px dashed #ccc;
+    padding-right: 20px;
+}
+
+.ujian-main-card .ujian-footer {
+    background: white;
+    padding: 20px 30px;
+    border-top: 1px solid #eee;
+    box-shadow: none;
+}
+
+/* Tombol Footer - Desktop */
+.btn-nav.prev { background: #dc3545 !important; color: white !important; border: none !important; }
+.btn-nav.prev:hover:not(:disabled) { background: #c82333 !important; }
+
+.ragu-checkbox { background: #ffc107 !important; color: white !important; border: none !important; }
+.ragu-checkbox label { color: white !important; }
+.ragu-checkbox:hover { background: #e0a800 !important; }
+
+.btn-nav.next { background: var(--secondary) !important; color: white !important; border: none !important; }
+.btn-nav.next:hover { background: var(--secondary-dark) !important; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #view-ujian {
+        padding-bottom: 0;
+        overflow-y: auto;
+    }
+    
+    #view-ujian .ujian-header {
+        height: 60px;
+        padding-top: 0;
+        align-items: center;
+        margin-bottom: 0;
+    }
+    
+    .ujian-main-card {
+        margin: 0;
+        width: 100%;
+        max-width: none;
+        border-radius: 0;
+        box-shadow: none;
+        min-height: auto;
+        padding-bottom: 80px; /* Space for fixed footer */
+    }
+    
+    .ujian-toolbar-new {
+        padding: 15px;
+    }
+    
+    .tool-title h2 { font-size: 1.2rem; }
+    
+    .ujian-main-card .ujian-wrapper {
+        padding: 15px;
+        flex-direction: column;
+    }
+    
+    .ujian-main-card .panel-kiri {
+        border-right: none;
+        padding-right: 0;
+        border-bottom: 1px dashed #ccc;
+        padding-bottom: 20px;
+        margin-bottom: 20px;
+    }
+
+    /* Keep footer fixed at bottom on mobile like original */
+    .ujian-main-card .ujian-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 10px 15px;
+        z-index: 100;
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
+    }
+    
+    .btn-mobile-icon.prev { background: #dc3545 !important; color: white !important; border: none !important; }
+    .btn-mobile-icon.next { background: var(--secondary) !important; color: white !important; border: none !important; }
+}
