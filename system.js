@@ -583,7 +583,36 @@ const app = {
         let html = `<div class="soal-text">${data.pertanyaan}</div>`;
         const jwb = this.answers[index];
 
-        if (data.tipe === 'pg') {
+        if (data.tipe === 'isian') {
+            let textPertanyaan = data.pertanyaan;
+            const ansObj = typeof jwb === 'object' && jwb !== null ? jwb : {};
+            
+            data.opsi.forEach((opsiStr, i) => {
+                const placeholder = `[isian:${i+1}]`;
+                let isianData = { tipe: 'teks' };
+                try { isianData = JSON.parse(opsiStr); } catch(e) {}
+                let inputType = isianData.tipe === 'jam' ? 'time' : (isianData.tipe === 'angka' ? 'number' : 'text');
+                const stepAttr = isianData.tipe === 'jam' ? 'step="1"' : '';
+                const val = ansObj[i] || '';
+                
+                let boxWidth = 200;
+                if (isianData.tipe === 'teks' && isianData.kunci) {
+                    const longestKey = isianData.kunci.split('|').reduce((a, b) => a.length > b.length ? a : b, "");
+                    boxWidth = Math.max(150, Math.ceil((longestKey.length * 12) / 50) * 50);
+                }
+                
+                let extraOnInput = "";
+                if (this.currentPaket.force_isian_angka) {
+                    inputType = "tel"; // type="tel" memunculkan keyboard angka di HP tapi tetap bisa terima simbol.
+                    extraOnInput = "this.value=this.value.replace(new RegExp('[^0-9.,+*()^:=/ -]', 'g'), ''); ";
+                }
+                
+                const inputHtml = `<input type="${inputType}" ${stepAttr} value="${val.replace(/"/g, '&quot;')}" oninput="${extraOnInput}app.inputIsian('${i}', this.value)" style="border:2px solid #cbd5e1; background:#f8fafc; padding:8px 15px; border-radius:8px; font-weight:bold; font-size:1.1rem; color:var(--primary); width:${boxWidth}px; max-width:100%; text-align:center; display:inline-block; transition: all 0.2s ease; outline:none;" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(37,99,235,0.2)';" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';">`;
+                
+                textPertanyaan = textPertanyaan.split(placeholder).join(inputHtml);
+            });
+            html = `<div class="soal-text">${textPertanyaan}</div>`;
+        } else if (data.tipe === 'pg') {
             html += `<div class="pilihan-wrapper">`;
             data.opsi.forEach((opt, i) => {
                 const char = String.fromCharCode(65 + i);
@@ -650,6 +679,13 @@ const app = {
         this.updateNavButtons(index);
     },
 
+    inputIsian: function(idx, val) {
+        let obj = this.answers[this.currentIndex] || {};
+        obj[idx] = val;
+        this.answers[this.currentIndex] = obj;
+        this.updateGrid();
+        this.saveRealtime();
+    },
     selectAnswer: function(val) { this.answers[this.currentIndex] = val; this.renderSoal(this.currentIndex); this.saveRealtime(); },
     toggleCheck: function(val) { 
         let arr = this.answers[this.currentIndex] || [];
@@ -802,6 +838,33 @@ const app = {
                     if (!jwb[r] || jwb[r] !== kunci[r]) { isPerfect = false; break; }
                 }
                 if (isPerfect) status = "BENAR";
+            } else if (soal.tipe === 'isian') {
+                let isPerfect = true;
+                const jwbObj = typeof jwb === 'object' && jwb !== null ? jwb : {};
+                
+                if (soal.opsi && Array.isArray(soal.opsi)) {
+                    soal.opsi.forEach((opsiStr, blankIdx) => {
+                        try {
+                            const isianData = JSON.parse(opsiStr);
+                            const jwbSiswa = (jwbObj[blankIdx] || "").trim();
+                            
+                            const keys = (isianData.kunci || "").split('|').map(k => k.trim().toLowerCase());
+                            let matched = jwbSiswa && keys.includes(jwbSiswa.toLowerCase());
+                            
+                            if (!matched && isianData.ai && isianData.tipe === 'teks') {
+                                if (app.aiResults && app.aiResults[i] && app.aiResults[i][blankIdx] === true) {
+                                    matched = true;
+                                }
+                            }
+                            
+                            if (!matched) isPerfect = false;
+                        } catch(e) { isPerfect = false; }
+                    });
+                } else {
+                    isPerfect = false;
+                }
+                
+                if (isPerfect) status = "BENAR";
             }
 
             if (status === "BENAR") {
@@ -827,7 +890,7 @@ const app = {
         return { skor: skorAkhir.toFixed(2), detail: detail };
     },
 
-    submitData: function(force) {
+    submitData: async function(force) {
         if (this.isSubmitting) return;
         this.isSubmitting = true;
         if (this.timerInterval) clearInterval(this.timerInterval);
@@ -835,6 +898,54 @@ const app = {
         this.stopSecurityProctor();
         
         Swal.fire({ title: 'Memproses Nilai...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        let aiPayload = [];
+        if (this.currentPaket && this.currentPaket.soal) {
+            this.currentPaket.soal.forEach((soal, i) => {
+                if (soal.tipe === 'isian' && soal.opsi) {
+                    const jwbObj = this.answers[i] || {};
+                    soal.opsi.forEach((opsiStr, blankIdx) => {
+                        try {
+                            const isianData = JSON.parse(opsiStr);
+                            if (isianData.ai && isianData.tipe === 'teks') {
+                                const jwbSiswa = (jwbObj[blankIdx] || "").trim();
+                                const keys = (isianData.kunci || "").split('|').map(k => k.trim().toLowerCase());
+                                if (jwbSiswa && !keys.includes(jwbSiswa.toLowerCase())) {
+                                    aiPayload.push({
+                                        id_soal: i,
+                                        id_blank: blankIdx,
+                                        jawaban_siswa: jwbSiswa,
+                                        kunci: isianData.kunci
+                                    });
+                                }
+                            }
+                        } catch(e) {}
+                    });
+                }
+            });
+        }
+
+        if (aiPayload.length > 0 && navigator.onLine) {
+            Swal.fire({ title: 'Jawabanmu sedang kami koreksi...', text:'Mohon tunggu sebentar...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const res = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "evaluasi_isian", answers: aiPayload })
+                });
+                const jsonRes = await res.json();
+                if (jsonRes.status === 'success' && Array.isArray(jsonRes.data)) {
+                    this.aiResults = this.aiResults || {};
+                    aiPayload.forEach((req, idx) => {
+                        if (!this.aiResults[req.id_soal]) this.aiResults[req.id_soal] = {};
+                        let isBenar = jsonRes.data[idx] === true || jsonRes.data[idx] === "true" || jsonRes.data[idx] === "True" || jsonRes.data[idx] === "TRUE";
+                        this.aiResults[req.id_soal][req.id_blank] = isBenar;
+                    });
+                }
+            } catch(e) { console.error("AI Eval Error", e); }
+            Swal.fire({ title: 'Menyelesaikan Pemrosesan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        }
+
         const result = this.calculateResult();
 
         let teksDurasi = "Tidak diketahui";
@@ -1007,27 +1118,17 @@ const app = {
             }
         }
 
-        if (isWaktuTutupLewat || this.userData.isAdmin) { // Admin bebas buka
-            // WAKTU UJIAN SUDAH DITUTUP
-            if (priv.lihat_kunci || this.userData.isAdmin) {
-                areaRincian.style.display = 'block';
-                areaRincian.innerHTML = `<button class="btn-login" style="background:#2563eb; color:white; width:100%; border:none; padding:14px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 4px 6px rgba(37,99,235,0.2);" onclick="app.bukaPopUpAnalisis()"> <i class="fa-solid fa-table-list"></i> Lihat Analisis Benar/Salah </button>`;
-                this.dataAnalisisDetail = detailJawaban;
-            }
+        // LOGIKA BARU: Tampilkan langsung setelah ujian selesai jika Role mengizinkan
+        if (priv.lihat_kunci || priv.lihat_skor || this.userData.isAdmin) {
+            areaRincian.style.display = 'block';
+            areaRincian.innerHTML = `<button class="btn-login" style="background:#2563eb; color:white; width:100%; border:none; padding:14px; border-radius:8px; font-weight:bold; cursor:pointer; box-shadow: 0 4px 6px rgba(37,99,235,0.2);" onclick="app.bukaPopUpAnalisis()"> <i class="fa-solid fa-table-list"></i> Lihat Analisis Benar/Salah </button>`;
+            this.dataAnalisisDetail = detailJawaban;
+        }
 
-            if(boxNotif) {
-                boxNotif.className = 'alert-info success';
-                boxNotif.style.background = '#dcfce7'; boxNotif.style.color = '#166534'; boxNotif.style.borderColor = '#bbf7d0';
-                boxNotif.innerHTML = '<i class="fa-solid fa-circle-check"></i> <strong>Sesi Ujian Selesai:</strong><br>Sistem menerapkan kebijakan hak akses (Role) Anda untuk melihat hasil dan pembahasan.';
-            }
-
-        } else {
-            // WAKTU UJIAN BELUM DITUTUP (HANYA MENUNGGU ANALISIS)
-            if(boxNotif) {
-                boxNotif.className = 'alert-info';
-                boxNotif.style.background = '#fff3cd'; boxNotif.style.color = '#856404'; boxNotif.style.borderColor = '#ffeeba';
-                boxNotif.innerHTML = '<i class="fa-solid fa-clock"></i> <strong>Menunggu Waktu Ujian Ditutup:</strong><br>Analisis jawaban (jika Role mengizinkan) baru dapat dilihat setelah batas waktu ujian berakhir. Silakan login kembali nanti.';
-            }
+        if(boxNotif) {
+            boxNotif.className = 'alert-info success';
+            boxNotif.style.background = '#dcfce7'; boxNotif.style.color = '#166534'; boxNotif.style.borderColor = '#bbf7d0';
+            boxNotif.innerHTML = '<i class="fa-solid fa-circle-check"></i> <strong>Sesi Ujian Selesai:</strong><br>Sistem menerapkan kebijakan hak akses (Role) Anda untuk melihat hasil dan pembahasan.';
         }
 
         // LOGIKA PERINGKAT (TETAP)
@@ -1096,7 +1197,31 @@ const app = {
                         lines.push(`<strong>${textPernyataan}</strong>: <span style="color:#2563eb">${textJawaban}</span>`);
                     });
                     if(lines.length > 0) jwbStr = lines.join('<br>');
+                } else if (soal.tipe === 'isian') {
+                    let lines = [];
+                    let jwbObj = typeof jwb === 'object' && jwb !== null ? jwb : {};
+                    let totalBlank = soal.opsi ? soal.opsi.length : 0;
+                    let anyAnswer = false;
+                    for (let b = 0; b < totalBlank; b++) {
+                        let ans = (jwbObj[b] || '').trim();
+                        if (ans !== '') {
+                            anyAnswer = true;
+                            lines.push(`<span style="color:#2563eb; font-weight:bold;">${ans}</span>`);
+                        } else {
+                            lines.push(`<span style="color:#ef4444; font-style:italic;">Kosong</span>`);
+                        }
+                    }
+                    if (lines.length > 0) jwbStr = lines.join('; ');
+                    if (!anyAnswer) jwbStr = '<span style="color:#ef4444; font-style:italic;">Tidak dijawab</span>';
                 }
+            } else if (soal.tipe === 'isian') {
+                // Handle the case where jwb is undefined but we still want to show all blanks as 'Kosong'
+                let lines = [];
+                let totalBlank = soal.opsi ? soal.opsi.length : 0;
+                for (let b = 0; b < totalBlank; b++) {
+                    lines.push(`<span style="color:#ef4444; font-style:italic;">Kosong</span>`);
+                }
+                if (lines.length > 0) jwbStr = lines.join('; ');
             }
 
             let color = stat === 'BENAR' ? '#166534' : (stat === 'KOSONG' ? '#475569' : '#991b1b');
