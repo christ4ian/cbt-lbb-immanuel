@@ -119,12 +119,12 @@
     </section>
 
     <section id="view-ujian" class="hidden-view">
+        <!-- TOP NAVBAR -->
         <header class="ujian-header">
             <div class="header-left">
-                <div class="logo-small">CBT</div>
-                <div class="siswa-info">
-                    <span id="disp-nama">Nama Siswa</span>
-                    <small id="disp-mapel">Matematika</small>
+                <div class="siswa-info" style="color: white;">
+                    <span id="disp-nama" style="font-size: 1.1rem;">Nama Siswa</span>
+                    <small id="disp-mapel" style="font-size: 0.85rem; opacity: 0.9;">Matematika</small>
                 </div>
             </div>
             <div class="header-right">
@@ -134,68 +134,82 @@
             </div>
         </header>
 
-        <div class="ujian-toolbar">
-            <div class="tool-left">
-                <div class="badge-nomor">NO. <span id="nomor-soal">1</span></div>
-            </div>
+        <!-- MAIN CARD WRAPPER -->
+        <div class="ujian-main-card">
+            
+            <!-- CARD HEADER (Replaces Toolbar) -->
+            <div class="ujian-toolbar-new">
+                <div class="tool-top-row">
+                    <div class="tool-title">
+                        <h2>Soal nomor <span id="nomor-soal">1</span></h2>
+                    </div>
 
-            <div class="tool-right">
-                <div class="timer-badge" id="timer-display">
-                    <i class="fa-regular fa-clock"></i> 
-                    <span id="time-val" style="margin-left: 5px;">00:00:00</span>
-                </div>
-
-                <div class="font-resizer">
-                    <span onclick="app.setFont(1)" style="font-size: 12px">A</span>
-                    <span onclick="app.setFont(2)" class="active" style="font-size: 15px">A</span>
-                    <span onclick="app.setFont(3)" style="font-size: 18px">A</span>
+                    <div class="tool-actions">
+                        <!-- Timer -->
+                        <div class="timer-badge" id="timer-display">
+                            Sisa Waktu: <span id="time-val">00:00:00</span>
+                        </div>
+                        
+                        <!-- Daftar Soal -->
+                        <button class="btn-list-icon-new" onclick="toggleSidebar()">
+                            <i class="fa-solid fa-table-cells"></i> Daftar Soal
+                        </button>
+                    </div>
                 </div>
                 
-                <button class="btn-list-icon" onclick="toggleSidebar()">
-                    <i class="fa-solid fa-table-cells"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="ujian-wrapper">
-            <div id="panel-stimulus" class="panel panel-kiri"></div>
-            <div id="panel-soal" class="panel panel-kanan"></div>
-
-            <div id="sidebar-list" class="sidebar">
-                <div class="sidebar-head">
-                    <span>Daftar Soal</span>
-                    <button onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div class="sidebar-body" id="grid-container"></div>
-            </div>
-        </div>
-
-        <footer class="ujian-footer">
-            <div class="footer-side">
-                <button class="btn-nav desktop-nav prev" onclick="app.prevSoal()">
-                    <i class="fa-solid fa-chevron-left"></i> <span>Sebelumnya</span>
-                </button>
-                <button class="btn-mobile-icon prev" onclick="app.prevSoal()">
-                    <i class="fa-solid fa-chevron-left"></i>
-                </button>
-            </div>
-
-            <div class="footer-center">
-                <div class="ragu-checkbox">
-                    <input type="checkbox" id="check-ragu" onchange="app.setRagu()">
-                    <label for="check-ragu">Ragu-ragu</label>
+                <!-- Font Resizer Row -->
+                <div class="tool-bottom-row">
+                    <span>Ukuran font soal:</span>
+                    <div class="font-resizer">
+                        <span onclick="app.setFont(1)" style="font-size: 12px">A</span>
+                        <span onclick="app.setFont(2)" class="active" style="font-size: 15px">A</span>
+                        <span onclick="app.setFont(3)" style="font-size: 18px">A</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="footer-side" style="justify-content: flex-end;">
-                <button class="btn-nav desktop-nav next" id="btn-next-desktop" onclick="app.nextSoal()">
-                    <span>Selanjutnya</span> <i class="fa-solid fa-chevron-right"></i>
-                </button>
-                <button class="btn-mobile-icon next" id="btn-next-mobile" onclick="app.nextSoal()">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </button>
+            <!-- CARD BODY (Replaces ujian-wrapper) -->
+            <div class="ujian-wrapper">
+                <div id="panel-stimulus" class="panel panel-kiri"></div>
+                <div id="panel-soal" class="panel panel-kanan"></div>
+
+                <div id="sidebar-list" class="sidebar">
+                    <div class="sidebar-head">
+                        <span>Daftar Soal</span>
+                        <button onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="sidebar-body" id="grid-container"></div>
+                </div>
             </div>
-        </footer>
+
+            <!-- CARD FOOTER (Replaces ujian-footer) -->
+            <footer class="ujian-footer">
+                <div class="footer-side">
+                    <button class="btn-nav desktop-nav prev" onclick="app.prevSoal()">
+                        <i class="fa-solid fa-chevron-left"></i> <span>Soal Sebelumnya</span>
+                    </button>
+                    <button class="btn-mobile-icon prev" onclick="app.prevSoal()">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                </div>
+
+                <div class="footer-center">
+                    <div class="ragu-checkbox">
+                        <input type="checkbox" id="check-ragu" onchange="app.setRagu()">
+                        <label for="check-ragu">Ragu-ragu</label>
+                    </div>
+                </div>
+
+                <div class="footer-side" style="justify-content: flex-end;">
+                    <button class="btn-nav desktop-nav next" id="btn-next-desktop" onclick="app.nextSoal()">
+                        <span>Selanjutnya</span> <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button class="btn-mobile-icon next" id="btn-next-mobile" onclick="app.nextSoal()">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </footer>
+        </div>
     </section>
 
     <section id="view-hasil" class="hidden-view" style="overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px; height: 100vh; display: flex; flex-direction: column;">
