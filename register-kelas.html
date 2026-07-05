@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Try Out Khusus Siswa Kelas</title>
+</head>
+<body>
+
+<!-- ======================================================= -->
+<!-- COPY MULAI DARI SINI UNTUK DI-PASTE KE HALAMAN BLOGGER  -->
+<!-- ======================================================= -->
+
+<!-- DEPENDENCIES -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+    /* CSS MINIMAL UNTUK BLOGGER AGAR MENGIKUTI TEMA BAWAAN */
+    .cbt-form-container { width: 100%; max-width: 100%; box-sizing: border-box; font-family: inherit; font-size: inherit; color: inherit; background-color: #f8fafc; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; }
+    
+    /* FIX UKURAN SWEETALERT DI BLOGGER */
+    .swal2-popup { font-size: 16px !important; font-family: inherit !important; width: 85% !important; max-width: 450px !important; }
+    .swal2-title { font-size: 24px !important; }
+    .swal2-html-container { font-size: 16px !important; line-height: 1.6 !important; }
+    .swal2-confirm { font-size: 16px !important; padding: 12px 25px !important; }
+
+    .cbt-form-container .alert-info { background-color: #eaf6ff; border-left: 5px solid #007bff; padding: 15px; margin-bottom: 20px; border-radius: 4px; line-height: 1.5; }
+    .cbt-form-container .alert-info strong { color: #0056b3; }
+    .cbt-form-container .alert-warning { background-color: #fff3cd; border-left: 5px solid #ffc107; color: #856404; padding: 15px; margin-bottom: 20px; border-radius: 4px; line-height: 1.5; }
+    
+    .cbt-form-container .form-group { margin-bottom: 15px; }
+    .cbt-form-container label { display: block; font-weight: bold; margin-bottom: 5px; color: inherit; }
+    .cbt-form-container input[type="text"], .cbt-form-container input[type="number"], .cbt-form-container input[type="email"], .cbt-form-container input[type="tel"], .cbt-form-container select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: inherit; background: #fff; transition: 0.3s; }
+    .cbt-form-container input:focus, .cbt-form-container select:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 3px rgba(0,123,255,0.1); }
+    .cbt-form-container .small-note { display: block; font-size: 0.85em; color: #e74c3c; margin-top: 5px; }
+    
+    .cbt-form-container .btn-login { background-color: #007bff; color: white; border: none; padding: 14px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: inherit; margin-top: 15px; transition: 0.3s; }
+    .cbt-form-container .btn-login:hover { background-color: #0056b3; }
+    .cbt-form-container .btn-login:disabled { background-color: #ccc; cursor: not-allowed; }
+    
+    .cbt-form-container .btn-wa-huge { display: block; background-color: #25D366; color: white; text-align: center; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 15px; font-size: 1.1em; transition: 0.3s; border: 2px solid #1ebe57; }
+    .cbt-form-container .btn-wa-huge:hover { background-color: #128C7E; color: white; }
+    .cbt-form-container .btn-action { width: 100%; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: inherit; transition: 0.3s; }
+    .cbt-form-container .btn-copy { background-color: #f8f9fa; border: 1px solid #ddd; color: inherit; }
+    .cbt-form-container .btn-copy:hover { background-color: #e9ecef; }
+    .cbt-form-container .btn-reset { background-color: transparent; color: #007bff; border: 1px dashed #007bff; }
+    .cbt-form-container .btn-reset:hover { background-color: rgba(0,123,255,0.05); }
+</style>
+
+<div class="cbt-form-container">
+    <div id="layar-loading" style="text-align: center; padding: 30px 0;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: #007bff; margin-bottom: 15px;"></i>
+        <p>Memuat formulir pendaftaran khusus...</p>
+    </div>
+
+    <div id="layar-tutup" style="display: none; text-align: center; padding: 20px 0;">
+        <i class="fa-solid fa-calendar-xmark" style="font-size: 4rem; color: #e74c3c; margin-bottom: 20px;"></i>
+        <h2 style="margin-top: 0; color: inherit;">Pendaftaran Ditutup</h2>
+        <p id="pesan-tutup" style="line-height: 1.6;"></p>
+    </div>
+
+    <div id="layar-form" style="display: none;">
+        <div class="alert-info">
+            <strong>Petunjuk Umum Pendaftaran:</strong>
+            <ol style="margin-top: 8px; padding-left: 20px; margin-bottom: 0;">
+                <li>Pengerjaan soal bersifat fleksibel dalam rentang waktu event.</li>
+                <li>Skor langsung muncul setelah selesai, pembahasan & ranking menyusul.</li>
+            </ol>
+        </div>
+
+        <div class="alert-warning">
+            <i class="fa-solid fa-triangle-exclamation"></i> <strong>PERHATIAN KHUSUS SISWA KELAS:</strong><br>
+            Try Out ini merupakan fasilitas <strong>GRATIS</strong> khusus untuk siswa LBB Immanuel. 
+            Dilarang keras menyebarkan link pendaftaran halaman ini kepada pihak luar.
+        </div>
+
+        <form id="form-pendaftaran" onsubmit="kirimData(event)">
+            <div class="form-group">
+                <label>Nama Siswa <span style="color:red">*</span></label>
+                <input type="text" id="reg-nama" required placeholder="Masukkan nama lengkap">
+            </div>
+
+            <div class="form-group">
+                <label>Kelas <span style="color:red">*</span></label>
+                <input type="number" id="reg-kelas" required min="1" max="12" placeholder="Contoh: 5, 6, 7, atau 8">
+            </div>
+
+            <div class="form-group">
+                <label>Asal Sekolah <span style="color:red">*</span></label>
+                <input type="text" id="reg-sekolah" required placeholder="Nama sekolah asal">
+            </div>
+
+            <div class="form-group">
+                <label>Asal Kota <span style="color:red">*</span></label>
+                <input type="text" id="reg-kota" required placeholder="Contoh: Malang">
+            </div>
+
+            <div class="form-group">
+                <label>E-mail <span style="color:red">*</span></label>
+                <input type="email" id="reg-email" required placeholder="Pastikan email aktif">
+                <span class="small-note" id="note-email">1 email hanya bisa digunakan 1 anak (tidak bisa lebih).</span>
+            </div>
+
+            <div class="form-group">
+                <label>Nomor Telepon / WhatsApp <span style="color:red">*</span></label>
+                <input type="tel" id="reg-telp" required placeholder="+628123456789" value="+62">
+                <span class="small-note" style="color: #666;">Harus menggunakan awalan +62 dan pastikan nomor WA aktif.</span>
+            </div>
+
+            <div id="dynamic-kolom-container"></div>
+
+            <div class="form-group">
+                <label>Mata Pelajaran <span style="color:red">*</span></label>
+                <select id="reg-mapel" required>
+                    <option value="">-- Memuat Paket Ujian --</option>
+                </select>
+                <span class="small-note">Apabila mendaftar lebih dari 1 mapel, isi formulir 2 kali.</span>
+            </div>
+
+            <button type="submit" class="btn-login" id="btn-submit">
+                KIRIM PENDAFTARAN <i class="fa-solid fa-circle-check" style="margin-left: 5px;"></i>
+            </button>
+        </form>
+    </div>
+
+    <div id="layar-sukses" style="display: none; text-align: center; padding: 20px 0;">
+        <i class="fa-solid fa-circle-check" style="font-size: 5rem; color: #25D366; margin-bottom: 20px;"></i>
+        <h2 style="margin-top: 0; color: inherit;">Pendaftaran Berhasil! 🎉</h2>
+        <p style="line-height: 1.6; margin-bottom: 20px;">Data pendaftaran berhasil diverifikasi oleh sistem.<br>
+        <strong>Langkah Terakhir:</strong> Wajib bergabung ke Grup WhatsApp kami untuk mendapatkan info terbaru.</p>
+
+        <a href="#" id="btn-gabung-wa" target="_blank" class="btn-wa-huge">
+            <i class="fa-brands fa-whatsapp" style="margin-right: 5px;"></i> GABUNG GRUP WA
+        </a>
+
+        <p style="font-size: 0.9em; color: #e3342f; margin-top: 15px; margin-bottom: 15px;">
+            <em>*Jika tombol di atas error/meminta WA Business, gunakan tombol <b>Salin Link</b> di bawah ini.</em>
+        </p>
+
+        <button onclick="salinLinkWA()" class="btn-action btn-copy">
+            <i class="fa-regular fa-copy"></i> Salin Link Grup WA
+        </button>
+
+        <button onclick="unduhKartuPeserta()" class="btn-action btn-copy" style="background-color: #f0f8ff; border-color: #007bff; color: #007bff; margin-top: 15px;">
+            <i class="fa-solid fa-file-pdf"></i> Unduh Kartu Peserta (PDF)
+        </button>
+
+        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 30px 0;">
+
+        <button onclick="daftarLagi()" class="btn-action btn-reset">
+            <i class="fa-solid fa-user-plus"></i> Isi Pendaftaran Siswa Lain
+        </button>
+    </div>
+</div>
+
+<script>
+    // INIT FIREBASE
+    const firebaseConfig = {
+        apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
+        authDomain: "cbt-lbb-immanuel.firebaseapp.com",
+        databaseURL: "https://cbt-lbb-immanuel-default-rtdb.firebaseio.com",
+        projectId: "cbt-lbb-immanuel",
+        storageBucket: "cbt-lbb-immanuel.firebasestorage.app",
+        messagingSenderId: "79589552415",
+        appId: "1:79589552415:web:20fb83aa055ec156cfc02a"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // CONFIGURASI LINK
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec"; 
+    
+    let activeEventId = null;
+    let activeEventData = null;
+
+    // Load from Firebase
+    db.ref('settings/registration_events').once('value').then(snap => {
+        document.getElementById('layar-loading').style.display = 'none';
+        
+        if(!snap.exists()) {
+            return tampilkanTutup("Belum ada event pendaftaran yang disetel oleh Admin.");
+        }
+        
+        const events = snap.val();
+        const now = new Date();
+        let foundEvent = null;
+        let eventKey = null;
+
+        for(const key in events) {
+            const ev = events[key];
+            const dStart = new Date(ev.tanggal_buka);
+            const dEnd = new Date(ev.tanggal_tutup);
+            // KUNCI: Hanya proses event yang jalur_kelas nya true
+            if(now >= dStart && now <= dEnd && ev.jalur_kelas === true) {
+                foundEvent = ev;
+                eventKey = key;
+                break;
+            }
+        }
+
+        if(foundEvent) {
+            activeEventId = eventKey;
+            activeEventData = foundEvent;
+            initFormEvent();
+        } else {
+            let lastClosed = null;
+            for(const key in events) {
+                const ev = events[key];
+                const dEnd = new Date(ev.tanggal_tutup);
+                if(now > dEnd && ev.jalur_kelas === true) {
+                    if(!lastClosed || new Date(events[lastClosed.key].tanggal_tutup) < dEnd) {
+                        lastClosed = { key, ...ev };
+                    }
+                }
+            }
+            if(lastClosed) {
+                tampilkanTutup(`Pendaftaran Jalur Kelas untuk <b>${lastClosed.nama_event}</b> telah ditutup pada ${new Date(lastClosed.tanggal_tutup).toLocaleString('id-ID')}. Nantikan event selanjutnya!`);
+            } else {
+                tampilkanTutup("Pendaftaran Jalur Kelas belum dibuka saat ini.");
+            }
+        }
+    });
+
+    function tampilkanTutup(pesan) {
+        document.getElementById('layar-tutup').style.display = 'block';
+        document.getElementById('pesan-tutup').innerHTML = pesan;
+    }
+
+    function initFormEvent() {
+        if(localStorage.getItem('statusDaftarKelas_' + activeEventId) === 'sukses') {
+            tampilkanLayarSukses();
+            return;
+        }
+
+        document.getElementById('layar-form').style.display = 'block';
+        
+        const selMapel = document.getElementById('reg-mapel');
+        selMapel.innerHTML = '<option value="">-- Pilih Mata Pelajaran --</option>';
+        if(activeEventData.paket_ujian) {
+            activeEventData.paket_ujian.forEach(p => {
+                selMapel.innerHTML += `<option value="${p.id}">${p.nama}</option>`;
+            });
+        }
+
+        const dynContainer = document.getElementById('dynamic-kolom-container');
+        dynContainer.innerHTML = '';
+        if(activeEventData.kolom_tambahan) {
+            activeEventData.kolom_tambahan.forEach(k => {
+                const requiredHTML = k.wajib ? ' <span style="color:red">*</span>' : '';
+                const reqAttr = k.wajib ? 'required' : '';
+                dynContainer.innerHTML += `
+                    <div class="form-group">
+                        <label>${k.label}${requiredHTML}</label>
+                        <input type="text" id="reg-dyn-${k.id}" data-id="${k.id}" data-label="${k.label}" class="dynamic-input" placeholder="Masukkan ${k.label}" ${reqAttr}>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    function tampilkanLayarSukses() {
+        if(document.getElementById('layar-loading')) document.getElementById('layar-loading').style.display = 'none';
+        if(document.getElementById('layar-form')) document.getElementById('layar-form').style.display = 'none';
+        
+        if (activeEventData && activeEventData.link_wa) {
+            document.getElementById('btn-gabung-wa').href = activeEventData.link_wa;
+        }
+
+        document.getElementById('layar-sukses').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function daftarLagi() {
+        if(activeEventId) localStorage.removeItem('statusDaftarKelas_' + activeEventId);
+        window.location.reload(); 
+    }
+
+    function salinLinkWA() {
+        if (!activeEventData || !activeEventData.link_wa) return Swal.fire("Error", "Link WA belum disetel.", "error");
+        navigator.clipboard.writeText(activeEventData.link_wa).then(() => {
+            Swal.fire({ icon: 'success', title: 'Tersalin!', text: 'Link Grup WA berhasil disalin ke clipboard.', timer: 2000, showConfirmButton: false });
+        });
+    }
+
+    let isSubmittingDaftar = false;
+
+    async function kirimData(e) {
+        e.preventDefault(); 
+        if (isSubmittingDaftar) return;
+        isSubmittingDaftar = true;
+        const btnSubmit = document.getElementById('btn-submit');
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = 'MENGIRIM... <i class="fa-solid fa-spinner fa-spin" style="margin-left: 5px;"></i>';
+
+        Swal.fire({
+            title: 'Memproses Pendaftaran',
+            text: 'Sedang mendaftarkan data...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const dataSiswa = {
+                nama: document.getElementById('reg-nama').value,
+                kelas: document.getElementById('reg-kelas').value,
+                sekolah: document.getElementById('reg-sekolah').value,
+                kota: document.getElementById('reg-kota').value,
+                email: document.getElementById('reg-email').value.trim().toLowerCase(),
+                telp: document.getElementById('reg-telp').value
+            };
+            
+            // Kolom Dinamis
+            const dynInputs = document.querySelectorAll('.dynamic-input');
+            const dataDinamis = [];
+            dynInputs.forEach(inp => {
+                dataDinamis.push({ id: inp.getAttribute('data-id'), label: inp.getAttribute('data-label'), value: inp.value });
+            });
+            if(dataDinamis.length > 0) dataSiswa.tambahan = dataDinamis;
+
+            const paketTarget = document.getElementById('reg-mapel').value;
+            const jalurDipilih = 'kelas';
+
+            const payload = {
+                action: "register",
+                paketId: paketTarget, 
+                jalur: jalurDipilih,
+                userData: dataSiswa,
+                files: [], // Tidak ada file bukti bayar untuk jalur kelas
+                linkWA: activeEventData && activeEventData.link_wa ? activeEventData.link_wa : "-",
+                waktuPengerjaan: activeEventData ? (activeEventData.tanggal_buka + " s.d " + activeEventData.tanggal_tutup) : "-"
+            };
+
+            const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const result = await response.json();
+
+            if(result.status === "success") {
+                const roleOtomatis = 'Kelas';
+                const emailSanitized = dataSiswa.email.replace(/[@.#$[\]]/g, '_');
+                const dbKey = `${paketTarget}_${emailSanitized}`;
+
+                const saveData = {
+                    email: dataSiswa.email,
+                    id_paket: paketTarget,
+                    kelas: dataSiswa.kelas,
+                    kota: dataSiswa.kota,
+                    nama_siswa: dataSiswa.nama,
+                    role: roleOtomatis,
+                    sekolah: dataSiswa.sekolah,
+                    waktu_daftar: new Date().toISOString(),
+                    telepon: dataSiswa.telp,
+                    jalur: jalurDipilih,
+                    bukti_bayar_url: "Siswa Kelas"
+                };
+                
+                if(dataDinamis.length > 0) saveData.data_tambahan = dataDinamis;
+
+                await db.ref('pendaftaran/' + dbKey).set(saveData);
+
+                const sel = document.getElementById('reg-mapel');
+                const paketText = sel.options[sel.selectedIndex].text;
+                let durasiUjian = 120;
+                let jumlahSoal = 0;
+                try {
+                    const snapTryout = await db.ref(`published_soal/${paketTarget}`).once('value');
+                    if (snapTryout.exists()) {
+                        const trData = snapTryout.val();
+                        durasiUjian = trData.waktu || trData.durasi_menit || trData.durasi || 120;
+                        jumlahSoal = trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0;
+                    }
+                } catch(e) { console.error("Gagal ambil data paket", e); }
+
+                localStorage.setItem('dataPesertaTerakhir', JSON.stringify({
+                    nama: dataSiswa.nama,
+                    email: dataSiswa.email,
+                    sekolah: dataSiswa.sekolah,
+                    kelas: dataSiswa.kelas,
+                    kota: dataSiswa.kota,
+                    role: roleOtomatis,
+                    paket: paketText,
+                    id_paket: paketTarget,
+                    event: activeEventData ? activeEventData.nama_event : "Try Out CBT",
+                    durasi: durasiUjian,
+                    jumlahSoal: jumlahSoal
+                }));
+
+                localStorage.setItem('statusDaftarKelas_' + activeEventId, 'sukses');
+
+                Swal.fire({
+                    icon: 'success', title: 'Pendaftaran Berhasil!', text: 'Sistem berhasil memverifikasi data Anda.',
+                    showConfirmButton: false, timer: 1500, timerProgressBar: true, allowOutsideClick: false
+                }).then(() => {
+                    tampilkanLayarSukses();
+                });
+
+            } else {
+                throw new Error(result.message || "Terjadi kesalahan pada server");
+            }
+
+        } catch (error) {
+            Swal.fire("Gagal Terkirim", error.message || "Terjadi kesalahan jaringan.", "error");
+        } finally {
+            isSubmittingDaftar = false;
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = 'KIRIM PENDAFTARAN <i class="fa-solid fa-circle-check" style="margin-left: 5px;"></i>';
+        }
+    }
+
+    async function unduhKartuPeserta() {
+        let dataPeserta = JSON.parse(localStorage.getItem('dataPesertaTerakhir') || "{}");
+        if(!dataPeserta.nama) {
+            return Swal.fire("Error", "Data peserta tidak ditemukan di perangkat ini.", "error");
+        }
+
+        Swal.fire({ title: 'Menyiapkan Kartu...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            if (!dataPeserta.sekolah && dataPeserta.idUnik) {
+                const snap = await db.ref('pendaftaran/' + dataPeserta.idUnik).once('value');
+                if (snap.exists()) {
+                    const p = snap.val();
+                    dataPeserta.sekolah = p.sekolah || "-";
+                    dataPeserta.kelas = p.kelas || "-";
+                    dataPeserta.kota = p.kota || "-";
+                    dataPeserta.role = p.role || "-";
+                    dataPeserta.id_paket = p.id_paket;
+                }
+            }
+
+            let trData = null;
+            if (dataPeserta.id_paket) {
+                const snapTryout = await db.ref('published_soal/' + dataPeserta.id_paket).once('value');
+                if (snapTryout.exists()) trData = snapTryout.val();
+            } else if (dataPeserta.paket) {
+                const snapAll = await db.ref('published_soal').once('value');
+                if (snapAll.exists()) {
+                    snapAll.forEach(child => {
+                        if (child.val().judul === dataPeserta.paket) {
+                            trData = child.val();
+                            dataPeserta.id_paket = child.key;
+                        }
+                    });
+                }
+            }
+
+            if (trData) {
+                dataPeserta.durasi = trData.waktu || trData.durasi_menit || trData.durasi || 120;
+                dataPeserta.jumlahSoal = trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0;
+            }
+            localStorage.setItem('dataPesertaTerakhir', JSON.stringify(dataPeserta));
+        } catch (e) { console.error("Gagal sinkron data terbaru", e); }
+        Swal.close();
+
+        if (!window.jspdf) return Swal.fire("Error", "Library PDF belum siap, tunggu sebentar.", "error");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a5' });
+
+        doc.setFillColor(248, 250, 252); doc.rect(0, 0, 210, 148, 'F');
+        doc.setFillColor(30, 58, 138); doc.rect(0, 0, 210, 35, 'F');
+        doc.setFillColor(239, 68, 68); doc.rect(0, 35, 210, 3, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22); doc.setFont("helvetica", "bold");
+        doc.text("KARTU PESERTA UJIAN", 105, 18, { align: "center" });
+        doc.setFontSize(11); doc.setFont("helvetica", "normal");
+        doc.text("LBB IMMANUEL - COMPUTER BASED TEST (CBT)", 105, 26, { align: "center" });
+
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(10, 45, 190, 90, 5, 5, 'F');
+        doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3);
+        doc.roundedRect(10, 45, 190, 90, 5, 5, 'S');
+
+        doc.setTextColor(30, 58, 138); doc.setFontSize(12); doc.setFont("helvetica", "bold");
+        doc.text("DATA PESERTA", 15, 55);
+        doc.setDrawColor(30, 58, 138); doc.setLineWidth(0.5); doc.line(15, 58, 60, 58);
+
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10); const colLeft = 50;
+        doc.setFont("helvetica", "normal"); doc.text("Nama Lengkap", 15, 68); doc.text(":", 45, 68);
+        doc.setFont("helvetica", "bold"); doc.text(dataPeserta.nama || "-", colLeft, 68);
+        
+        doc.setFont("helvetica", "normal"); doc.text("Asal Sekolah", 15, 78); doc.text(":", 45, 78);
+        doc.setFont("helvetica", "bold"); 
+        let sekolahText = doc.splitTextToSize(dataPeserta.sekolah || "-", 48); doc.text(sekolahText, colLeft, 78);
+        
+        doc.setFont("helvetica", "normal"); doc.text("Kelas / Kota", 15, 88); doc.text(":", 45, 88);
+        doc.setFont("helvetica", "bold"); 
+        let kelasKotaText = doc.splitTextToSize(`${dataPeserta.kelas || "-"} / ${dataPeserta.kota || "-"}`, 48); doc.text(kelasKotaText, colLeft, 88);
+
+        doc.setFont("helvetica", "normal"); doc.text("Email", 15, 98); doc.text(":", 45, 98);
+        doc.setFont("helvetica", "bold"); 
+        let emailText = doc.splitTextToSize(dataPeserta.email || "-", 48); doc.text(emailText, colLeft, 98);
+
+        doc.setFont("helvetica", "normal"); let nextLeftY = 98 + ((emailText.length - 1) * 5) + 10;
+        doc.text("Jalur Daftar", 15, nextLeftY); doc.text(":", 45, nextLeftY);
+        doc.setFont("helvetica", "bold"); doc.text(dataPeserta.role || "-", colLeft, nextLeftY);
+
+        doc.setDrawColor(220, 220, 220); doc.setLineWidth(0.3); doc.line(105, 52, 105, 128);
+
+        doc.setTextColor(30, 58, 138); doc.setFontSize(12); doc.setFont("helvetica", "bold");
+        doc.text("INFORMASI UJIAN", 110, 55);
+        doc.setDrawColor(30, 58, 138); doc.setLineWidth(0.5); doc.line(110, 58, 155, 58);
+
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10); const colRight = 145;
+        doc.setFont("helvetica", "normal"); doc.text("Event Daftar", 110, 68); doc.text(":", 140, 68);
+        doc.setFont("helvetica", "bold"); 
+        let eventText = doc.splitTextToSize(dataPeserta.event || "-", 50); doc.text(eventText, colRight, 68);
+
+        let nextY = 68 + ((eventText.length - 1) * 5) + 10;
+        doc.setFont("helvetica", "normal"); doc.text("Mata Pelajaran", 110, nextY); doc.text(":", 140, nextY);
+        doc.setFont("helvetica", "bold");
+        let mapelText = doc.splitTextToSize(dataPeserta.paket || "-", 50); doc.text(mapelText, colRight, nextY);
+        
+        nextY = nextY + ((mapelText.length - 1) * 5) + 10;
+        doc.setFont("helvetica", "normal"); doc.text("Durasi Waktu", 110, nextY); doc.text(":", 140, nextY);
+        doc.setFont("helvetica", "bold"); doc.text(`${dataPeserta.durasi || 120} Menit`, colRight, nextY);
+
+        doc.setFont("helvetica", "normal"); nextY += 10;
+        doc.text("Jumlah Soal", 110, nextY); doc.text(":", 140, nextY);
+        doc.setFont("helvetica", "bold"); doc.text(`${dataPeserta.jumlahSoal || 0} Butir`, colRight, nextY);
+
+        doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(150, 150, 150);
+        doc.text("Simpan kartu ujian ini sebagai bukti pendaftaran. Segala instruksi teknis akan diumumkan melalui Grup WhatsApp.", 105, 142, { align: "center" });
+
+        doc.save(`Kartu_Peserta_${dataPeserta.nama.replace(/\s+/g, '_')}.pdf`);
+        
+        Swal.fire({
+            icon: 'success', title: 'Berhasil Diunduh!', text: 'Kartu Peserta telah berhasil disimpan ke perangkat Anda.',
+            timer: 3000, showConfirmButton: false
+        });
+    }
+</script>
+
+<!-- ======================================================= -->
+<!-- AKHIR COPY -->
+<!-- ======================================================= -->
+
+</body>
+</html>

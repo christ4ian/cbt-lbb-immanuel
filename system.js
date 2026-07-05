@@ -21,7 +21,7 @@ const firebaseConfig = {
 };
 
 // URL SCRIPT GOOGLE
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec"; 
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec";
 
 const ADMIN_EMAIL = "admin@lbbimmanuel.com";
 
@@ -41,15 +41,15 @@ const app = {
     // STATE
     currentPaket: null,
     currentIndex: 0,
-    answers: {},            
-    ragu: {},               
+    answers: {},
+    ragu: {},
     timerInterval: null,
     sisaWaktu: 0,
-    userData: {},     
+    userData: {},
     sessionId: null,
     deviceId: null,
     sheetRowIndex: null,
-    serverStartTime: 0, 
+    serverStartTime: 0,
 
     // Config
     deadline: 0,
@@ -57,24 +57,24 @@ const app = {
     // --- PENYIMPANAN BUKTI KEAMANAN ---
     capturedImages: { start: null, mid: null, end: null },
 
-    captureSnapshot: function(momentType) {
-        if (this.capturedImages[momentType]) return; 
+    captureSnapshot: function (momentType) {
+        if (this.capturedImages[momentType]) return;
         if (this.userData && (this.userData.isAdmin || this.userData.email === ADMIN_EMAIL)) return;
 
         const video = document.getElementById('proctor-video');
         if (!video || !video.srcObject) return;
 
         const canvas = document.createElement('canvas');
-        canvas.width = 320; 
+        canvas.width = 320;
         canvas.height = 240;
         const ctx = canvas.getContext('2d');
-        
+
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
+
         const base64Data = canvas.toDataURL('image/jpeg', 0.5);
-        
+
         this.capturedImages[momentType] = base64Data;
-        
+
         // SIMPAN KE CACHE BROWSER AGAR TIDAK HILANG SAAT REFRESH
         if (this.sessionId) {
             localStorage.setItem('cbt_images_' + this.sessionId, JSON.stringify(this.capturedImages));
@@ -82,9 +82,9 @@ const app = {
     },
 
     // --- INIT ---
-    init: function() {
+    init: function () {
         console.log("System Ready (Role Sync & Deadline Logic Version).");
-        
+
         let did = localStorage.getItem('cbt_device_id');
         if (!did) {
             did = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -104,24 +104,24 @@ const app = {
         document.head.appendChild(styleFix);
     },
 
-    checkResume: function() {
+    checkResume: function () {
         const saved = JSON.parse(localStorage.getItem('cbt_active_session'));
         if (saved && saved.sessionId) {
             this.sessionId = saved.sessionId;
             this.userData = saved.userData;
             this.sheetRowIndex = saved.sheetRowIndex;
-            
+
             const paket = PAKET_SOAL.find(p => p.id === saved.paketId);
-            if(paket) {
+            if (paket) {
                 this.currentPaket = paket;
-                this.syncWithCloud(true); 
+                this.syncWithCloud(true);
             }
         }
     },
 
-    loadDaftarPaket: function() {
+    loadDaftarPaket: function () {
         const select = document.getElementById('input-paket');
-        if(typeof PAKET_SOAL !== 'undefined' && select) {
+        if (typeof PAKET_SOAL !== 'undefined' && select) {
             select.innerHTML = '<option value="">-- Pilih Paket Soal --</option>';
             PAKET_SOAL.forEach((p, i) => {
                 const opt = document.createElement('option');
@@ -131,7 +131,7 @@ const app = {
         }
     },
 
-    unduhKartuDariCBT: function() {
+    unduhKartuDariCBT: function () {
         if (!window.jspdf) {
             return Swal.fire("Error", "Library PDF belum termuat, silakan tunggu sebentar.", "error");
         }
@@ -144,7 +144,7 @@ const app = {
         doc.setFillColor(248, 250, 252); doc.rect(0, 0, 210, 148, 'F');
         doc.setFillColor(30, 58, 138); doc.rect(0, 0, 210, 35, 'F');
         doc.setFillColor(239, 68, 68); doc.rect(0, 35, 210, 3, 'F');
-        
+
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(22); doc.setFont("helvetica", "bold");
         doc.text("KARTU PESERTA UJIAN", 105, 18, { align: "center" });
@@ -163,17 +163,17 @@ const app = {
         doc.setTextColor(0, 0, 0); doc.setFontSize(10); const colLeft = 50;
         doc.setFont("helvetica", "normal"); doc.text("Nama Lengkap", 15, 68); doc.text(":", 45, 68);
         doc.setFont("helvetica", "bold"); doc.text(dataPeserta.nama, colLeft, 68);
-        
+
         doc.setFont("helvetica", "normal"); doc.text("Asal Sekolah", 15, 78); doc.text(":", 45, 78);
-        doc.setFont("helvetica", "bold"); 
+        doc.setFont("helvetica", "bold");
         let sekolahText = doc.splitTextToSize(dataPeserta.sekolah, 48); doc.text(sekolahText, colLeft, 78);
-        
+
         doc.setFont("helvetica", "normal"); doc.text("Kelas / Kota", 15, 88); doc.text(":", 45, 88);
-        doc.setFont("helvetica", "bold"); 
+        doc.setFont("helvetica", "bold");
         let kelasKotaText = doc.splitTextToSize(`${dataPeserta.kelas} / ${dataPeserta.kota}`, 48); doc.text(kelasKotaText, colLeft, 88);
 
         doc.setFont("helvetica", "normal"); doc.text("Email", 15, 98); doc.text(":", 45, 98);
-        doc.setFont("helvetica", "bold"); 
+        doc.setFont("helvetica", "bold");
         let emailText = doc.splitTextToSize(dataPeserta.email, 48); doc.text(emailText, colLeft, 98);
 
         doc.setFont("helvetica", "normal"); let nextLeftY = 98 + ((emailText.length - 1) * 5) + 10;
@@ -188,14 +188,14 @@ const app = {
 
         doc.setTextColor(0, 0, 0); doc.setFontSize(10); const colRight = 145;
         doc.setFont("helvetica", "normal"); doc.text("Event Daftar", 110, 68); doc.text(":", 140, 68);
-        doc.setFont("helvetica", "bold"); 
+        doc.setFont("helvetica", "bold");
         let eventText = doc.splitTextToSize(dataPeserta.event, 50); doc.text(eventText, colRight, 68);
 
         let nextY = 68 + ((eventText.length - 1) * 5) + 10;
         doc.setFont("helvetica", "normal"); doc.text("Mata Pelajaran", 110, nextY); doc.text(":", 140, nextY);
         doc.setFont("helvetica", "bold");
         let mapelText = doc.splitTextToSize(dataPeserta.paket, 50); doc.text(mapelText, colRight, nextY);
-        
+
         nextY = nextY + ((mapelText.length - 1) * 5) + 10;
         doc.setFont("helvetica", "normal"); doc.text("Durasi Waktu", 110, nextY); doc.text(":", 140, nextY);
         doc.setFont("helvetica", "bold"); doc.text(`${dataPeserta.durasi} Menit`, colRight, nextY);
@@ -213,30 +213,31 @@ const app = {
     // =========================================
     // 1. LOGIN
     // =========================================
-    gotoData: function() {
+    gotoData: async function () {
         const idx = document.getElementById('input-paket').value;
         const email = document.getElementById('input-email').value.trim().toLowerCase();
 
-        if(idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
-        if(!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
+        if (idx === "") return Swal.fire('Error', 'Pilih paket soal!', 'error');
+        if (!email || !email.includes('@')) return Swal.fire('Error', 'Masukkan email valid!', 'error');
 
         // --- CEK ADMIN ---
         if (email === ADMIN_EMAIL) {
             this.currentPaket = PAKET_SOAL[idx];
-            this.userData = { 
-                nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL", 
-                email: email, isAdmin: true, role: "Admin" 
+            this.userData = {
+                nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL",
+                email: email, isAdmin: true, role: "Admin"
             };
             this.sessionId = "admin_" + this.currentPaket.id + "_" + Date.now();
-            this.gotoConfirmPage(); 
-            return; 
+            this.gotoConfirmPage();
+            return;
         }
 
-        if(!navigator.onLine) return Swal.fire('Offline', 'Wajib online untuk login.', 'error');
+        if (!navigator.onLine) return Swal.fire('Offline', 'Wajib online untuk login.', 'error');
         this.currentPaket = PAKET_SOAL[idx];
         Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
 
-        db.ref('pendaftaran').once('value').then(snap => {
+        try {
+            let snap = await db.ref('pendaftaran').once('value');
             let emailFound = false;
             let studentData = null;
             let studentKey = null;
@@ -246,12 +247,44 @@ const app = {
                     let data = child.val();
                     if (data.email && data.email.toLowerCase() === email) {
                         emailFound = true;
-                        if(data.id_paket === this.currentPaket.id) {
+                        if (data.id_paket === this.currentPaket.id) {
                             studentData = data;
                             studentKey = child.key;
                         }
                     }
                 });
+            }
+
+            if (!studentData && this.currentPaket.linked_class) {
+                let snapClass = await db.ref('class_users').once('value');
+                if (snapClass.exists()) {
+                    snapClass.forEach(waNode => {
+                        const waData = waNode.val();
+                        if (waData.profil_siswa) {
+                            Object.keys(waData.profil_siswa).forEach(sId => {
+                                const siswa = waData.profil_siswa[sId];
+                                if (siswa.email && siswa.email.toLowerCase() === email) {
+                                    if (siswa.langganan_aktif && siswa.langganan_aktif[this.currentPaket.linked_class]) {
+                                        const status = siswa.langganan_aktif[this.currentPaket.linked_class].status;
+                                        if (status === 'Aktif' || status === 'Hanya Rekaman') {
+                                            emailFound = true;
+                                            studentData = {
+                                                nama_siswa: siswa.nama || "-",
+                                                email: email,
+                                                sekolah: siswa.asal_sekolah || "-",
+                                                kelas: siswa.kelas || "-",
+                                                kota: waData.asal_kota || "-",
+                                                role: status === 'Hanya Rekaman' ? 'Rekaman' : 'Aktif',
+                                                id_paket: this.currentPaket.id
+                                            };
+                                            studentKey = "class_" + sId;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
             }
 
             if (emailFound) {
@@ -261,23 +294,23 @@ const app = {
 
                     db.ref('sessions/' + tempSessionId).once('value').then(sesSnap => {
                         let sessionData = sesSnap.val();
-                        
+
                         if (sessionData && sessionData.status === 'finished') {
                             Swal.close();
                             this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role };
                             this.sessionId = tempSessionId;
-                            
-                            this.answers = sessionData.answers || {}; 
-                            
+
+                            this.answers = sessionData.answers || {};
+
                             Swal.close();
                             let durasiStr = sessionData.durasi_teks || "-";
-                            if(durasiStr === "-" && sessionData.startTime && sessionData.finishTime) {
+                            if (durasiStr === "-" && sessionData.startTime && sessionData.finishTime) {
                                 let dMs = sessionData.finishTime - sessionData.startTime;
                                 let menit = Math.floor(dMs / 60000);
                                 let detik = Math.floor((dMs % 60000) / 1000);
                                 durasiStr = `${menit} Menit ${detik} Detik`;
                             }
-                            
+
                             this.tampilkanHalamanHasil(sessionData.skor_akhir || 0, durasiStr, sessionData.detail || []);
                             return;
                         }
@@ -285,7 +318,7 @@ const app = {
                         const now = new Date();
                         const strBuka = this.currentPaket.waktu_buka ? this.currentPaket.waktu_buka.replace(' ', 'T') : null;
                         const strTutup = this.currentPaket.waktu_tutup ? this.currentPaket.waktu_tutup.replace(' ', 'T') : null;
-                        
+
                         const waktuBuka = strBuka ? new Date(strBuka) : null;
                         const waktuTutup = strTutup ? new Date(strTutup) : null;
 
@@ -339,10 +372,10 @@ const app = {
                                 icon: 'info', confirmButtonText: 'Lanjut ke Pembahasan', confirmButtonColor: '#007bff'
                             }).then(() => {
                                 this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role };
-                                this.answers = {}; 
+                                this.answers = {};
                                 this.tampilkanHalamanHasil(0, "Tidak Mengerjakan", []);
                             });
-                            return; 
+                            return;
                         }
 
                         const formatWaktu = (date) => date ? date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Tidak dibatasi';
@@ -370,15 +403,15 @@ const app = {
                         }).then((result) => {
                             if (result.isConfirmed) {
                                 Swal.fire({ title: 'Memuat Data...', didOpen: () => Swal.showLoading() });
-                                
-                                this.userData = { 
-                                    nama: studentData.nama_siswa, 
-                                    kelas: studentData.kelas, 
-                                    sekolah: studentData.sekolah, 
+
+                                this.userData = {
+                                    nama: studentData.nama_siswa,
+                                    kelas: studentData.kelas,
+                                    sekolah: studentData.sekolah,
                                     email: email,
                                     role: studentData.role || 'Default'
                                 };
-                                this.sheetRowIndex = studentKey; 
+                                this.sheetRowIndex = studentKey;
                                 this.sessionId = tempSessionId;
                                 this.syncWithCloud(false);
                             }
@@ -390,13 +423,13 @@ const app = {
             } else {
                 Swal.fire('Gagal', 'Email tidak terdaftar di database.', 'error');
             }
-        }).catch(err => {
+        } catch (err) {
             console.error(err);
             Swal.fire('Error', 'Gagal koneksi ke server database.', 'error');
-        });
+        }
     },
 
-    syncWithCloud: function(isResume) {
+    syncWithCloud: function (isResume) {
         db.ref('sessions/' + this.sessionId).once('value').then((snapshot) => {
             const data = snapshot.val();
             Swal.close();
@@ -404,10 +437,10 @@ const app = {
             if (data) {
                 if (data.status === 'finished') {
                     localStorage.removeItem('cbt_active_session');
-                    this.userData = data.userData || this.userData; 
-                    
+                    this.userData = data.userData || this.userData;
+
                     let durasiStr = data.durasi_teks || "-";
-                    if(durasiStr === "-" && data.startTime && data.finishTime) {
+                    if (durasiStr === "-" && data.startTime && data.finishTime) {
                         let dMs = data.finishTime - data.startTime;
                         let menit = Math.floor(dMs / 60000);
                         let detik = Math.floor((dMs % 60000) / 1000);
@@ -416,58 +449,58 @@ const app = {
                     this.tampilkanHalamanHasil(data.skor_akhir, durasiStr, data.detail || []);
                     return;
                 }
-                
+
                 db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId });
                 this.restoreSession(data);
             } else {
-                if(isResume) { localStorage.removeItem('cbt_active_session'); location.reload(); return; }
+                if (isResume) { localStorage.removeItem('cbt_active_session'); location.reload(); return; }
                 this.gotoConfirmPage();
             }
         });
     },
 
-    gotoConfirmPage: function() {
+    gotoConfirmPage: function () {
         document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
         document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
         document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
-        
+
         const petunjukList = document.getElementById('info-petunjuk-list');
-        if(petunjukList) {
-            petunjukList.innerHTML = ""; 
+        if (petunjukList) {
+            petunjukList.innerHTML = "";
             const daftarPetunjuk = this.currentPaket.petunjuk || ["Ikuti instruksi pengawas."];
             daftarPetunjuk.forEach(teks => {
                 const li = document.createElement('li');
-                li.innerHTML = teks; 
+                li.innerHTML = teks;
                 petunjukList.appendChild(li);
             });
-        } 
+        }
 
         const inpNama = document.getElementById('data-nama');
         const inpKelas = document.getElementById('data-kelas');
         const inpSekolah = document.getElementById('data-sekolah');
-        
-        if(inpNama) inpNama.value = this.userData.nama;
-        if(inpKelas) inpKelas.value = this.userData.kelas;
-        if(inpSekolah) inpSekolah.value = this.userData.sekolah;
+
+        if (inpNama) inpNama.value = this.userData.nama;
+        if (inpKelas) inpKelas.value = this.userData.kelas;
+        if (inpSekolah) inpSekolah.value = this.userData.sekolah;
         this.startSecurityProctor();
         this.switchView('view-data');
     },
 
-    startUjian: function() {
+    startUjian: function () {
         if (this.userData && this.userData.isAdmin) {
             const dummyData = { startTime: getServerTime(), answers: {}, ragu: {}, status: 'ongoing' };
-            this.restoreSession(dummyData); 
-            return; 
+            this.restoreSession(dummyData);
+            return;
         }
-        
-        if(!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
+
+        if (!navigator.onLine) return Swal.fire('Offline', 'Koneksi internet diperlukan.', 'warning');
         Swal.fire({ title: 'Memulai Ujian...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         const currentTime = getServerTime();
         db.ref('sessions/' + this.sessionId).once('value').then(snap => {
             if (!snap.exists()) {
                 const newSession = {
-                    startTime: currentTime, 
+                    startTime: currentTime,
                     paketId: this.currentPaket.id,
                     userData: this.userData,
                     sheetRowIndex: this.sheetRowIndex,
@@ -475,7 +508,7 @@ const app = {
                     activeDeviceId: this.deviceId
                 };
                 db.ref('sessions/' + this.sessionId).set(newSession).catch(err => console.error("Firebase Set Error:", err));
-                
+
                 Swal.close();
                 this.restoreSession(newSession);
             } else {
@@ -484,10 +517,10 @@ const app = {
                     existingData.startTime = currentTime;
                     db.ref('sessions/' + this.sessionId).update({ startTime: currentTime });
                 }
-                
+
                 db.ref('sessions/' + this.sessionId).update({ activeDeviceId: this.deviceId }).catch(err => console.error(err));
                 existingData.activeDeviceId = this.deviceId;
-                
+
                 Swal.close();
                 this.restoreSession(existingData);
             }
@@ -497,16 +530,16 @@ const app = {
         });
     },
 
-    restoreSession: function(data) {
+    restoreSession: function (data) {
         localStorage.setItem('cbt_active_session', JSON.stringify({
-            sessionId: this.sessionId, paketId: this.currentPaket.id, 
+            sessionId: this.sessionId, paketId: this.currentPaket.id,
             userData: this.userData, sheetRowIndex: this.sheetRowIndex
         }));
 
         // MUAT CACHE FOTO KALAU HABIS REFRESH
         const savedImages = localStorage.getItem('cbt_images_' + this.sessionId);
         if (savedImages) {
-            try { this.capturedImages = JSON.parse(savedImages); } catch(e) {}
+            try { this.capturedImages = JSON.parse(savedImages); } catch (e) { }
         } else {
             this.capturedImages = { start: null, mid: null, end: null };
         }
@@ -514,63 +547,69 @@ const app = {
         this.answers = data.answers || {};
         this.ragu = data.ragu || {};
         cheatCount = data.cheatCount || 0;
-        
-        const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu; 
+
+        const durasiMenit = this.userData.isAdmin ? 999 : this.currentPaket.waktu;
         this.deadline = data.startTime + (durasiMenit * 60 * 1000);
 
         if (getServerTime() >= this.deadline && !this.userData.isAdmin) {
             return this.submitData(true);
         }
 
-        if(document.getElementById('disp-nama')) document.getElementById('disp-nama').innerText = this.userData.nama;
-        if(document.getElementById('disp-mapel')) document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
-        
+        if (document.getElementById('disp-nama')) document.getElementById('disp-nama').innerText = this.userData.nama;
+        if (document.getElementById('disp-mapel')) document.getElementById('disp-mapel').innerText = this.currentPaket.mapel;
+
         this.renderSoal(0);
-        this.updateGrid(); 
-        this.startTimer(); 
-        this.monitorSingleDevice(); 
+        this.updateGrid();
+        this.startTimer();
+        this.monitorSingleDevice();
         this.setFont(2);
         this.startSecurityProctor();
-        
+
         this.switchView('view-ujian');
     },
 
-    monitorSingleDevice: function() {
+    monitorSingleDevice: function () {
         if (this.userData.isAdmin) return;
         const deviceRef = db.ref('sessions/' + this.sessionId + '/activeDeviceId');
         deviceRef.on('value', (snapshot) => {
             const activeId = snapshot.val();
             if (activeId && activeId !== this.deviceId) {
-                deviceRef.off(); 
-                if(this.timerInterval) clearInterval(this.timerInterval);
+                deviceRef.off();
+                if (this.timerInterval) clearInterval(this.timerInterval);
                 localStorage.removeItem('cbt_active_session');
-                Swal.fire({ 
-                    title: 'Logout Otomatis', text: 'Akun login di perangkat lain.', 
-                    icon: 'error', allowOutsideClick: false, confirmButtonText: 'Keluar' 
+                Swal.fire({
+                    title: 'Logout Otomatis', text: 'Akun login di perangkat lain.',
+                    icon: 'error', allowOutsideClick: false, confirmButtonText: 'Keluar'
                 }).then(() => location.reload());
             }
         });
     },
 
-    renderSoal: function(index) {
+    renderSoal: function (index) {
         this.currentIndex = index;
         const totalSoal = this.currentPaket.soal.length;
         const midPoint = Math.floor(totalSoal / 2);
 
-        if (index === 0) { setTimeout(() => this.captureSnapshot('start'), 3000); } 
+        if (index === 0) { setTimeout(() => this.captureSnapshot('start'), 3000); }
         else if (index === midPoint) { setTimeout(() => this.captureSnapshot('mid'), 1000); }
 
         const data = this.currentPaket.soal[index];
         document.getElementById('nomor-soal').innerText = index + 1;
-        
+
         const pStim = document.getElementById('panel-stimulus');
         if (data.stimulus && data.stimulus.tampil) {
             if (this.lastStimulusContent !== data.stimulus.konten) {
                 pStim.innerHTML = data.stimulus.konten;
                 this.lastStimulusContent = data.stimulus.konten;
                 if (window.MathJax) {
-                    if (MathJax.typesetPromise) MathJax.typesetPromise([pStim]).catch(err => console.error(err));
-                    else if (MathJax.Hub && MathJax.Hub.Queue) MathJax.Hub.Queue(["Typeset", MathJax.Hub, pStim]);
+                    if (MathJax.typesetPromise) {
+                        MathJax.typesetPromise([pStim])
+                            .then(() => this.applyDragScrollToMath(pStim))
+                            .catch(err => console.error(err));
+                    } else if (MathJax.Hub && MathJax.Hub.Queue) {
+                        MathJax.Hub.Queue(["Typeset", MathJax.Hub, pStim]);
+                        MathJax.Hub.Queue(() => this.applyDragScrollToMath(pStim));
+                    }
                 }
             }
             pStim.classList.add('active');
@@ -586,29 +625,29 @@ const app = {
         if (data.tipe === 'isian') {
             let textPertanyaan = data.pertanyaan;
             const ansObj = typeof jwb === 'object' && jwb !== null ? jwb : {};
-            
+
             data.opsi.forEach((opsiStr, i) => {
-                const placeholder = `[isian:${i+1}]`;
+                const placeholder = `[isian:${i + 1}]`;
                 let isianData = { tipe: 'teks' };
-                try { isianData = JSON.parse(opsiStr); } catch(e) {}
+                try { isianData = JSON.parse(opsiStr); } catch (e) { }
                 let inputType = isianData.tipe === 'jam' ? 'time' : (isianData.tipe === 'angka' ? 'number' : 'text');
                 const stepAttr = isianData.tipe === 'jam' ? 'step="1"' : '';
                 const val = ansObj[i] || '';
-                
+
                 let boxWidth = 200;
                 if (isianData.tipe === 'teks' && isianData.kunci) {
                     const longestKey = isianData.kunci.split('|').reduce((a, b) => a.length > b.length ? a : b, "");
                     boxWidth = Math.max(150, Math.ceil((longestKey.length * 12) / 50) * 50);
                 }
-                
+
                 let extraOnInput = "";
                 if (this.currentPaket.force_isian_angka) {
                     inputType = "tel"; // type="tel" memunculkan keyboard angka di HP tapi tetap bisa terima simbol.
                     extraOnInput = "this.value=this.value.replace(new RegExp('[^0-9.,+*()^:=/ -]', 'g'), ''); ";
                 }
-                
+
                 const inputHtml = `<input type="${inputType}" ${stepAttr} value="${val.replace(/"/g, '&quot;')}" oninput="${extraOnInput}app.inputIsian('${i}', this.value)" style="border:2px solid #cbd5e1; background:#f8fafc; padding:8px 15px; border-radius:8px; font-weight:bold; font-size:1.1rem; color:var(--primary); width:${boxWidth}px; max-width:100%; text-align:center; display:inline-block; transition: all 0.2s ease; outline:none;" onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(37,99,235,0.2)';" onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='none';">`;
-                
+
                 textPertanyaan = textPertanyaan.split(placeholder).join(inputHtml);
             });
             html = `<div class="soal-text">${textPertanyaan}</div>`;
@@ -631,8 +670,8 @@ const app = {
             html += `</div>`;
         } else if (data.tipe === 'pgk-kategori') {
             const obj = jwb || {};
-            const label = data.label_pgk || ["B", "S"]; 
-            
+            const label = data.label_pgk || ["B", "S"];
+
             html += `<table class="table-bs">
                         <thead>
                             <tr>
@@ -642,12 +681,12 @@ const app = {
                             </tr>
                         </thead>
                         <tbody>`;
-                        
+
             data.opsi.forEach((row, i) => {
                 const val = i.toString();
-                const opt1 = obj[val] === 'L1' ? 'checked' : ''; 
-                const opt2 = obj[val] === 'L2' ? 'checked' : ''; 
-                
+                const opt1 = obj[val] === 'L1' ? 'checked' : '';
+                const opt2 = obj[val] === 'L2' ? 'checked' : '';
+
                 html += `<tr>
                             <td>${row}</td>
                             <td class="text-center">
@@ -668,10 +707,16 @@ const app = {
         }
 
         pSoal.innerHTML = html;
-        
+
         if (window.MathJax) {
-            if (MathJax.typesetPromise) MathJax.typesetPromise([pSoal]).catch(err => console.error(err));
-            else if (MathJax.Hub && MathJax.Hub.Queue) MathJax.Hub.Queue(["Typeset", MathJax.Hub, pSoal]);
+            if (MathJax.typesetPromise) {
+                MathJax.typesetPromise([pSoal])
+                    .then(() => this.applyDragScrollToMath(pSoal))
+                    .catch(err => console.error(err));
+            } else if (MathJax.Hub && MathJax.Hub.Queue) {
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub, pSoal]);
+                MathJax.Hub.Queue(() => this.applyDragScrollToMath(pSoal));
+            }
         }
 
         document.getElementById('check-ragu').checked = this.ragu[index] || false;
@@ -679,28 +724,79 @@ const app = {
         this.updateNavButtons(index);
     },
 
-    inputIsian: function(idx, val) {
+    applyDragScrollToMath: function (container) {
+        if (!container) return;
+        const mathContainers = container.querySelectorAll('mjx-container');
+        mathContainers.forEach(el => {
+            if (el.dataset.dragScrollApplied) return;
+            el.dataset.dragScrollApplied = "true";
+
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            const checkCursor = () => {
+                if (el.scrollWidth > el.clientWidth) {
+                    el.style.cursor = 'grab';
+                } else {
+                    el.style.cursor = '';
+                }
+            };
+
+            el.addEventListener('mouseenter', checkCursor);
+            el.addEventListener('mouseover', checkCursor);
+
+            el.addEventListener('mousedown', (e) => {
+                if (el.scrollWidth <= el.clientWidth) return;
+                isDown = true;
+                el.style.cursor = 'grabbing';
+                el.style.userSelect = 'none';
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
+            });
+
+            el.addEventListener('mouseleave', () => {
+                isDown = false;
+                checkCursor();
+            });
+
+            el.addEventListener('mouseup', () => {
+                isDown = false;
+                checkCursor();
+            });
+
+            el.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - el.offsetLeft;
+                const walk = (x - startX) * 1.5;
+                el.scrollLeft = scrollLeft - walk;
+            });
+        });
+    },
+
+    inputIsian: function (idx, val) {
         let obj = this.answers[this.currentIndex] || {};
         obj[idx] = val;
         this.answers[this.currentIndex] = obj;
         this.updateGrid();
         this.saveRealtime();
     },
-    selectAnswer: function(val) { this.answers[this.currentIndex] = val; this.renderSoal(this.currentIndex); this.saveRealtime(); },
-    toggleCheck: function(val) { 
+    selectAnswer: function (val) { this.answers[this.currentIndex] = val; this.renderSoal(this.currentIndex); this.saveRealtime(); },
+    toggleCheck: function (val) {
         let arr = this.answers[this.currentIndex] || [];
-        if(!Array.isArray(arr)) arr = [];
-        if(arr.includes(val)) arr = arr.filter(x=>x!==val); else arr.push(val);
-        this.answers[this.currentIndex] = arr; this.renderSoal(this.currentIndex); this.saveRealtime(); 
+        if (!Array.isArray(arr)) arr = [];
+        if (arr.includes(val)) arr = arr.filter(x => x !== val); else arr.push(val);
+        this.answers[this.currentIndex] = arr; this.renderSoal(this.currentIndex); this.saveRealtime();
     },
-    selectBS: function(r, v) { 
-        let obj = this.answers[this.currentIndex] || {}; obj[r] = v; this.answers[this.currentIndex] = obj; this.updateGrid(); this.saveRealtime(); 
+    selectBS: function (r, v) {
+        let obj = this.answers[this.currentIndex] || {}; obj[r] = v; this.answers[this.currentIndex] = obj; this.updateGrid(); this.saveRealtime();
     },
-    setRagu: function() { this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked; this.updateGrid(); this.saveRealtime(); },
-    
-    saveRealtime: function() {
-        if(this.userData.isAdmin) return;
-        if(this.sessionId) {
+    setRagu: function () { this.ragu[this.currentIndex] = document.getElementById('check-ragu').checked; this.updateGrid(); this.saveRealtime(); },
+
+    saveRealtime: function () {
+        if (this.userData.isAdmin) return;
+        if (this.sessionId) {
             const cleanAnswers = {};
             const totalSoal = this.currentPaket.soal.length;
             for (let i = 0; i < totalSoal; i++) {
@@ -718,14 +814,14 @@ const app = {
         }
     },
 
-    prevSoal: function() { this.navigasi(-1); },
-    nextSoal: function() { this.navigasi(1); },
-    navigasi: function(step) {
+    prevSoal: function () { this.navigasi(-1); },
+    nextSoal: function () { this.navigasi(1); },
+    navigasi: function (step) {
         const next = this.currentIndex + step;
-        if(next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
+        if (next >= 0 && next < this.currentPaket.soal.length) this.renderSoal(next);
     },
 
-    updateNavButtons: function(index) {
+    updateNavButtons: function (index) {
         const total = this.currentPaket.soal.length;
         const isLast = (index === total - 1);
         const isFirst = (index === 0);
@@ -735,11 +831,11 @@ const app = {
         const btnPrevDesk = document.querySelector('.btn-nav.prev');
         const btnPrevMob = document.querySelector('.btn-mobile-icon.prev');
 
-        if(btnPrevDesk) btnPrevDesk.disabled = isFirst;
-        if(btnPrevMob) btnPrevMob.disabled = isFirst;
+        if (btnPrevDesk) btnPrevDesk.disabled = isFirst;
+        if (btnPrevMob) btnPrevMob.disabled = isFirst;
 
         const updateStyle = (btn, isMob) => {
-            if(!btn) return;
+            if (!btn) return;
             btn.classList.remove('btn-selesai');
             if (isLast) {
                 btn.innerHTML = isMob ? '<i class="fa-solid fa-check"></i>' : 'SELESAI <i class="fa-solid fa-check"></i>';
@@ -755,28 +851,28 @@ const app = {
         updateStyle(btnNextMob, true);
     },
 
-    updateGrid: function() {
+    updateGrid: function () {
         const c = document.getElementById('grid-container');
-        if(!c) return;
+        if (!c) return;
         let h = '';
         this.currentPaket.soal.forEach((_, i) => {
             let cls = '';
             const ans = this.answers[i];
             const isAns = ans && ((Array.isArray(ans) && ans.length > 0) || (typeof ans === 'object' && Object.keys(ans).length > 0) || (typeof ans === 'string'));
-            if(i === this.currentIndex) cls += ' current';
-            if(isAns) cls += ' answered';
-            if(this.ragu[i]) cls += ' ragu';
-            h += `<div class="grid-item ${cls}" onclick="app.renderSoal(${i})">${i+1}</div>`;
+            if (i === this.currentIndex) cls += ' current';
+            if (isAns) cls += ' answered';
+            if (this.ragu[i]) cls += ' ragu';
+            h += `<div class="grid-item ${cls}" onclick="app.renderSoal(${i})">${i + 1}</div>`;
         });
         c.innerHTML = h;
     },
 
-    startTimer: function() {
+    startTimer: function () {
         if (this.timerInterval) clearInterval(this.timerInterval);
         const timerDisplay = document.getElementById('time-val');
-        
+
         this.timerInterval = setInterval(() => {
-            if (!timerDisplay) return; 
+            if (!timerDisplay) return;
 
             const sekarang = getServerTime();
             const sisaDetik = Math.floor((this.deadline - sekarang) / 1000);
@@ -801,26 +897,27 @@ const app = {
         }, 1000);
     },
 
-    confirmSubmit: function() {
+    confirmSubmit: function () {
         this.captureSnapshot('end');
-        Swal.fire({ title: 'Konfirmasi', text: "Yakin ingin mengakhiri ujian?", icon: 'question', showCancelButton: true, confirmButtonColor: '#28a745', confirmButtonText: 'Ya, Kumpulkan'
+        Swal.fire({
+            title: 'Konfirmasi', text: "Yakin ingin mengakhiri ujian?", icon: 'question', showCancelButton: true, confirmButtonColor: '#28a745', confirmButtonText: 'Ya, Kumpulkan'
         }).then((res) => { if (res.isConfirmed) this.submitData(false); });
     },
 
-    calculateResult: function() {
+    calculateResult: function () {
         let detail = [];
         let benarCount = 0;
         let totalPoinDiperoleh = 0;
-        let totalPoinMaksimal = 0; 
-        
+        let totalPoinMaksimal = 0;
+
         const totalSoal = this.currentPaket.soal.length;
-        const isSistemPoin = this.currentPaket.sistem_poin === true; 
+        const isSistemPoin = this.currentPaket.sistem_poin === true;
 
         this.currentPaket.soal.forEach((soal, i) => {
             const jwb = this.answers[i];
             const kunci = soal.kunci;
             let status = "SALAH";
-            let poinMaksSoalIni = soal.poin !== undefined ? soal.poin : 1; 
+            let poinMaksSoalIni = soal.poin !== undefined ? soal.poin : 1;
 
             if (isSistemPoin) totalPoinMaksimal += poinMaksSoalIni;
 
@@ -841,29 +938,29 @@ const app = {
             } else if (soal.tipe === 'isian') {
                 let isPerfect = true;
                 const jwbObj = typeof jwb === 'object' && jwb !== null ? jwb : {};
-                
+
                 if (soal.opsi && Array.isArray(soal.opsi)) {
                     soal.opsi.forEach((opsiStr, blankIdx) => {
                         try {
                             const isianData = JSON.parse(opsiStr);
                             const jwbSiswa = (jwbObj[blankIdx] || "").trim();
-                            
+
                             const keys = (isianData.kunci || "").split('|').map(k => k.trim().toLowerCase());
                             let matched = jwbSiswa && keys.includes(jwbSiswa.toLowerCase());
-                            
+
                             if (!matched && isianData.ai && isianData.tipe === 'teks') {
                                 if (app.aiResults && app.aiResults[i] && app.aiResults[i][blankIdx] === true) {
                                     matched = true;
                                 }
                             }
-                            
+
                             if (!matched) isPerfect = false;
-                        } catch(e) { isPerfect = false; }
+                        } catch (e) { isPerfect = false; }
                     });
                 } else {
                     isPerfect = false;
                 }
-                
+
                 if (isPerfect) status = "BENAR";
             }
 
@@ -875,10 +972,10 @@ const app = {
         });
 
         let skorAkhir = 0;
-        
+
         let poinDidapat = isSistemPoin ? totalPoinDiperoleh : benarCount;
         let poinMaksimal = isSistemPoin ? totalPoinMaksimal : totalSoal;
-        
+
         if (this.currentPaket.mode_skor === 'asli') {
             skorAkhir = poinDidapat;
         } else {
@@ -886,17 +983,17 @@ const app = {
             let pembagi = poinMaksimal > 0 ? poinMaksimal : 1;
             skorAkhir = (poinDidapat / pembagi) * maxScore;
         }
-        
+
         return { skor: skorAkhir.toFixed(2), detail: detail };
     },
 
-    submitData: async function(force) {
+    submitData: async function (force) {
         if (this.isSubmitting) return;
         this.isSubmitting = true;
         if (this.timerInterval) clearInterval(this.timerInterval);
-        this.captureSnapshot('end'); 
+        this.captureSnapshot('end');
         this.stopSecurityProctor();
-        
+
         Swal.fire({ title: 'Memproses Nilai...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         let aiPayload = [];
@@ -919,14 +1016,14 @@ const app = {
                                     });
                                 }
                             }
-                        } catch(e) {}
+                        } catch (e) { }
                     });
                 }
             });
         }
 
         if (aiPayload.length > 0 && navigator.onLine) {
-            Swal.fire({ title: 'Jawabanmu sedang kami koreksi...', text:'Mohon tunggu sebentar...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'Jawabanmu sedang kami koreksi...', text: 'Mohon tunggu sebentar...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             try {
                 const res = await fetch(GOOGLE_SCRIPT_URL, {
                     method: "POST",
@@ -942,7 +1039,7 @@ const app = {
                         this.aiResults[req.id_soal][req.id_blank] = isBenar;
                     });
                 }
-            } catch(e) { console.error("AI Eval Error", e); }
+            } catch (e) { console.error("AI Eval Error", e); }
             Swal.fire({ title: 'Menyelesaikan Pemrosesan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         }
 
@@ -953,7 +1050,7 @@ const app = {
             const sisaDetik = Math.floor((this.deadline - getServerTime()) / 1000);
             const totalWaktuDetik = this.userData.isAdmin ? 999 * 60 : this.currentPaket.waktu * 60;
             let durasiDetik = totalWaktuDetik - sisaDetik;
-            if (durasiDetik < 0) durasiDetik = 0; 
+            if (durasiDetik < 0) durasiDetik = 0;
             if (durasiDetik > totalWaktuDetik) durasiDetik = totalWaktuDetik;
             const menit = Math.floor(durasiDetik / 60);
             const detik = durasiDetik % 60;
@@ -961,7 +1058,7 @@ const app = {
         }
 
         // --- BYPASS ADMIN LOGIC: Tidak nunggu Firebase agar tidak stuck! ---
-        if(this.userData && this.userData.isAdmin) {
+        if (this.userData && this.userData.isAdmin) {
             localStorage.removeItem('cbt_active_session');
             localStorage.removeItem('cbt_images_' + this.sessionId); // bersihkan cache foto
             Swal.close();
@@ -969,8 +1066,8 @@ const app = {
             Swal.fire({ title: 'Simulasi Selesai', text: 'Data admin tidak dikirim ke database. Menampilkan hasil...', icon: 'success', timer: 2500, showConfirmButton: false });
             return;
         }
-        
-        if(!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet. Pastikan jaringan stabil.', 'error');
+
+        if (!navigator.onLine) return Swal.fire('Error', 'Tidak ada koneksi internet. Pastikan jaringan stabil.', 'error');
 
         const cleanAnswers = {};
         const totalSoal = this.currentPaket.soal.length;
@@ -982,13 +1079,13 @@ const app = {
         if (Object.keys(cleanAnswers).length === 0) cleanAnswers["empty"] = true;
 
         db.ref('sessions/' + this.sessionId).update({
-            status: 'finished',         
-            skor_akhir: result.skor,    
-            answers: cleanAnswers,      
+            status: 'finished',
+            skor_akhir: result.skor,
+            answers: cleanAnswers,
             finishTime: firebase.database.ServerValue.TIMESTAMP,
             durasi_teks: teksDurasi,
             detail: result.detail,
-            cheatCount: cheatCount 
+            cheatCount: cheatCount
         }).then(() => {
             localStorage.removeItem('cbt_active_session');
             localStorage.removeItem('cbt_images_' + this.sessionId); // Hapus cache foto setelah beres kirim
@@ -996,12 +1093,12 @@ const app = {
             this.tampilkanHalamanHasil(result.skor, teksDurasi, result.detail);
 
             const statusUpload = document.getElementById('status-upload-keamanan');
-            if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #f59e0b;"></i> Memverifikasi bukti keamanan proctoring...';
+            if (statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #f59e0b;"></i> Memverifikasi bukti keamanan proctoring...';
 
             fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
-                redirect: "follow", 
-                headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                redirect: "follow",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({
                     action: "submit_score",
                     paketId: this.currentPaket.id,
@@ -1010,25 +1107,25 @@ const app = {
                     rowIndex: this.sheetRowIndex,
                     skor: result.skor,
                     detailJawaban: result.detail,
-                    pelanggaran: cheatCount, 
-                    durasi: teksDurasi, 
+                    pelanggaran: cheatCount,
+                    durasi: teksDurasi,
                     fotoIntel: this.capturedImages
                 })
             })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    db.ref('sessions/' + this.sessionId).update({ ss_url: "Tersimpan di Telegram" });
-                    if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Bukti keamanan berhasil diverifikasi dan diamankan oleh sistem.';
-                } else {
-                    console.error("Error dari GAS:", res.message);
-                    if(statusUpload) statusUpload.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i> Server Error: ${res.message}`;
-                }
-            })
-            .catch(err => {
-                console.error("Fetch API error:", err);
-                if(statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-wifi" style="color: #ef4444;"></i> Koneksi terputus saat memverifikasi bukti keamanan.';
-            });
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        db.ref('sessions/' + this.sessionId).update({ ss_url: "Tersimpan di Telegram" });
+                        if (statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Bukti keamanan berhasil diverifikasi dan diamankan oleh sistem.';
+                    } else {
+                        console.error("Error dari GAS:", res.message);
+                        if (statusUpload) statusUpload.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i> Server Error: ${res.message}`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Fetch API error:", err);
+                    if (statusUpload) statusUpload.innerHTML = '<i class="fa-solid fa-wifi" style="color: #ef4444;"></i> Koneksi terputus saat memverifikasi bukti keamanan.';
+                });
 
         }).catch(err => {
             console.error("Firebase Update Error:", err);
@@ -1039,9 +1136,9 @@ const app = {
     // =========================================
     // ROLE PRIVILEGE & LOGIKA DEADLINE HASIL
     // =========================================
-    tampilkanHalamanHasil: async function(skor, teksDurasi, detailJawaban) {
-        this.switchView('view-hasil'); 
-        
+    tampilkanHalamanHasil: async function (skor, teksDurasi, detailJawaban) {
+        this.switchView('view-hasil');
+
         document.getElementById('hasil-nama').innerText = this.userData.nama || this.userData.nama_siswa || "Siswa";
         document.getElementById('hasil-durasi').innerText = teksDurasi;
 
@@ -1061,12 +1158,12 @@ const app = {
 
         // --- TARIK ROLE DARI FIREBASE ---
         let roleSiswa = this.userData.role || 'Default';
-        let priv = { lihat_skor: true, lihat_kunci: false, akses_pembahasan: false }; 
-        
+        let priv = { lihat_skor: true, lihat_kunci: false, akses_pembahasan: false };
+
         try {
             let snap = await db.ref(`paket_ujian/${this.currentPaket.id}/roles/${roleSiswa}`).once('value');
-            if(snap.exists()) priv = snap.val();
-        } catch(e) { console.error("Gagal menarik Role Privilege", e); }
+            if (snap.exists()) priv = snap.val();
+        } catch (e) { console.error("Gagal menarik Role Privilege", e); }
 
         // --- CEK DEADLINE UJIAN ---
         const now = Date.now();
@@ -1107,7 +1204,7 @@ const app = {
             btnBahas.style.display = 'block'; // Munculkan tombolnya
             if (this.currentPaket.url_pembahasan) {
                 btnBahas.disabled = false;
-                btnBahas.style.background = '#10b981'; 
+                btnBahas.style.background = '#10b981';
                 btnBahas.style.cursor = 'pointer';
                 btnBahas.innerHTML = '<i class="fa-solid fa-download"></i> Download File Pembahasan';
                 btnBahas.onclick = () => { window.open(this.currentPaket.url_pembahasan, '_blank'); };
@@ -1125,7 +1222,7 @@ const app = {
             this.dataAnalisisDetail = detailJawaban;
         }
 
-        if(boxNotif) {
+        if (boxNotif) {
             boxNotif.className = 'alert-info success';
             boxNotif.style.background = '#dcfce7'; boxNotif.style.color = '#166534'; boxNotif.style.borderColor = '#bbf7d0';
             boxNotif.innerHTML = '<i class="fa-solid fa-circle-check"></i> <strong>Sesi Ujian Selesai:</strong><br>Sistem menerapkan kebijakan hak akses (Role) Anda untuk melihat hasil dan pembahasan.';
@@ -1136,22 +1233,22 @@ const app = {
             try {
                 const snap = await db.ref('sessions').orderByChild('paketId').equalTo(this.currentPaket.id).once('value');
                 let allSessions = [];
-                if(snap.exists()) {
+                if (snap.exists()) {
                     snap.forEach(child => {
                         let d = child.val();
-                        if(d.status === 'finished') {
+                        if (d.status === 'finished') {
                             let dMs = (d.finishTime && d.startTime) ? (d.finishTime - d.startTime) : 99999999;
                             allSessions.push({ skor: parseFloat(d.skor_akhir || 0), durasi: dMs, id: child.key });
                         }
                     });
                 }
-                allSessions.sort((a,b) => {
-                    if(b.skor !== a.skor) return b.skor - a.skor;
+                allSessions.sort((a, b) => {
+                    if (b.skor !== a.skor) return b.skor - a.skor;
                     return a.durasi - b.durasi;
                 });
                 let myRank = allSessions.findIndex(x => x.id === this.sessionId) + 1;
                 document.getElementById('hasil-rank').innerText = myRank ? `#${myRank} dari ${allSessions.length}` : '-';
-            } catch(e) {
+            } catch (e) {
                 console.error("Gagal hitung rank", e);
                 document.getElementById('hasil-rank').innerText = "-";
             }
@@ -1161,9 +1258,9 @@ const app = {
     },
 
     // POP-UP TABEL ANALISIS TANPA KUNCI JAWABAN
-    bukaPopUpAnalisis: function() {
-        if(!this.dataAnalisisDetail) return;
-        
+    bukaPopUpAnalisis: function () {
+        if (!this.dataAnalisisDetail) return;
+
         let tHTML = `<div style="overflow-x:auto; margin-top:10px;">
             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; min-width: 450px;">
                 <thead>
@@ -1175,12 +1272,12 @@ const app = {
                     </tr>
                 </thead>
                 <tbody>`;
-        
+
         this.dataAnalisisDetail.forEach((stat, i) => {
             let jwb = this.answers[i];
             let soal = this.currentPaket.soal[i];
             let jwbStr = '<span style="color:#ef4444; font-style:italic;">Tidak dijawab</span>';
-            
+
             if (jwb !== undefined && jwb !== null && jwb !== "") {
                 if (soal.tipe === 'pg') {
                     jwbStr = `<strong>${jwb}</strong>`;
@@ -1196,7 +1293,7 @@ const app = {
                         let textJawaban = jwb[k] === 'L1' ? lbl[0] : lbl[1];
                         lines.push(`<strong>${textPernyataan}</strong>: <span style="color:#2563eb">${textJawaban}</span>`);
                     });
-                    if(lines.length > 0) jwbStr = lines.join('<br>');
+                    if (lines.length > 0) jwbStr = lines.join('<br>');
                 } else if (soal.tipe === 'isian') {
                     let lines = [];
                     let jwbObj = typeof jwb === 'object' && jwb !== null ? jwb : {};
@@ -1227,9 +1324,9 @@ const app = {
             let color = stat === 'BENAR' ? '#166534' : (stat === 'KOSONG' ? '#475569' : '#991b1b');
             let bg = stat === 'BENAR' ? '#dcfce7' : (stat === 'KOSONG' ? '#f1f5f9' : '#fee2e2');
             let bobotSoal = soal.poin || 1;
-            
+
             tHTML += `<tr>
-                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center; font-weight:bold;">${i+1}</td>
+                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center; font-weight:bold;">${i + 1}</td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; word-break: break-word;">${jwbStr}</td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center; font-weight:bold; color:#64748b;">${bobotSoal}</td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center;">
@@ -1237,47 +1334,47 @@ const app = {
                 </td>
             </tr>`;
         });
-        
+
         tHTML += `</tbody></table></div>
         <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 0.8rem; margin-top: 15px; text-align: left; border-left: 4px solid #ffeeba;">
             <i class="fa-solid fa-circle-info"></i> <strong>Kunci Jawaban Disembunyikan.</strong><br>Silakan unduh file pembahasan untuk melihat penjelasan lengkap.
         </div>`;
-        
+
         Swal.fire({
             title: 'Analisis Jawaban', html: tHTML, width: '800px', showCloseButton: true, showConfirmButton: false
         });
     },
 
     // Utils
-    switchView: function(viewId) {
+    switchView: function (viewId) {
         document.querySelectorAll('section').forEach(el => {
             el.classList.remove('active-view');
             el.classList.add('hidden-view');
         });
         const target = document.getElementById(viewId);
-        if(target) { target.classList.remove('hidden-view'); target.classList.add('active-view'); }
+        if (target) { target.classList.remove('hidden-view'); target.classList.add('active-view'); }
     },
-    setFont: function(size) {
+    setFont: function (size) {
         const s = ['14px', '16px', '20px'];
-        document.documentElement.style.setProperty('--base-size', s[size-1]);
-        document.querySelectorAll('.font-resizer span').forEach((el, i) => { i === size-1 ? el.classList.add('active') : el.classList.remove('active'); });
+        document.documentElement.style.setProperty('--base-size', s[size - 1]);
+        document.querySelectorAll('.font-resizer span').forEach((el, i) => { i === size - 1 ? el.classList.add('active') : el.classList.remove('active'); });
     },
-    logout: function() { this.confirmSubmit(); }
+    logout: function () { this.confirmSubmit(); }
 };
 
 function toggleSidebar() {
     const sb = document.getElementById('sidebar-list');
     const ov = document.getElementById('overlay');
-    if(sb && ov) {
+    if (sb && ov) {
         sb.classList.toggle('active');
         ov.classList.toggle('active');
     }
 }
 
-if (document.readyState === 'complete' || document.readyState === 'interactive') { setTimeout(() => app.init(), 1); } 
+if (document.readyState === 'complete' || document.readyState === 'interactive') { setTimeout(() => app.init(), 1); }
 else { document.addEventListener('DOMContentLoaded', () => app.init()); }
 
-(function() {
+(function () {
     const Toast = Swal.mixin({
         toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true,
         didOpen: (toast) => { toast.addEventListener('mouseenter', Swal.stopTimer); toast.addEventListener('mouseleave', Swal.resumeTimer); }
@@ -1288,7 +1385,7 @@ else { document.addEventListener('DOMContentLoaded', () => app.init()); }
             Toast.fire({ icon: 'error', title: 'Koneksi Terputus!', text: 'Tenang, jawabanmu aman disimpan di HP ini.' });
         } else {
             Toast.fire({ icon: 'success', title: 'Koneksi Kembali!', text: 'Mencoba sinkronisasi data ke server...' });
-            if(typeof app !== 'undefined' && app.saveRealtime) app.saveRealtime();
+            if (typeof app !== 'undefined' && app.saveRealtime) app.saveRealtime();
         }
     }
 
@@ -1297,18 +1394,18 @@ else { document.addEventListener('DOMContentLoaded', () => app.init()); }
     if (!navigator.onLine) handleConnectionChange();
 
     if (typeof app !== 'undefined') {
-        const originalSave = app.saveRealtime; 
-        const originalRestore = app.restoreSession; 
+        const originalSave = app.saveRealtime;
+        const originalRestore = app.restoreSession;
 
-        app.saveRealtime = function() {
-            originalSave.call(app); 
-            if(app.sessionId) {
+        app.saveRealtime = function () {
+            originalSave.call(app);
+            if (app.sessionId) {
                 const backupData = { answers: app.answers, ragu: app.ragu, timestamp: Date.now() };
                 localStorage.setItem('CBT_BACKUP_' + app.sessionId, JSON.stringify(backupData));
             }
         };
 
-        app.restoreSession = function(data) {
+        app.restoreSession = function (data) {
             const backupKey = 'CBT_BACKUP_' + app.sessionId;
             const localBackup = JSON.parse(localStorage.getItem(backupKey));
 
@@ -1328,12 +1425,12 @@ document.addEventListener('click', function (e) {
         const imgClone = e.target.cloneNode();
         fullOverlay.appendChild(imgClone);
         document.body.appendChild(fullOverlay);
-        fullOverlay.onclick = function() { fullOverlay.remove(); };
+        fullOverlay.onclick = function () { fullOverlay.remove(); };
     }
 });
 
 // EVENT LISTENER ANTI-CHEAT TAB SWITCHING
-document.addEventListener("visibilitychange", function() {
+document.addEventListener("visibilitychange", function () {
     const viewUjian = document.getElementById('view-ujian');
     const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
     if (document.visibilityState === 'hidden' && isLagiUjian) {
@@ -1344,7 +1441,7 @@ document.addEventListener("visibilitychange", function() {
 });
 
 // --- PERBAIKAN UI KAMERA: ANTI OFF-SCREEN & MINIMIZE BERSIH ---
-app.startSecurityProctor = function() {
+app.startSecurityProctor = function () {
     const user = this.userData || app.userData || {};
     if (user.isAdmin || user.email === ADMIN_EMAIL) return;
     if (document.getElementById('proctor-container')) return;
@@ -1353,7 +1450,7 @@ app.startSecurityProctor = function() {
         html: 'Ujian ini diawasi oleh <b>Sistem Kamera Keamanan</b>.<br><br>Mohon klik <b>"Allow" / "Izinkan"</b> pada notifikasi browser di atas layar untuk melanjutkan ke halaman identitas.',
         icon: 'info', confirmButtonText: 'Siap, Izinkan! 🚀', confirmButtonColor: '#007bff', allowOutsideClick: false
     }).then((res) => {
-        if(res.isConfirmed) {
+        if (res.isConfirmed) {
             navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
                 const style = document.createElement('style');
                 style.innerHTML = `
@@ -1384,22 +1481,22 @@ app.startSecurityProctor = function() {
                 document.body.appendChild(div);
 
                 document.getElementById('proctor-video').srcObject = stream;
-                
-                div.checkBoundary = function() {
+
+                div.checkBoundary = function () {
                     if (!document.body.contains(div)) return;
                     const winWidth = window.innerWidth;
                     const winHeight = window.innerHeight;
                     const elWidth = div.offsetWidth;
                     const elHeight = div.offsetHeight;
-                    
+
                     let currentLeft = div.offsetLeft;
                     let currentTop = div.offsetTop;
-                    
+
                     if (currentLeft < 10) currentLeft = 10;
                     if (currentLeft + elWidth > winWidth - 10) currentLeft = Math.max(10, winWidth - elWidth - 10);
                     if (currentTop < 10) currentTop = 10;
                     if (currentTop + elHeight > winHeight - 10) currentTop = Math.max(10, winHeight - elHeight - 10);
-                    
+
                     div.style.left = currentLeft + "px";
                     div.style.top = currentTop + "px";
                     div.style.bottom = "auto";
@@ -1407,19 +1504,19 @@ app.startSecurityProctor = function() {
                 };
 
                 window.addEventListener('resize', div.checkBoundary);
-                
+
                 let currentSizeLevel = 0;
-                document.getElementById('proctor-resize-btn').onclick = function() {
+                document.getElementById('proctor-resize-btn').onclick = function () {
                     currentSizeLevel = (currentSizeLevel + 1) % 3;
                     const sizes = ['180px', '240px', '140px'];
                     div.style.width = sizes[currentSizeLevel];
-                    setTimeout(div.checkBoundary, 350); 
+                    setTimeout(div.checkBoundary, 350);
                 };
-                
+
                 // Logika minimize lebih bersih
-                document.getElementById('proctor-min').onclick = function() { 
-                    div.classList.toggle('minimized'); 
-                    this.innerHTML = div.classList.contains('minimized') ? '<i class="fa-solid fa-camera"></i>' : '−'; 
+                document.getElementById('proctor-min').onclick = function () {
+                    div.classList.toggle('minimized');
+                    this.innerHTML = div.classList.contains('minimized') ? '<i class="fa-solid fa-camera"></i>' : '−';
                     const recText = document.querySelector('.blink-red');
                     if (recText) recText.style.display = div.classList.contains('minimized') ? 'none' : 'inline';
                 };
@@ -1433,7 +1530,7 @@ app.startSecurityProctor = function() {
                     const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
                     const s = (sec % 60).toString().padStart(2, '0');
                     const timerEl = document.getElementById('proctor-timer');
-                    if(timerEl) timerEl.innerText = `${h}:${m}:${s}`;
+                    if (timerEl) timerEl.innerText = `${h}:${m}:${s}`;
                 }, 1000);
             }).catch(err => {
                 Swal.fire({ title: 'Akses Ditolak! ❌', html: `<div style="text-align:left; font-size: 14px;">Kamu <b>TIDAK BISA</b> mengikuti ujian tanpa menyalakan kamera & mikrofon pengawas.<br><br><b>Cara Memperbaiki:</b><br>1. Klik ikon <b>Gembok 🔒 / Kamera 📷</b> di bilah alamat browser.<br>2. Pilih <b>Site Settings (Setelan Situs)</b> atau <b>Permissions</b>.<br>3. Ubah Izin Kamera & Mikrofon menjadi <b>Allow (Izinkan)</b>.<br>4. Ulangi proses masuk ujian.</div>`, icon: 'error', confirmButtonText: 'Mengerti & Ulangi', confirmButtonColor: '#d33', allowOutsideClick: false }).then(() => { location.reload(); });
@@ -1442,7 +1539,7 @@ app.startSecurityProctor = function() {
     });
 };
 
-app.stopSecurityProctor = function() {
+app.stopSecurityProctor = function () {
     const video = document.getElementById('proctor-video');
     if (video && video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
     const container = document.getElementById('proctor-container');
@@ -1456,47 +1553,47 @@ app.stopSecurityProctor = function() {
 function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var header = document.getElementById("proctor-header");
-    header.onmousedown = dragMouseDown; header.ontouchstart = dragMouseDown; 
+    header.onmousedown = dragMouseDown; header.ontouchstart = dragMouseDown;
 
     function dragMouseDown(e) {
         e = e || window.event;
-        if(e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
+        if (e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; }
         else { e.preventDefault(); pos3 = e.clientX; pos4 = e.clientY; }
         document.onmouseup = closeDragElement; document.ontouchend = closeDragElement;
         document.addEventListener('touchmove', elementDrag, { passive: false });
-        document.onmousemove = elementDrag; 
+        document.onmousemove = elementDrag;
     }
-    
+
     function elementDrag(e) {
         e = e || window.event;
         var clientX, clientY;
-        if(e.type === 'touchmove') { 
+        if (e.type === 'touchmove') {
             if (e.cancelable) e.preventDefault();
-            clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; 
-        } 
+            clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+        }
         else { e.preventDefault(); clientX = e.clientX; clientY = e.clientY; }
         pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
-        
+
         let newTop = elmnt.offsetTop - pos2;
         let newLeft = elmnt.offsetLeft - pos1;
-        
+
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
         const elWidth = elmnt.offsetWidth;
         const elHeight = elmnt.offsetHeight;
-        
+
         // BOUNDARY: Jangan biarkan keluar layar (diberi margin 10px agar tidak stuck di pojok)
         if (newLeft < 10) newLeft = 10;
         if (newLeft + elWidth > winWidth - 10) newLeft = Math.max(10, winWidth - elWidth - 10);
         if (newTop < 10) newTop = 10;
         if (newTop + elHeight > winHeight - 10) newTop = Math.max(10, winHeight - elHeight - 10);
-        
-        elmnt.style.top = newTop + "px"; 
+
+        elmnt.style.top = newTop + "px";
         elmnt.style.left = newLeft + "px";
-        elmnt.style.bottom = "auto"; 
+        elmnt.style.bottom = "auto";
         elmnt.style.right = "auto";
     }
-    
+
     function closeDragElement() {
         document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null;
         document.removeEventListener('touchmove', elementDrag);

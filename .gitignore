@@ -1,0 +1,7 @@
+# Folders excluded as requested
+/admin/
+/assets/
+/node/
+/node_modules/
+/register/
+/soal/

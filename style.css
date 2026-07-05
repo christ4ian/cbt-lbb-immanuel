@@ -1466,6 +1466,8 @@ mjx-container {
     overflow-y: hidden !important;
     padding: 5px 0; /* Biar scrollbar-nya ga nabrak huruf */
     font-size: 1.15em !important; /* Menyelaraskan MathJax agar ikut membesar bersama text size */
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #ccc #f1f1f1; /* Firefox */
 }
 
 /* Khusus untuk rumus yang bentuknya block (tengah-tengah) */
@@ -1488,9 +1490,9 @@ mjx-container[display="true"] {
     }
 }
 
-/* Custom Scrollbar khusus buat area rumus di HP biar estetik */
+/* Custom Scrollbar khusus buat area rumus agar estetik dan mudah digeser di PC & HP */
 mjx-container::-webkit-scrollbar {
-    height: 5px;
+    height: 8px; /* Lebih tebal agar mudah diklik/geser */
 }
 mjx-container::-webkit-scrollbar-track {
     background: #f1f1f1;
@@ -1499,6 +1501,10 @@ mjx-container::-webkit-scrollbar-track {
 mjx-container::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 4px;
+    transition: background 0.2s;
+}
+mjx-container::-webkit-scrollbar-thumb:hover {
+    background: #999; /* Menggelap saat di-hover agar lebih kelihatan */
 }
 /* ========================================= */
 /* TABEL OTOMATIS UNTUK KONTEN SOAL (DENGAN GARIS) */
