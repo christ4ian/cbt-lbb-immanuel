@@ -1149,10 +1149,15 @@ const app = {
         let roleSiswa = this.userData.role || 'Default';
         let priv = { lihat_skor: true, lihat_kunci: false, akses_pembahasan: false };
 
-        try {
-            let snap = await db.ref(`paket_ujian/${this.currentPaket.id}/roles/${roleSiswa}`).once('value');
-            if (snap.exists()) priv = snap.val();
-        } catch (e) { console.error("Gagal menarik Role Privilege", e); }
+        // [FITUR BARU] Siswa jalur Kelas otomatis Bypass (Unlock Semua)
+        if (roleSiswa.toLowerCase() === 'kelas') {
+            priv = { lihat_skor: true, lihat_kunci: true, akses_pembahasan: true };
+        } else {
+            try {
+                let snap = await db.ref(`paket_ujian/${this.currentPaket.id}/roles/${roleSiswa}`).once('value');
+                if (snap.exists()) priv = snap.val();
+            } catch (e) { console.error("Gagal menarik Role Privilege", e); }
+        }
 
         // --- CEK DEADLINE UJIAN ---
         const now = Date.now();
