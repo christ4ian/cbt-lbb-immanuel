@@ -278,7 +278,7 @@ const app = {
 
                         if (sessionData && sessionData.status === 'finished') {
                             Swal.close();
-                            this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role };
+                            this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role || studentData.jalur };
                             this.sessionId = tempSessionId;
 
                             this.answers = sessionData.answers || {};
@@ -352,7 +352,7 @@ const app = {
                                 `,
                                 icon: 'info', confirmButtonText: 'Lanjut ke Pembahasan', confirmButtonColor: '#007bff'
                             }).then(() => {
-                                this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role };
+                                this.userData = { nama: studentData.nama_siswa, email: email, role: studentData.role || studentData.jalur };
                                 this.answers = {};
                                 this.tampilkanHalamanHasil(0, "Tidak Mengerjakan", []);
                             });
@@ -390,7 +390,7 @@ const app = {
                                     kelas: studentData.kelas,
                                     sekolah: studentData.sekolah,
                                     email: email,
-                                    role: studentData.role || 'Default'
+                                    role: studentData.role || studentData.jalur || 'Default'
                                 };
                                 this.sheetRowIndex = studentKey;
                                 this.sessionId = tempSessionId;
