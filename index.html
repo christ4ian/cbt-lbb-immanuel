@@ -289,15 +289,17 @@
             }
             const dbLocal = firebase.database();
 
-            console.log("⏳ Menarik data paket soal dari Firebase (Node: published_soal)...");
+            console.log("⏳ Menarik metadata paket soal dari Firebase (Node: paket_ujian)...");
 
-            dbLocal.ref('published_soal').once('value')
+            dbLocal.ref('paket_ujian').orderByChild('status').equalTo('published').once('value')
                 .then((snap) => {
                     if (snap.exists()) {
                         snap.forEach(child => {
-                            PAKET_SOAL.push(child.val());
+                            let data = child.val();
+                            data.id = child.key; // Simpan ID
+                            PAKET_SOAL.push(data);
                         });
-                        console.log(`✅ Berhasil memuat ${PAKET_SOAL.length} paket soal dari Firebase.`);
+                        console.log(`✅ Berhasil memuat ${PAKET_SOAL.length} metadata paket soal dari Firebase.`);
                     } else {
                         console.warn("⚠️ Peringatan: Tidak ada paket soal yang berstatus PUBLISHED di Firebase.");
                     }

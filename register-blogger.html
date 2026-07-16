@@ -782,26 +782,24 @@
                 }
             }
 
-            // SELALU ambil data tryout terbaru dari published_soal
+            // SELALU ambil data tryout terbaru dari paket_ujian
             let trData = null;
             if (dataPeserta.id_paket) {
-                const snapTryout = await db.ref('published_soal/' + dataPeserta.id_paket).once('value');
+                const snapTryout = await db.ref('paket_ujian/' + dataPeserta.id_paket).once('value');
                 if (snapTryout.exists()) trData = snapTryout.val();
             } else if (dataPeserta.paket) {
-                const snapAll = await db.ref('published_soal').once('value');
+                const snapAll = await db.ref('paket_ujian').orderByChild('judul').equalTo(dataPeserta.paket).once('value');
                 if (snapAll.exists()) {
                     snapAll.forEach(child => {
-                        if (child.val().judul === dataPeserta.paket) {
-                            trData = child.val();
-                            dataPeserta.id_paket = child.key;
-                        }
+                        trData = child.val();
+                        dataPeserta.id_paket = child.key;
                     });
                 }
             }
 
             if (trData) {
                 dataPeserta.durasi = trData.waktu || trData.durasi_menit || trData.durasi || 120;
-                dataPeserta.jumlahSoal = trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0;
+                dataPeserta.jumlahSoal = trData.jumlah_soal || (trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0);
             }
 
             localStorage.setItem('dataPesertaTerakhir', JSON.stringify(dataPeserta));
@@ -1193,11 +1191,11 @@
                 let durasiUjian = 120;
                 let jumlahSoal = 0;
                 try {
-                    const snapTryout = await db.ref(`published_soal/${paketTarget}`).once('value');
+                    const snapTryout = await db.ref(`paket_ujian/${paketTarget}`).once('value');
                     if (snapTryout.exists()) {
                         const trData = snapTryout.val();
                         durasiUjian = trData.waktu || trData.durasi_menit || trData.durasi || 120;
-                        jumlahSoal = trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0;
+                        jumlahSoal = trData.jumlah_soal || (trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0);
                     }
                 } catch (e) { console.error("Gagal ambil data tryout", e); }
 

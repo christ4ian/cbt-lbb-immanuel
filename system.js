@@ -237,7 +237,7 @@ const app = {
         Swal.fire({ title: 'Verifikasi...', didOpen: () => Swal.showLoading() });
 
         try {
-            let snap = await db.ref('pendaftaran').once('value');
+            let snap = await db.ref('pendaftaran').orderByChild('email').equalTo(email).once('value');
             let emailFound = false;
             let studentData = null;
             let studentKey = null;
@@ -255,40 +255,21 @@ const app = {
                 });
             }
 
-            if (!studentData && this.currentPaket.linked_class) {
-                let snapClass = await db.ref('class_users').once('value');
-                if (snapClass.exists()) {
-                    snapClass.forEach(waNode => {
-                        const waData = waNode.val();
-                        if (waData.profil_siswa) {
-                            Object.keys(waData.profil_siswa).forEach(sId => {
-                                const siswa = waData.profil_siswa[sId];
-                                if (siswa.email && siswa.email.toLowerCase() === email) {
-                                    if (siswa.langganan_aktif && siswa.langganan_aktif[this.currentPaket.linked_class]) {
-                                        const status = siswa.langganan_aktif[this.currentPaket.linked_class].status;
-                                        if (status === 'Aktif' || status === 'Hanya Rekaman') {
-                                            emailFound = true;
-                                            studentData = {
-                                                nama_siswa: siswa.nama || "-",
-                                                email: email,
-                                                sekolah: siswa.asal_sekolah || "-",
-                                                kelas: siswa.kelas || "-",
-                                                kota: waData.asal_kota || "-",
-                                                role: status === 'Hanya Rekaman' ? 'Rekaman' : 'Aktif',
-                                                id_paket: this.currentPaket.id
-                                            };
-                                            studentKey = "class_" + sId;
-                                        }
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }
-            }
+            // FALLBACK PENCARIAN DI CLASS_USERS TELAH DIHAPUS UNTUK MENGHEMAT KUOTA.
+            // Siswa HANYA BISA LOGIN jika emailnya terdaftar di tabel `pendaftaran`.
 
             if (emailFound) {
                 if (studentData) {
+                    // SEKARANG KITA BARU MENDOWNLOAD FULL SOAL HANYA UNTUK PAKET INI
+                    let soalSnap = await db.ref('published_soal/' + this.currentPaket.id).once('value');
+                    if (soalSnap.exists()) {
+                        this.currentPaket = soalSnap.val();
+                        this.currentPaket.id = soalSnap.key;
+                    } else {
+                        Swal.fire('Error', 'Soal belum dipublish oleh Admin.', 'error');
+                        return;
+                    }
+
                     const safeEmail = email.replace(/\./g, '_');
                     const tempSessionId = this.currentPaket.id + "_" + safeEmail;
 
@@ -1046,6 +1027,7 @@ const app = {
         const result = this.calculateResult();
 
         let teksDurasi = "Tidak diketahui";
+        let durasiDetikVal = 999999;
         if (this.currentPaket && this.deadline) {
             const sisaDetik = Math.floor((this.deadline - getServerTime()) / 1000);
             const totalWaktuDetik = this.userData.isAdmin ? 999 * 60 : this.currentPaket.waktu * 60;
@@ -1055,6 +1037,7 @@ const app = {
             const menit = Math.floor(durasiDetik / 60);
             const detik = durasiDetik % 60;
             teksDurasi = `${menit} Menit ${detik} Detik`;
+            durasiDetikVal = durasiDetik;
         }
 
         // --- BYPASS ADMIN LOGIC: Tidak nunggu Firebase agar tidak stuck! ---
@@ -1078,15 +1061,21 @@ const app = {
         }
         if (Object.keys(cleanAnswers).length === 0) cleanAnswers["empty"] = true;
 
-        db.ref('sessions/' + this.sessionId).update({
-            status: 'finished',
-            skor_akhir: result.skor,
-            answers: cleanAnswers,
-            finishTime: firebase.database.ServerValue.TIMESTAMP,
-            durasi_teks: teksDurasi,
-            detail: result.detail,
-            cheatCount: cheatCount
-        }).then(() => {
+        let rootUpdates = {};
+        rootUpdates['sessions/' + this.sessionId + '/status'] = 'finished';
+        rootUpdates['sessions/' + this.sessionId + '/skor_akhir'] = result.skor;
+        rootUpdates['sessions/' + this.sessionId + '/answers'] = cleanAnswers;
+        rootUpdates['sessions/' + this.sessionId + '/finishTime'] = firebase.database.ServerValue.TIMESTAMP;
+        rootUpdates['sessions/' + this.sessionId + '/durasi_teks'] = teksDurasi;
+        rootUpdates['sessions/' + this.sessionId + '/detail'] = result.detail;
+        rootUpdates['sessions/' + this.sessionId + '/cheatCount'] = cheatCount;
+        
+        rootUpdates['leaderboard/' + this.currentPaket.id + '/' + this.sessionId] = {
+            skor: result.skor,
+            durasiMs: durasiDetikVal * 1000
+        };
+
+        db.ref().update(rootUpdates).then(() => {
             localStorage.removeItem('cbt_active_session');
             localStorage.removeItem('cbt_images_' + this.sessionId); // Hapus cache foto setelah beres kirim
             Swal.close();
@@ -1231,15 +1220,12 @@ const app = {
         // LOGIKA PERINGKAT (TETAP)
         if (!this.userData.isAdmin) {
             try {
-                const snap = await db.ref('sessions').orderByChild('paketId').equalTo(this.currentPaket.id).once('value');
+                const snap = await db.ref('leaderboard/' + this.currentPaket.id).once('value');
                 let allSessions = [];
                 if (snap.exists()) {
                     snap.forEach(child => {
                         let d = child.val();
-                        if (d.status === 'finished') {
-                            let dMs = (d.finishTime && d.startTime) ? (d.finishTime - d.startTime) : 99999999;
-                            allSessions.push({ skor: parseFloat(d.skor_akhir || 0), durasi: dMs, id: child.key });
-                        }
+                        allSessions.push({ skor: parseFloat(d.skor || 0), durasi: parseFloat(d.durasiMs || 99999999), id: child.key });
                     });
                 }
                 allSessions.sort((a, b) => {
