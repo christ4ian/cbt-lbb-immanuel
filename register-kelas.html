@@ -366,11 +366,11 @@
                 let durasiUjian = 120;
                 let jumlahSoal = 0;
                 try {
-                    const snapTryout = await db.ref(`published_soal/${paketTarget}`).once('value');
+                    const snapTryout = await db.ref(`paket_ujian/${paketTarget}`).once('value');
                     if (snapTryout.exists()) {
                         const trData = snapTryout.val();
                         durasiUjian = trData.waktu || trData.durasi_menit || trData.durasi || 120;
-                        jumlahSoal = trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0;
+                        jumlahSoal = trData.jumlah_soal || (trData.soal ? (Array.isArray(trData.soal) ? trData.soal.length : Object.keys(trData.soal).length) : 0);
                     }
                 } catch(e) { console.error("Gagal ambil data paket", e); }
 
