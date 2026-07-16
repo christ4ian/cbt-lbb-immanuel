@@ -10,7 +10,7 @@ const data = JSON.stringify({
 });
 
 const req = https.request({
-    hostname: 'cbt-lbb-immanuel-default-rtdb.firebaseio.com',
+    hostname: 'lbb-immanuel-cbt-default-rtdb.firebaseio.com',
     port: 443,
     path: '/bot_status.json',
     method: 'PATCH',

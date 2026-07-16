@@ -11,13 +11,13 @@
 // 1. CONFIG & ANTI-CHEAT
 let cheatCount = 0;
 const firebaseConfig = {
-    apiKey: "AIzaSyC04h_Aaz9I9WncNeEWc8A5cEKajmIEDVs",
-    authDomain: "cbt-lbb-immanuel.firebaseapp.com",
-    databaseURL: "https://cbt-lbb-immanuel-default-rtdb.firebaseio.com",
-    projectId: "cbt-lbb-immanuel",
-    storageBucket: "cbt-lbb-immanuel.firebasestorage.app",
-    messagingSenderId: "79589552415",
-    appId: "1:79589552415:web:20fb83aa055ec156cfc02a"
+    apiKey: "AIzaSyDu2LuvfDm_NCTd_xZBSPQiUkjtoM65xCs",
+    authDomain: "lbb-immanuel-cbt.firebaseapp.com",
+    databaseURL: "https://lbb-immanuel-cbt-default-rtdb.firebaseio.com",
+    projectId: "lbb-immanuel-cbt",
+    storageBucket: "lbb-immanuel-cbt.firebasestorage.app",
+    messagingSenderId: "594873579300",
+    appId: "1:594873579300:web:20fb83aa055ec156cfc02a"
 };
 
 // URL SCRIPT GOOGLE
