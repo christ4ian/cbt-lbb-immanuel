@@ -291,7 +291,7 @@
 
             console.log("⏳ Menarik metadata paket soal dari Firebase (Node: paket_ujian)...");
 
-            dbLocal.ref('paket_ujian').orderByChild('status').equalTo('published').once('value')
+            dbLocal.ref('paket_ujian').orderByChild('status').equalTo('aktif').once('value')
                 .then((snap) => {
                     if (snap.exists()) {
                         snap.forEach(child => {
@@ -301,7 +301,7 @@
                         });
                         console.log(`✅ Berhasil memuat ${PAKET_SOAL.length} metadata paket soal dari Firebase.`);
                     } else {
-                        console.warn("⚠️ Peringatan: Tidak ada paket soal yang berstatus PUBLISHED di Firebase.");
+                        console.warn("⚠️ Peringatan: Tidak ada paket soal yang berstatus AKTIF di Firebase.");
                     }
                 })
                 .catch((error) => {
