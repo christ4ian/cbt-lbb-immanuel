@@ -255,8 +255,29 @@ const app = {
                 });
             }
 
-            // FALLBACK PENCARIAN DI CLASS_USERS TELAH DIHAPUS UNTUK MENGHEMAT KUOTA.
-            // Siswa HANYA BISA LOGIN jika emailnya terdaftar di tabel `pendaftaran`.
+            // CEK CLASS_USERS JIKA TERDAPAT LINKED_CLASS
+            if (!studentData && this.currentPaket.linked_class) {
+                let classSnap = await db.ref('class_users/' + this.currentPaket.linked_class + '/profil_siswa').once('value');
+                if (classSnap.exists()) {
+                    classSnap.forEach(child => {
+                        let data = child.val();
+                        if (data.email && data.email.toLowerCase() === email) {
+                            emailFound = true;
+                            // mapping data class ke studentData
+                            studentData = {
+                                nama_siswa: data.nama,
+                                email: data.email,
+                                sekolah: data.asal_sekolah || "-",
+                                kelas: data.kelas || "-",
+                                kota: data.asal_kota || "-",
+                                id_paket: this.currentPaket.id,
+                                role: 'Kelas' // Role = 'Kelas' untuk mendapatkan privilege penuh
+                            };
+                            studentKey = child.key;
+                        }
+                    });
+                }
+            }
 
             if (emailFound) {
                 if (studentData) {
