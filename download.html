@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Modul Pembelajaran Eksklusif | LBB CBT</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-hover: #047857;
+            --primary-light: #d1fae5;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #064e3b 100%);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 35px 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .icon-header {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 10px 20px rgba(5, 150, 105, 0.3);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        select.form-control {
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .btn-download {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 10px;
+        }
+
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.6);
+        }
+
+        .btn-download:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .watermark-badge {
+            margin-top: 25px;
+            padding: 10px 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            color: #fca5a5;
+            font-size: 0.78rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="icon-header">
+            <i class="fa-solid fa-file-pdf"></i>
+        </div>
+
+        <h1>Download Modul Eksklusif</h1>
+        <p class="subtitle">Masukkan email terdaftar Anda untuk mengunduh modul PDF resmi dengan watermark personal.</p>
+
+        <form id="downloadForm" onsubmit="handleDownload(event)">
+            
+            <div class="form-group">
+                <label for="bookId">Pilih Modul Pembelajaran</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-book-open"></i>
+                    <select id="bookId" class="form-control" required>
+                        <option value="default">Sample Modul Pembelajaran (Default)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="userEmail">Email Terdaftar Anda</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="userEmail" class="form-control" placeholder="nama@gmail.com" required>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn-download">
+                <i class="fa-solid fa-download"></i>
+                <span>Download PDF Sekarang</span>
+            </button>
+        </form>
+
+        <div class="watermark-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>File PDF akan disematkan watermark identitas email Anda.</span>
+        </div>
+
+        <div class="footer-note">
+            &copy; 2026 LBB CBT Immanuel. All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        // Firebase config matching CBT Legacy
+        const firebaseConfig = {
+            apiKey: "AIzaSyDu2LuvfDm_NCTd_xZBSPQiUkjtoM65xCs",
+            authDomain: "lbb-immanuel-cbt.firebaseapp.com",
+            databaseURL: "https://lbb-immanuel-cbt-default-rtdb.firebaseio.com",
+            projectId: "lbb-immanuel-cbt",
+            storageBucket: "lbb-immanuel-cbt.firebasestorage.app",
+            messagingSenderId: "594873579300",
+            appId: "1:594873579300:web:3906f798106177c47665b1"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBooksDropdown();
+        });
+
+        function loadBooksDropdown() {
+            const selectEl = document.getElementById('bookId');
+            db.ref('pdf_books').once('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    selectEl.innerHTML = '';
+                    Object.keys(data).forEach((id) => {
+                        const book = data[id];
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        opt.innerText = book.title || id;
+                        selectEl.appendChild(opt);
+                    });
+                }
+            });
+        }
+
+        // URL Backend Vercel Serverless API
+        const VERCEL_BACKEND_URL = 'https://cbt-lbb-immanuel.vercel.app';
+
+        async function handleDownload(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('userEmail').value.trim();
+            const bookId = document.getElementById('bookId').value;
+            const btn = document.getElementById('submitBtn');
+
+            if (!email) {
+                Swal.fire('Error', 'Masukkan email Anda!', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Menyiapkan PDF...</span>`;
+
+            try {
+                // Construct API URL (Works cross-origin from Cloudflare Pages to Vercel Backend)
+                const baseUrl = VERCEL_BACKEND_URL ? VERCEL_BACKEND_URL.replace(/\/$/, '') : '';
+                const apiUrl = `${baseUrl}/api/download-pdf?email=${encodeURIComponent(email)}&bookId=${encodeURIComponent(bookId)}`;
+                
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Error ${response.status}: Gagal mengunduh file.`);
+                }
+
+                // Get blob binary PDF
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                
+                // Get filename from Content-Disposition header if available
+                let filename = `modul_${bookId}.pdf`;
+                const disposition = response.headers.get('Content-Disposition');
+                if (disposition && disposition.includes('filename=')) {
+                    const match = disposition.match(/filename="?([^"]+)"?/);
+                    if (match && match[1]) filename = match[1];
+                }
+
+                // Trigger browser download
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Download Berhasil!',
+                    text: 'File PDF ter-watermark telah diunduh ke perangkat Anda.',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Akses Ditolak / Gagal',
+                    text: err.message || 'Terjadi kesalahan saat memproses PDF.'
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-download"></i> <span>Download PDF Sekarang</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
