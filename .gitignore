@@ -1,10 +1,8 @@
 # Folders excluded as requested
-admin/*
-!admin/admin-buku.html
+/admin/
 /assets/
 /node/
 /node_modules/
 /register/
 /soal/
-*export*.json  
- 
+*export*.json
