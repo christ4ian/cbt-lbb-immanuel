@@ -247,16 +247,25 @@
 
         function loadBooksDropdown() {
             const selectEl = document.getElementById('bookId');
+            
+            // Set default initial choices
+            selectEl.innerHTML = `
+                <option value="main">Modul Utama (main.pdf)</option>
+                <option value="main_pembahasan">Pembahasan Modul (main_pembahasan.pdf)</option>
+                <option value="default">Sample Modul (sample.pdf)</option>
+            `;
+
             db.ref('pdf_books').once('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    selectEl.innerHTML = '';
                     Object.keys(data).forEach((id) => {
-                        const book = data[id];
-                        const opt = document.createElement('option');
-                        opt.value = id;
-                        opt.innerText = book.title || id;
-                        selectEl.appendChild(opt);
+                        if (id !== 'main' && id !== 'main_pembahasan' && id !== 'default') {
+                            const book = data[id];
+                            const opt = document.createElement('option');
+                            opt.value = id;
+                            opt.innerText = book.title || id;
+                            selectEl.appendChild(opt);
+                        }
                     });
                 }
             });

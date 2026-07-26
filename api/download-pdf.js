@@ -6,14 +6,35 @@ import path from 'path';
 const FIREBASE_DB_URL = "https://lbb-immanuel-cbt-default-rtdb.firebaseio.com";
 
 /**
- * Helper to sanitize email for Firebase keys (Firebase RTDB keys cannot contain '.', '#', '$', '[', or ']')
+ * Helper to sanitize email for Firebase keys
  */
 function sanitizeEmail(email) {
   return String(email).trim().toLowerCase().replace(/\./g, '_dot_').replace(/[@#$\[\]]/g, '_');
 }
 
+/**
+ * Helper to find local PDF file across standard project asset locations
+ */
+function findLocalPdf(filenameOrPath) {
+  const cleanName = path.basename(filenameOrPath);
+  const possiblePaths = [
+    filenameOrPath,
+    path.join(process.cwd(), filenameOrPath),
+    path.join(process.cwd(), 'public', 'pdf', cleanName),
+    path.join(process.cwd(), 'public', cleanName),
+    path.join(process.cwd(), cleanName)
+  ];
+
+  for (const p of possiblePaths) {
+    if (p && typeof p === 'string' && fs.existsSync(p) && fs.statSync(p).isFile()) {
+      return fs.readFileSync(p);
+    }
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
-  // Allow CORS for Web Frontend
+  // Allow CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,7 +44,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get query parameters or body data
     const email = (req.query.email || req.body?.email || '').trim().toLowerCase();
     const bookId = (req.query.bookId || req.body?.bookId || 'default').trim();
 
@@ -48,8 +68,8 @@ export default async function handler(req, res) {
       console.error('Firebase DB Check Error:', dbErr);
     }
 
-    // Fallback: Allow instant testing for default book or check strict authorization
-    if (!isAuthorized && bookId === 'default') {
+    // Allow instant testing for default, main, or main_pembahasan if DB record not set yet
+    if (!isAuthorized && (bookId === 'default' || bookId === 'main' || bookId === 'main_pembahasan')) {
       isAuthorized = true;
     }
 
@@ -62,43 +82,57 @@ export default async function handler(req, res) {
     // 2. Fetch or load the Master PDF file
     let masterPdfBuffer = null;
     let targetFilename = `modul_${bookId}.pdf`;
+    let pdfSourceUrl = null;
 
     // Fetch book metadata from Firebase if available
     try {
       const bookRes = await fetch(`${FIREBASE_DB_URL}/pdf_books/${bookId}.json`);
       if (bookRes.ok) {
         const bookData = await bookRes.json();
-        if (bookData && bookData.filename) {
-          targetFilename = bookData.filename;
-        }
-        if (bookData && bookData.pdfUrl) {
-          if (bookData.pdfUrl.startsWith('http://') || bookData.pdfUrl.startsWith('https://')) {
-            const pdfFetchRes = await fetch(bookData.pdfUrl);
-            if (pdfFetchRes.ok) {
-              const arrayBuf = await pdfFetchRes.arrayBuffer();
-              masterPdfBuffer = Buffer.from(arrayBuf);
-            }
-          }
+        if (bookData) {
+          if (bookData.filename) targetFilename = bookData.filename;
+          if (bookData.pdfUrl) pdfSourceUrl = bookData.pdfUrl;
         }
       }
     } catch (bookErr) {
       console.warn('Book Metadata Fetch Warning:', bookErr);
     }
 
-    // Fallback to local default sample PDF if remote URL is not configured or fails
-    if (!masterPdfBuffer) {
-      const localSamplePath = path.join(process.cwd(), 'public', 'pdf', 'sample.pdf');
-      if (fs.existsSync(localSamplePath)) {
-        masterPdfBuffer = fs.readFileSync(localSamplePath);
-      } else {
-        const altPath = path.join(process.cwd(), 'public', 'sample.pdf');
-        if (fs.existsSync(altPath)) {
-          masterPdfBuffer = fs.readFileSync(altPath);
-        } else {
-          return res.status(404).json({ error: 'Master file PDF tidak ditemukan di server.' });
+    // Attempt loading from remote URL if specified
+    if (pdfSourceUrl && (pdfSourceUrl.startsWith('http://') || pdfSourceUrl.startsWith('https://'))) {
+      try {
+        const pdfFetchRes = await fetch(pdfSourceUrl);
+        if (pdfFetchRes.ok) {
+          const arrayBuf = await pdfFetchRes.arrayBuffer();
+          masterPdfBuffer = Buffer.from(arrayBuf);
         }
+      } catch (remoteErr) {
+        console.warn('Remote PDF Fetch Failed, trying local fallback:', remoteErr);
       }
     }
+
+    // Attempt loading from relative path or local PDF files
+    if (!masterPdfBuffer && pdfSourceUrl) {
+      masterPdfBuffer = findLocalPdf(pdfSourceUrl);
+    }
+
+    // Try finding local PDF matching bookId (e.g. main.pdf, main_pembahasan.pdf, sample.pdf)
+    if (!masterPdfBuffer) {
+      masterPdfBuffer = findLocalPdf(`${bookId}.pdf`) || findLocalPdf(`public/pdf/${bookId}.pdf`);
+    }
+
+    // Default fallback to sample.pdf if still not found
+    if (!masterPdfBuffer) {
+      masterPdfBuffer = findLocalPdf('public/pdf/sample.pdf') || findLocalPdf('sample.pdf');
+    }
+
+    if (!masterPdfBuffer) {
+      return res.status(404).json({ error: 'Master file PDF tidak ditemukan di server.' });
+    }
+
+    // Adjust targetFilename if default
+    if (bookId === 'main') targetFilename = 'Modul_Utama.pdf';
+    if (bookId === 'main_pembahasan') targetFilename = 'Pembahasan_Modul.pdf';
 
     // 3. Process Watermark Injection using pdf-lib
     const pdfDoc = await PDFDocument.load(masterPdfBuffer);
@@ -110,13 +144,12 @@ export default async function handler(req, res) {
 
     for (const page of pages) {
       const { height } = page.getSize();
-      // Draw watermark on Top-Left corner (x: 30, y: height - 35)
       page.drawText(watermarkText, {
         x: 30,
         y: height - 35,
         size: fontSize,
         font: font,
-        color: rgb(1, 0, 0), // Solid Red (RGB 1, 0, 0)
+        color: rgb(1, 0, 0), // Merah pekat (RGB 1, 0, 0)
       });
     }
 
