@@ -1549,43 +1549,132 @@ body.swal2-shown {
 /* CSS KHUSUS SOAL ESAI (UPLOAD LEMBAR KERJA)*/
 /* ========================================= */
 .esai-upload-zone {
-    background: #f8fafc;
-    border: 2px dashed #94a3b8;
-    border-radius: 16px;
-    padding: 30px 20px;
-    margin-top: 25px;
-    text-align: center;
-    transition: all 0.25s ease;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border: 2px dashed #94a3b8 !important;
+    border-radius: 20px !important;
+    padding: 35px 20px !important;
+    margin-top: 25px !important;
+    text-align: center !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.25s ease !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 .esai-upload-zone:hover {
-    border-color: var(--primary);
-    background: #f0fdf4;
+    border-color: #2563eb !important;
+    background: #f0f7ff !important;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.08) !important;
 }
+.esai-icon-bubble {
+    width: 68px;
+    height: 68px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+}
+.esai-title {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin: 0 auto 8px auto !important;
+    text-align: center !important;
+    width: 100% !important;
+    display: block !important;
+}
+.esai-desc {
+    font-size: 0.92rem !important;
+    color: #64748b !important;
+    max-width: 520px !important;
+    margin: 0 auto 24px auto !important;
+    line-height: 1.55 !important;
+    text-align: center !important;
+    display: block !important;
+}
+.esai-btn-group {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 14px !important;
+    flex-wrap: wrap !important;
+}
+.esai-btn-select {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 13px 24px !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+.esai-btn-select:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4) !important;
+}
+.esai-btn-cam {
+    background: #ffffff !important;
+    color: #15803d !important;
+    border: 2px solid #16a34a !important;
+    padding: 13px 24px !important;
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    border-radius: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.12) !important;
+    transition: all 0.2s ease !important;
+}
+.esai-btn-cam:hover {
+    background: #f0fdf4 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(22, 163, 74, 0.2) !important;
+}
+
 .esai-gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
     gap: 15px;
     margin-top: 15px;
 }
 .esai-card {
     background: #f8fafc;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 10px;
+    border-radius: 14px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     position: relative;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .esai-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
 }
 @media (max-width: 600px) {
     .esai-gallery-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 10px;
+    }
+    .esai-btn-select, .esai-btn-cam {
+        width: 100%;
+        justify-content: center;
     }
 }

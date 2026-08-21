@@ -789,12 +789,12 @@ const app = {
 
             let cardsHtml = '';
             if (imgList.length > 0) {
-                cardsHtml += `<div class="esai-gallery-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:15px; margin-top:15px;">`;
+                cardsHtml += `<div class="esai-gallery-grid">`;
                 imgList.forEach((img, fIdx) => {
                     const isPdf = img.type === 'pdf' || (img.url && img.url.toLowerCase().includes('.pdf'));
                     if (isPdf) {
                         cardsHtml += `
-                            <div class="esai-card" style="background:#fef2f2; border:2px solid #fecaca; border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; position:relative; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+                            <div class="esai-card" style="background:#fef2f2; border:2px solid #fecaca;">
                                 <div style="font-weight:700; font-size:0.85rem; color:#b91c1c; display:flex; justify-content:space-between; align-items:center;">
                                     <span><i class="fa-solid fa-file-pdf"></i> Dokumen PDF ${fIdx + 1}</span>
                                     <button type="button" onclick="app.hapusFotoEsai(${index}, ${fIdx})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:2px 6px; font-size:0.95rem;" title="Hapus berkas ini"><i class="fa-solid fa-trash-can"></i></button>
@@ -803,14 +803,14 @@ const app = {
                                     <i class="fa-solid fa-file-pdf" style="font-size:2.8rem; color:#dc2626;"></i>
                                     <span style="font-size:0.75rem; color:#7f1d1d; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;">${img.name || 'Dokumen Lembar Jawaban.pdf'}</span>
                                 </div>
-                                <button type="button" class="btn btn-outline" style="width:100%; padding:6px; font-size:0.8rem; border-color:#f87171; color:#dc2626; background:white; font-weight:700; border-radius:6px;" onclick="app.previewPdfEsai('${img.url}', 'Dokumen PDF Lembar Jawaban')">
+                                <button type="button" class="btn" style="width:100%; padding:7px; font-size:0.8rem; border:1px solid #f87171; color:#dc2626; background:white; font-weight:700; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;" onclick="app.previewPdfEsai('${img.url}', 'Dokumen PDF Lembar Jawaban')">
                                     <i class="fa-solid fa-eye"></i> Baca Dokumen PDF
                                 </button>
                             </div>
                         `;
                     } else {
                         cardsHtml += `
-                            <div class="esai-card" style="background:#f8fafc; border:2px solid #e2e8f0; border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:8px; position:relative; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+                            <div class="esai-card">
                                 <div style="font-weight:700; font-size:0.85rem; color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
                                     <span><i class="fa-solid fa-file-image"></i> Lembar Foto ${fIdx + 1}</span>
                                     <button type="button" onclick="app.hapusFotoEsai(${index}, ${fIdx})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:2px 6px; font-size:0.95rem;" title="Hapus foto ini"><i class="fa-solid fa-trash-can"></i></button>
@@ -834,7 +834,7 @@ const app = {
                                 </span>
                             </div>
                             <div style="display:flex; gap:8px;">
-                                <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-add-${index}').click()" style="padding:8px 16px; font-size:0.85rem; font-weight:700; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
+                                <button type="button" class="esai-btn-select" onclick="document.getElementById('input-esai-add-${index}').click()" style="padding:8px 16px; font-size:0.85rem;">
                                     <i class="fa-solid fa-plus"></i> Tambah Foto / PDF Lain
                                 </button>
                                 <input type="file" id="input-esai-add-${index}" accept="image/*,application/pdf" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
@@ -845,19 +845,19 @@ const app = {
                 `;
             } else {
                 html += `
-                    <div class="esai-upload-zone" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 2px dashed #94a3b8; border-radius: 20px; padding: 35px 20px; margin-top: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: all 0.25s ease;">
-                        <div style="display:inline-flex; align-items:center; justify-content:center; width:68px; height:68px; background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color:white; border-radius:50%; font-size:1.8rem; margin-bottom:15px; box-shadow:0 8px 16px rgba(37,99,235,0.25);">
+                    <div class="esai-upload-zone">
+                        <div class="esai-icon-bubble">
                             <i class="fa-solid fa-file-arrow-up"></i>
                         </div>
-                        <h4 style="font-size:1.2rem; font-weight:800; color:#0f172a; margin-bottom:6px;">Unggah Lembar Jawaban Tulisan Tangan</h4>
-                        <p style="font-size:0.9rem; color:#64748b; max-width:520px; margin:0 auto 20px auto; line-height:1.5;">
+                        <h4 class="esai-title">Unggah Lembar Jawaban Tulisan Tangan</h4>
+                        <p class="esai-desc">
                             Tuliskan jawaban Anda di kertas lalu ambil foto menggunakan kamera HP atau unggah berkas dokumen PDF. (Bisa memilih lebih dari 1 foto sekaligus).
                         </p>
-                        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-                            <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-${index}').click()" style="padding:12px 20px; font-size:0.92rem; font-weight:700; border-radius:10px; display:inline-flex; align-items:center; gap:8px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+                        <div class="esai-btn-group">
+                            <button type="button" class="esai-btn-select" onclick="document.getElementById('input-esai-${index}').click()">
                                 <i class="fa-solid fa-folder-open"></i> Pilih Berkas Foto / PDF
                             </button>
-                            <button type="button" class="btn btn-outline" onclick="document.getElementById('input-esai-cam-${index}').click()" style="padding:12px 20px; font-size:0.92rem; font-weight:700; border-radius:10px; border:2px solid #2563eb; color:#2563eb; background:white; display:inline-flex; align-items:center; gap:8px;">
+                            <button type="button" class="esai-btn-cam" onclick="document.getElementById('input-esai-cam-${index}').click()">
                                 <i class="fa-solid fa-camera"></i> Buka Kamera Langsung
                             </button>
                         </div>
@@ -1033,14 +1033,19 @@ const app = {
     },
 
     previewPdfEsai: function(url, title = 'Dokumen PDF Lembar Jawaban') {
+        const viewerGoogle = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
         Swal.fire({
-            title: title,
+            title: `<div style="display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.15rem; font-weight:800; color:#0f172a;"><i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> ${title}</div>`,
             html: `
-                <div style="width:100%; height:70vh; background:#1e293b; border-radius:12px; overflow:hidden;">
-                    <iframe src="${url}#toolbar=0" style="width:100%; height:100%; border:none;" title="Preview PDF"></iframe>
+                <div style="width:100%; height:72vh; background:#1e293b; border-radius:14px; overflow:hidden; position:relative; display:flex; flex-direction:column; box-shadow:0 6px 20px rgba(0,0,0,0.15);">
+                    <div style="background:#0f172a; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; color:#94a3b8; font-size:0.82rem; border-bottom:1px solid #334155;">
+                        <span style="display:inline-flex; align-items:center; gap:6px; color:#e2e8f0; font-weight:600;"><i class="fa-solid fa-shield-halved" style="color:#10b981;"></i> Mode Baca In-App (Aman Anti-Cheat)</span>
+                        <button type="button" style="padding:4px 10px; font-size:0.75rem; background:#334155; color:#38bdf8; border:1px solid #475569; border-radius:6px; cursor:pointer;" onclick="document.getElementById('cbt-pdf-frame').src='${viewerGoogle}'"><i class="fa-solid fa-rotate"></i> Muat Ulang</button>
+                    </div>
+                    <iframe id="cbt-pdf-frame" src="${viewerGoogle}" style="width:100%; height:100%; border:none; background:#ffffff;" title="Preview PDF" allow="fullscreen"></iframe>
                 </div>
             `,
-            width: '850px',
+            width: '920px',
             showCloseButton: true,
             showConfirmButton: false
         });
