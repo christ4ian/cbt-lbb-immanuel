@@ -783,42 +783,61 @@ const app = {
                 if (Array.isArray(jwb.images)) {
                     imgList = jwb.images;
                 } else if (jwb.imageUrl) {
-                    imgList = [{ url: jwb.imageUrl, publicId: jwb.publicId || '' }];
+                    imgList = [{ url: jwb.imageUrl, publicId: jwb.publicId || '', type: 'image' }];
                 }
             }
 
             let cardsHtml = '';
             if (imgList.length > 0) {
-                cardsHtml += `<div class="esai-gallery-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:15px; margin-top:15px;">`;
+                cardsHtml += `<div class="esai-gallery-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:15px; margin-top:15px;">`;
                 imgList.forEach((img, fIdx) => {
-                    cardsHtml += `
-                        <div class="esai-card" style="background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px; position:relative; box-shadow:0 2px 4px rgba(0,0,0,0.04);">
-                            <div style="font-weight:700; font-size:0.85rem; color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
-                                <span><i class="fa-solid fa-file-image"></i> Lembar ${fIdx + 1}</span>
-                                <button type="button" onclick="app.hapusFotoEsai(${index}, ${fIdx})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:2px 6px; font-size:0.9rem;" title="Hapus foto ini"><i class="fa-solid fa-trash-can"></i></button>
+                    const isPdf = img.type === 'pdf' || (img.url && img.url.toLowerCase().includes('.pdf'));
+                    if (isPdf) {
+                        cardsHtml += `
+                            <div class="esai-card" style="background:#fef2f2; border:2px solid #fecaca; border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; position:relative; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+                                <div style="font-weight:700; font-size:0.85rem; color:#b91c1c; display:flex; justify-content:space-between; align-items:center;">
+                                    <span><i class="fa-solid fa-file-pdf"></i> Dokumen PDF ${fIdx + 1}</span>
+                                    <button type="button" onclick="app.hapusFotoEsai(${index}, ${fIdx})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:2px 6px; font-size:0.95rem;" title="Hapus berkas ini"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
+                                <div style="width:100%; height:120px; border-radius:8px; background:#fee2e2; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; gap:6px; padding:10px; text-align:center;" onclick="app.previewPdfEsai('${img.url}', 'Dokumen PDF Lembar Jawaban')">
+                                    <i class="fa-solid fa-file-pdf" style="font-size:2.8rem; color:#dc2626;"></i>
+                                    <span style="font-size:0.75rem; color:#7f1d1d; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;">${img.name || 'Dokumen Lembar Jawaban.pdf'}</span>
+                                </div>
+                                <button type="button" class="btn btn-outline" style="width:100%; padding:6px; font-size:0.8rem; border-color:#f87171; color:#dc2626; background:white; font-weight:700; border-radius:6px;" onclick="app.previewPdfEsai('${img.url}', 'Dokumen PDF Lembar Jawaban')">
+                                    <i class="fa-solid fa-eye"></i> Baca Dokumen PDF
+                                </button>
                             </div>
-                            <div style="width:100%; height:140px; border-radius:8px; overflow:hidden; background:#e2e8f0; cursor:pointer; position:relative;" onclick="app.previewFotoEsai('${img.url}', 'Lembar ${fIdx + 1}')">
-                                <img src="${img.url}" alt="Lembar ${fIdx + 1}" style="width:100%; height:100%; object-fit:cover; display:block;">
-                                <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); color:white; font-size:0.75rem; text-align:center; padding:3px;"><i class="fa-solid fa-magnifying-glass-plus"></i> Klik Perbesar</div>
+                        `;
+                    } else {
+                        cardsHtml += `
+                            <div class="esai-card" style="background:#f8fafc; border:2px solid #e2e8f0; border-radius:14px; padding:10px; display:flex; flex-direction:column; gap:8px; position:relative; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+                                <div style="font-weight:700; font-size:0.85rem; color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
+                                    <span><i class="fa-solid fa-file-image"></i> Lembar Foto ${fIdx + 1}</span>
+                                    <button type="button" onclick="app.hapusFotoEsai(${index}, ${fIdx})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:2px 6px; font-size:0.95rem;" title="Hapus foto ini"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
+                                <div style="width:100%; height:130px; border-radius:8px; overflow:hidden; background:#e2e8f0; cursor:pointer; position:relative;" onclick="app.previewFotoEsai('${img.url}', 'Lembar Foto ${fIdx + 1}')">
+                                    <img src="${img.url}" alt="Lembar ${fIdx + 1}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                    <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.65); color:white; font-size:0.75rem; text-align:center; padding:4px;"><i class="fa-solid fa-magnifying-glass-plus"></i> Perbesar Foto</div>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
                 });
                 cardsHtml += `</div>`;
 
                 html += `
-                    <div class="esai-answer-container" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:14px; padding:20px; margin-top:20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
+                    <div class="esai-answer-container" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-top:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:14px;">
                             <div>
-                                <span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:6px 12px; border-radius:20px; font-size:0.85rem;">
-                                    <i class="fa-solid fa-circle-check"></i> ${imgList.length} Lembar Jawaban Terunggah
+                                <span class="badge" style="background:#dcfce7; color:#15803d; font-weight:800; padding:8px 14px; border-radius:30px; font-size:0.88rem; display:inline-flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-circle-check"></i> ${imgList.length} Berkas Lembar Jawaban Terunggah
                                 </span>
                             </div>
                             <div style="display:flex; gap:8px;">
-                                <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-add-${index}').click()" style="padding:8px 14px; font-size:0.85rem;">
-                                    <i class="fa-solid fa-plus"></i> Tambah Foto Lembar Lain
+                                <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-add-${index}').click()" style="padding:8px 16px; font-size:0.85rem; font-weight:700; border-radius:8px; display:inline-flex; align-items:center; gap:6px;">
+                                    <i class="fa-solid fa-plus"></i> Tambah Foto / PDF Lain
                                 </button>
-                                <input type="file" id="input-esai-add-${index}" accept="image/*" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
+                                <input type="file" id="input-esai-add-${index}" accept="image/*,application/pdf" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
                             </div>
                         </div>
                         ${cardsHtml}
@@ -826,23 +845,23 @@ const app = {
                 `;
             } else {
                 html += `
-                    <div class="esai-upload-zone" style="background:#f8fafc; border:2px dashed #94a3b8; border-radius:16px; padding:35px 20px; margin-top:25px; text-align:center; transition:all 0.2s ease;">
-                        <div style="width:64px; height:64px; background:#e0f2fe; color:var(--primary); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:15px;">
-                            <i class="fa-solid fa-camera"></i>
+                    <div class="esai-upload-zone" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 2px dashed #94a3b8; border-radius: 20px; padding: 35px 20px; margin-top: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: all 0.25s ease;">
+                        <div style="display:inline-flex; align-items:center; justify-content:center; width:68px; height:68px; background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color:white; border-radius:50%; font-size:1.8rem; margin-bottom:15px; box-shadow:0 8px 16px rgba(37,99,235,0.25);">
+                            <i class="fa-solid fa-file-arrow-up"></i>
                         </div>
-                        <h4 style="font-size:1.15rem; font-weight:800; color:var(--text-dark); margin-bottom:6px;">Unggah Lembar Jawaban Tulisan Tangan</h4>
-                        <p style="font-size:0.9rem; color:var(--text-muted); max-width:500px; margin:0 auto 20px auto;">
-                            Tuliskan jawaban Anda di kertas, lalu ambil foto menggunakan kamera HP atau pilih dari berkas galeri. (Bisa memilih lebih dari 1 foto sekaligus).
+                        <h4 style="font-size:1.2rem; font-weight:800; color:#0f172a; margin-bottom:6px;">Unggah Lembar Jawaban Tulisan Tangan</h4>
+                        <p style="font-size:0.9rem; color:#64748b; max-width:520px; margin:0 auto 20px auto; line-height:1.5;">
+                            Tuliskan jawaban Anda di kertas lalu ambil foto menggunakan kamera HP atau unggah berkas dokumen PDF. (Bisa memilih lebih dari 1 foto sekaligus).
                         </p>
                         <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-                            <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-${index}').click()" style="padding:12px 22px; font-size:0.95rem; font-weight:700; border-radius:10px;">
-                                <i class="fa-solid fa-images"></i> Pilih Foto dari Perangkat
+                            <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-${index}').click()" style="padding:12px 20px; font-size:0.92rem; font-weight:700; border-radius:10px; display:inline-flex; align-items:center; gap:8px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+                                <i class="fa-solid fa-folder-open"></i> Pilih Berkas Foto / PDF
                             </button>
-                            <button type="button" class="btn btn-outline" onclick="document.getElementById('input-esai-cam-${index}').click()" style="padding:12px 22px; font-size:0.95rem; font-weight:700; border-radius:10px; border-color:var(--primary); color:var(--primary); background:white;">
+                            <button type="button" class="btn btn-outline" onclick="document.getElementById('input-esai-cam-${index}').click()" style="padding:12px 20px; font-size:0.92rem; font-weight:700; border-radius:10px; border:2px solid #2563eb; color:#2563eb; background:white; display:inline-flex; align-items:center; gap:8px;">
                                 <i class="fa-solid fa-camera"></i> Buka Kamera Langsung
                             </button>
                         </div>
-                        <input type="file" id="input-esai-${index}" accept="image/*" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
+                        <input type="file" id="input-esai-${index}" accept="image/*,application/pdf" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
                         <input type="file" id="input-esai-cam-${index}" accept="image/*" capture="environment" style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
                     </div>
                 `;
@@ -878,8 +897,8 @@ const app = {
         if (!files || files.length === 0) return;
 
         Swal.fire({
-            title: `Mengunggah ${files.length} Lembar Jawaban...`,
-            html: `<div style="margin-top:10px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2.2rem; color:var(--primary);"></i><p style="margin-top:12px; font-size:0.9rem; color:#64748b;">Mengompresi dan mengunggah foto ke Cloudinary...</p></div>`,
+            title: `Mengunggah ${files.length} Berkas Jawaban...`,
+            html: `<div style="margin-top:10px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2.4rem; color:#2563eb;"></i><p style="margin-top:12px; font-size:0.9rem; color:#64748b;">Mengompresi & mengunggah lembar jawaban ke Cloudinary...</p></div>`,
             allowOutsideClick: false,
             showConfirmButton: false
         });
@@ -888,13 +907,25 @@ const app = {
             let uploadedList = [];
             for (let i = 0; i < files.length; i++) {
                 const f = files[i];
-                const compressedBlob = await compressImageClient(f);
+                const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+
+                let fileToUpload;
+                let uploadEndpoint;
+
+                if (isPdf) {
+                    fileToUpload = f;
+                    uploadEndpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/auto/upload`;
+                } else {
+                    fileToUpload = await compressImageClient(f);
+                    uploadEndpoint = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`;
+                }
                 
                 const formData = new FormData();
-                formData.append('file', compressedBlob, `esai_${this.sessionId || 'siswa'}_soal_${index + 1}_${Date.now()}_${i}.jpg`);
+                const safeFileName = `esai_${this.sessionId || 'siswa'}_soal_${index + 1}_${Date.now()}_${i}.${isPdf ? 'pdf' : 'jpg'}`;
+                formData.append('file', fileToUpload, safeFileName);
                 formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
 
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {
+                const res = await fetch(uploadEndpoint, {
                     method: 'POST',
                     body: formData
                 });
@@ -904,10 +935,12 @@ const app = {
                     uploadedList.push({
                         url: data.secure_url,
                         publicId: data.public_id || '',
+                        type: isPdf ? 'pdf' : 'image',
+                        name: f.name || (isPdf ? 'Dokumen PDF' : `Lembar ${i + 1}`),
                         uploadedAt: Date.now()
                     });
                 } else {
-                    throw new Error(data.error?.message || 'Gagal mengunggah foto ke Cloudinary.');
+                    throw new Error(data.error?.message || 'Gagal mengunggah berkas ke Cloudinary.');
                 }
             }
 
@@ -915,7 +948,7 @@ const app = {
             let existingImages = [];
             if (cur && typeof cur === 'object') {
                 if (Array.isArray(cur.images)) existingImages = [...cur.images];
-                else if (cur.imageUrl) existingImages = [{ url: cur.imageUrl, publicId: cur.publicId || '' }];
+                else if (cur.imageUrl) existingImages = [{ url: cur.imageUrl, publicId: cur.publicId || '', type: 'image' }];
             }
 
             existingImages.push(...uploadedList);
@@ -935,7 +968,7 @@ const app = {
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil!',
-                text: `${uploadedList.length} foto lembar jawaban berhasil diunggah.`,
+                text: `${uploadedList.length} berkas lembar jawaban berhasil diunggah.`,
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -947,17 +980,18 @@ const app = {
 
     hapusFotoEsai: function(soalIdx, fotoIdx) {
         Swal.fire({
-            title: 'Hapus Foto Ini?',
-            text: `Lembar foto ${fotoIdx + 1} akan dihapus dari jawaban Anda.`,
+            title: 'Hapus Berkas Ini?',
+            text: `Lembar jawaban ${fotoIdx + 1} akan dihapus dari jawaban Anda.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            confirmButtonText: 'Ya, Hapus'
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal'
         }).then(res => {
             if (res.isConfirmed) {
                 let cur = this.answers[soalIdx];
                 if (cur && typeof cur === 'object') {
-                    let list = Array.isArray(cur.images) ? [...cur.images] : (cur.imageUrl ? [{ url: cur.imageUrl }] : []);
+                    let list = Array.isArray(cur.images) ? [...cur.images] : (cur.imageUrl ? [{ url: cur.imageUrl, type: 'image' }] : []);
                     list.splice(fotoIdx, 1);
                     if (list.length > 0) {
                         this.answers[soalIdx] = {
@@ -971,7 +1005,7 @@ const app = {
                     this.saveRealtime();
                     this.renderSoal(soalIdx);
                     this.updateGrid();
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Foto terhapus', timer: 1500, showConfirmButton: false });
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Berkas terhapus', timer: 1500, showConfirmButton: false });
                 }
             }
         });
@@ -983,17 +1017,30 @@ const app = {
         Swal.fire({
             title: title,
             html: `
-                <div style="overflow:hidden; max-height:65vh; display:flex; justify-content:center; align-items:center; background:#0f172a; border-radius:10px; padding:10px; position:relative;">
+                <div style="overflow:hidden; max-height:65vh; display:flex; justify-content:center; align-items:center; background:#0f172a; border-radius:12px; padding:12px; position:relative;">
                     <img id="swal-preview-img" src="${url}" style="max-width:100%; max-height:60vh; object-fit:contain; transition:transform 0.2s ease; transform:rotate(0deg) scale(1);">
                 </div>
                 <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; flex-wrap:wrap;">
                     <button type="button" class="btn btn-outline" onclick="(() => { rotation = (rotation + 90) % 360; document.getElementById('swal-preview-img').style.transform = 'rotate(' + rotation + 'deg) scale(' + zoomLevel + ')'; })()"><i class="fa-solid fa-rotate-right"></i> Putar 90°</button>
                     <button type="button" class="btn btn-outline" onclick="(() => { zoomLevel = Math.min(zoomLevel + 0.25, 3); document.getElementById('swal-preview-img').style.transform = 'rotate(' + rotation + 'deg) scale(' + zoomLevel + ')'; })()"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom In</button>
                     <button type="button" class="btn btn-outline" onclick="(() => { zoomLevel = Math.max(zoomLevel - 0.25, 0.5); document.getElementById('swal-preview-img').style.transform = 'rotate(' + rotation + 'deg) scale(' + zoomLevel + ')'; })()"><i class="fa-solid fa-magnifying-glass-minus"></i> Zoom Out</button>
-                    <a href="${url}" target="_blank" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Tab Baru</a>
                 </div>
             `,
             width: '800px',
+            showCloseButton: true,
+            showConfirmButton: false
+        });
+    },
+
+    previewPdfEsai: function(url, title = 'Dokumen PDF Lembar Jawaban') {
+        Swal.fire({
+            title: title,
+            html: `
+                <div style="width:100%; height:70vh; background:#1e293b; border-radius:12px; overflow:hidden;">
+                    <iframe src="${url}#toolbar=0" style="width:100%; height:100%; border:none;" title="Preview PDF"></iframe>
+                </div>
+            `,
+            width: '850px',
             showCloseButton: true,
             showConfirmButton: false
         });
@@ -1484,15 +1531,31 @@ const app = {
             labelPeringkat.innerText = isWaktuTutupLewat ? "Ranking Anda" : "Peringkat Sementara";
         }
 
-        // 1. ATUR SKOR AKHIR
+        // 1. ATUR SKOR AKHIR & PESAN STATUS KOREKSI
         const divSkor = document.getElementById('hasil-skor');
-        if (!priv.lihat_skor) {
+        const isTundaSkor = this.currentPaket.tunda_skor === true || (Array.isArray(detailJawaban) && detailJawaban.includes('MENUNGGU_KOREKSI'));
+
+        // Bersihkan notifikasi skor tunda lama jika ada
+        const oldMsgTunda = document.getElementById('msg-skor-tunda');
+        if (oldMsgTunda) oldMsgTunda.remove();
+        const oldMsgLock = document.getElementById('msg-skor-lock');
+        if (oldMsgLock) oldMsgLock.remove();
+
+        if (isTundaSkor && !this.userData.isAdmin) {
+            divSkor.innerHTML = '<span style="font-size:1.6rem; color:#b45309; font-weight:800;"><i class="fa-solid fa-hourglass-half fa-spin"></i> Menunggu Penilaian</span>';
+            divSkor.insertAdjacentHTML('afterend', `
+                <div id="msg-skor-tunda" style="background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:15px; border-radius:12px; margin-top:14px; font-size:0.9rem; line-height:1.5; text-align:left;">
+                    <div style="font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:4px; color:#b45309;">
+                        <i class="fa-solid fa-circle-info"></i> Jawaban Berhasil Dikumpulkan
+                    </div>
+                    Lembar kerja Anda telah tersimpan dengan aman di server. Skor akhir & nilai resmi akan dirilis setelah guru menyelesaikan proses koreksi manual.
+                </div>
+            `);
+        } else if (!priv.lihat_skor) {
             divSkor.innerHTML = '<i class="fa-solid fa-lock"></i>';
             divSkor.style.fontSize = '3.5rem';
             divSkor.style.color = '#94a3b8';
-            if (!document.getElementById('msg-skor-lock')) {
-                divSkor.insertAdjacentHTML('afterend', '<div id="msg-skor-lock" style="font-size:0.85rem; color:#ef4444; margin-top:10px; font-weight:bold;">Skor disembunyikan karena pengaturan hak akses Role Anda.</div>');
-            }
+            divSkor.insertAdjacentHTML('afterend', '<div id="msg-skor-lock" style="font-size:0.85rem; color:#ef4444; margin-top:10px; font-weight:bold;">Skor disembunyikan karena pengaturan hak akses Role Anda.</div>');
         } else {
             divSkor.innerText = skor;
         }
@@ -1618,22 +1681,26 @@ const app = {
                     let imgList = [];
                     if (jwb && typeof jwb === 'object') {
                         if (Array.isArray(jwb.images)) imgList = jwb.images;
-                        else if (jwb.imageUrl) imgList = [{ url: jwb.imageUrl }];
+                        else if (jwb.imageUrl) imgList = [{ url: jwb.imageUrl, type: 'image' }];
                     }
                     if (imgList.length > 0) {
-                        jwbStr = `<span style="color:#059669; font-weight:bold;"><i class="fa-solid fa-file-image"></i> ${imgList.length} Lembar Foto Diunggah</span>`;
+                        const hasPdf = imgList.some(item => item.type === 'pdf' || (item.url && item.url.toLowerCase().includes('.pdf')));
+                        if (hasPdf) {
+                            jwbStr = `<span style="color:#dc2626; font-weight:bold;"><i class="fa-solid fa-file-pdf"></i> Dokumen PDF Terunggah (${imgList.length} Berkas)</span>`;
+                        } else {
+                            jwbStr = `<span style="color:#059669; font-weight:bold;"><i class="fa-solid fa-images"></i> ${imgList.length} Lembar Foto Diunggah</span>`;
+                        }
                         if (jwb.nilai_esai !== null && jwb.nilai_esai !== undefined) {
-                            jwbStr += `<br><span style="font-size:0.8rem; color:#64748b;">Nilai Esai: <b>${jwb.nilai_esai}</b> / ${soal.poin || 10}</span>`;
+                            jwbStr += `<br><span style="font-size:0.8rem; color:#15803d; font-weight:700;">Nilai Koreksi: <b>${jwb.nilai_esai}</b> / ${soal.poin || 10}</span>`;
                             if (jwb.catatan_guru) {
-                                jwbStr += `<br><span style="font-size:0.75rem; color:#475569; font-style:italic;">Catatan: "${jwb.catatan_guru}"</span>`;
+                                jwbStr += `<br><span style="font-size:0.75rem; color:#475569; font-style:italic;">Catatan Guru: "${jwb.catatan_guru}"</span>`;
                             }
                         }
                     } else {
-                        jwbStr = '<span style="color:#ef4444; font-style:italic;">Tidak mengunggah lembar foto</span>';
+                        jwbStr = '<span style="color:#ef4444; font-style:italic;">Tidak mengunggah lembar jawaban</span>';
                     }
                 }
             } else if (soal.tipe === 'isian') {
-                // Handle the case where jwb is undefined but we still want to show all blanks as 'Kosong'
                 let lines = [];
                 let totalBlank = soal.opsi ? soal.opsi.length : 0;
                 for (let b = 0; b < totalBlank; b++) {
@@ -1642,8 +1709,19 @@ const app = {
                 if (lines.length > 0) jwbStr = lines.join('; ');
             }
 
-            let color = stat === 'BENAR' ? '#166534' : (stat === 'KOSONG' ? '#475569' : (stat === 'MENUNGGU_KOREKSI' ? '#854d0e' : (stat === 'SEBAGIAN' ? '#0369a1' : '#991b1b')));
-            let bg = stat === 'BENAR' ? '#dcfce7' : (stat === 'KOSONG' ? '#f1f5f9' : (stat === 'MENUNGGU_KOREKSI' ? '#fef9c3' : (stat === 'SEBAGIAN' ? '#e0f2fe' : '#fee2e2')));
+            let badgeHtml = '';
+            if (stat === 'BENAR') {
+                badgeHtml = `<span style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check"></i> Benar</span>`;
+            } else if (stat === 'SALAH') {
+                badgeHtml = `<span style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-xmark"></i> Salah</span>`;
+            } else if (stat === 'SEBAGIAN') {
+                badgeHtml = `<span style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-star-half-stroke"></i> Sebagian</span>`;
+            } else if (stat === 'MENUNGGU_KOREKSI') {
+                badgeHtml = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-clock-rotate-left"></i> Menunggu Koreksi Guru</span>`;
+            } else {
+                badgeHtml = `<span style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1; padding:4px 10px; border-radius:20px; font-weight:700; font-size:0.75rem;">Kosong</span>`;
+            }
+
             let bobotSoal = soal.poin || 1;
 
             tHTML += `<tr>
@@ -1651,7 +1729,7 @@ const app = {
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; word-break: break-word;">${jwbStr}</td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center; font-weight:bold; color:#64748b;">${bobotSoal}</td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-align:center;">
-                    <span style="background:${bg}; color:${color}; padding:6px 10px; border-radius:6px; font-weight:bold; font-size:0.75rem;">${stat}</span>
+                    ${badgeHtml}
                 </td>
             </tr>`;
         });
