@@ -23,6 +23,48 @@ const firebaseConfig = {
 // URL SCRIPT GOOGLE
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKBR9C0h9unHOU8PcQSLN3u26wyqt6ft7UYoZxhNBdkSwguLvQc5iACpODWFn8kU_ltg/exec";
 
+// CONFIG CLOUDINARY UNTUK SOAL ESAI (UNSIGNED UPLOAD)
+const CLOUDINARY_CONFIG = {
+    cloudName: "z3dyeir1",
+    uploadPreset: "CBT-Esai"
+};
+
+// HELPER: Kompresi Gambar Client-side via Canvas (menghemat kuota & upload super cepat)
+function compressImageClient(file, maxDimension = 1600, quality = 0.8) {
+    return new Promise((resolve) => {
+        if (!file.type.startsWith('image/')) return resolve(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    resolve(blob || file);
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = () => resolve(file);
+            img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+    });
+}
+
 const ADMIN_EMAIL = "admin@lbbimmanuel.com";
 
 // Init Firebase
@@ -705,7 +747,76 @@ const app = {
                             </td>
                         </tr>`;
             });
-            html += `</tbody></table>`;
+        } else if (data.tipe === 'esai') {
+            let imgList = [];
+            if (jwb && typeof jwb === 'object') {
+                if (Array.isArray(jwb.images)) {
+                    imgList = jwb.images;
+                } else if (jwb.imageUrl) {
+                    imgList = [{ url: jwb.imageUrl, publicId: jwb.publicId || '' }];
+                }
+            }
+
+            let cardsHtml = '';
+            if (imgList.length > 0) {
+                cardsHtml += `<div class="esai-gallery-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:15px; margin-top:15px;">`;
+                imgList.forEach((img, fIdx) => {
+                    cardsHtml += `
+                        <div class="esai-card" style="background:#f8fafc; border:2px solid #e2e8f0; border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px; position:relative; box-shadow:0 2px 4px rgba(0,0,0,0.04);">
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--primary); display:flex; justify-content:space-between; align-items:center;">
+                                <span><i class="fa-solid fa-file-image"></i> Lembar ${fIdx + 1}</span>
+                                <button type="button" onclick="app.hapusFotoEsai(${index}, ${fIdx})" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:2px 6px; font-size:0.9rem;" title="Hapus foto ini"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                            <div style="width:100%; height:140px; border-radius:8px; overflow:hidden; background:#e2e8f0; cursor:pointer; position:relative;" onclick="app.previewFotoEsai('${img.url}', 'Lembar ${fIdx + 1}')">
+                                <img src="${img.url}" alt="Lembar ${fIdx + 1}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                <div style="position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,0.6); color:white; font-size:0.75rem; text-align:center; padding:3px;"><i class="fa-solid fa-magnifying-glass-plus"></i> Klik Perbesar</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                cardsHtml += `</div>`;
+
+                html += `
+                    <div class="esai-answer-container" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:14px; padding:20px; margin-top:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
+                            <div>
+                                <span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700; padding:6px 12px; border-radius:20px; font-size:0.85rem;">
+                                    <i class="fa-solid fa-circle-check"></i> ${imgList.length} Lembar Jawaban Terunggah
+                                </span>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-add-${index}').click()" style="padding:8px 14px; font-size:0.85rem;">
+                                    <i class="fa-solid fa-plus"></i> Tambah Foto Lembar Lain
+                                </button>
+                                <input type="file" id="input-esai-add-${index}" accept="image/*" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
+                            </div>
+                        </div>
+                        ${cardsHtml}
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="esai-upload-zone" style="background:#f8fafc; border:2px dashed #94a3b8; border-radius:16px; padding:35px 20px; margin-top:25px; text-align:center; transition:all 0.2s ease;">
+                        <div style="width:64px; height:64px; background:#e0f2fe; color:var(--primary); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:1.8rem; margin-bottom:15px;">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <h4 style="font-size:1.15rem; font-weight:800; color:var(--text-dark); margin-bottom:6px;">Unggah Lembar Jawaban Tulisan Tangan</h4>
+                        <p style="font-size:0.9rem; color:var(--text-muted); max-width:500px; margin:0 auto 20px auto;">
+                            Tuliskan jawaban Anda di kertas, lalu ambil foto menggunakan kamera HP atau pilih dari berkas galeri. (Bisa memilih lebih dari 1 foto sekaligus).
+                        </p>
+                        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+                            <button type="button" class="btn btn-primary" onclick="document.getElementById('input-esai-${index}').click()" style="padding:12px 22px; font-size:0.95rem; font-weight:700; border-radius:10px;">
+                                <i class="fa-solid fa-images"></i> Pilih Foto dari Perangkat
+                            </button>
+                            <button type="button" class="btn btn-outline" onclick="document.getElementById('input-esai-cam-${index}').click()" style="padding:12px 22px; font-size:0.95rem; font-weight:700; border-radius:10px; border-color:var(--primary); color:var(--primary); background:white;">
+                                <i class="fa-solid fa-camera"></i> Buka Kamera Langsung
+                            </button>
+                        </div>
+                        <input type="file" id="input-esai-${index}" accept="image/*" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
+                        <input type="file" id="input-esai-cam-${index}" accept="image/*" capture="environment" style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
+                    </div>
+                `;
+            }
         }
 
         pSoal.innerHTML = html;
@@ -724,6 +835,138 @@ const app = {
         document.getElementById('check-ragu').checked = this.ragu[index] || false;
         this.updateGrid();
         this.updateNavButtons(index);
+    },
+
+    handleEsaiFileSelect: async function(input, index) {
+        if (!input.files || input.files.length === 0) return;
+        const files = Array.from(input.files);
+        input.value = '';
+        await this.uploadJawabanEsai(files, index);
+    },
+
+    uploadJawabanEsai: async function(files, index) {
+        if (!files || files.length === 0) return;
+
+        Swal.fire({
+            title: `Mengunggah ${files.length} Lembar Jawaban...`,
+            html: `<div style="margin-top:10px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2.2rem; color:var(--primary);"></i><p style="margin-top:12px; font-size:0.9rem; color:#64748b;">Mengompresi dan mengunggah foto ke Cloudinary...</p></div>`,
+            allowOutsideClick: false,
+            showConfirmButton: false
+        });
+
+        try {
+            let uploadedList = [];
+            for (let i = 0; i < files.length; i++) {
+                const f = files[i];
+                const compressedBlob = await compressImageClient(f);
+                
+                const formData = new FormData();
+                formData.append('file', compressedBlob, `esai_${this.sessionId || 'siswa'}_soal_${index + 1}_${Date.now()}_${i}.jpg`);
+                formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+                if (data.secure_url) {
+                    uploadedList.push({
+                        url: data.secure_url,
+                        publicId: data.public_id || '',
+                        uploadedAt: Date.now()
+                    });
+                } else {
+                    throw new Error(data.error?.message || 'Gagal mengunggah foto ke Cloudinary.');
+                }
+            }
+
+            let cur = this.answers[index];
+            let existingImages = [];
+            if (cur && typeof cur === 'object') {
+                if (Array.isArray(cur.images)) existingImages = [...cur.images];
+                else if (cur.imageUrl) existingImages = [{ url: cur.imageUrl, publicId: cur.publicId || '' }];
+            }
+
+            existingImages.push(...uploadedList);
+
+            this.answers[index] = {
+                tipe: 'esai',
+                images: existingImages,
+                imageUrl: existingImages[0]?.url || '',
+                nilai_esai: (cur && cur.nilai_esai !== undefined) ? cur.nilai_esai : null,
+                catatan_guru: (cur && cur.catatan_guru) ? cur.catatan_guru : ''
+            };
+
+            this.saveRealtime();
+            this.renderSoal(index);
+            this.updateGrid();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: `${uploadedList.length} foto lembar jawaban berhasil diunggah.`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } catch (err) {
+            console.error("Cloudinary Upload Error:", err);
+            Swal.fire('Gagal Upload', 'Terjadi kesalahan saat mengunggah: ' + err.message, 'error');
+        }
+    },
+
+    hapusFotoEsai: function(soalIdx, fotoIdx) {
+        Swal.fire({
+            title: 'Hapus Foto Ini?',
+            text: `Lembar foto ${fotoIdx + 1} akan dihapus dari jawaban Anda.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Ya, Hapus'
+        }).then(res => {
+            if (res.isConfirmed) {
+                let cur = this.answers[soalIdx];
+                if (cur && typeof cur === 'object') {
+                    let list = Array.isArray(cur.images) ? [...cur.images] : (cur.imageUrl ? [{ url: cur.imageUrl }] : []);
+                    list.splice(fotoIdx, 1);
+                    if (list.length > 0) {
+                        this.answers[soalIdx] = {
+                            ...cur,
+                            images: list,
+                            imageUrl: list[0].url
+                        };
+                    } else {
+                        delete this.answers[soalIdx];
+                    }
+                    this.saveRealtime();
+                    this.renderSoal(soalIdx);
+                    this.updateGrid();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Foto terhapus', timer: 1500, showConfirmButton: false });
+                }
+            }
+        });
+    },
+
+    previewFotoEsai: function(url, title = 'Lembar Jawaban') {
+        let rotation = 0;
+        let zoomLevel = 1;
+        Swal.fire({
+            title: title,
+            html: `
+                <div style="overflow:hidden; max-height:65vh; display:flex; justify-content:center; align-items:center; background:#0f172a; border-radius:10px; padding:10px; position:relative;">
+                    <img id="swal-preview-img" src="${url}" style="max-width:100%; max-height:60vh; object-fit:contain; transition:transform 0.2s ease; transform:rotate(0deg) scale(1);">
+                </div>
+                <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-outline" onclick="(() => { rotation = (rotation + 90) % 360; document.getElementById('swal-preview-img').style.transform = 'rotate(' + rotation + 'deg) scale(' + zoomLevel + ')'; })()"><i class="fa-solid fa-rotate-right"></i> Putar 90°</button>
+                    <button type="button" class="btn btn-outline" onclick="(() => { zoomLevel = Math.min(zoomLevel + 0.25, 3); document.getElementById('swal-preview-img').style.transform = 'rotate(' + rotation + 'deg) scale(' + zoomLevel + ')'; })()"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom In</button>
+                    <button type="button" class="btn btn-outline" onclick="(() => { zoomLevel = Math.max(zoomLevel - 0.25, 0.5); document.getElementById('swal-preview-img').style.transform = 'rotate(' + rotation + 'deg) scale(' + zoomLevel + ')'; })()"><i class="fa-solid fa-magnifying-glass-minus"></i> Zoom Out</button>
+                    <a href="${url}" target="_blank" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Tab Baru</a>
+                </div>
+            `,
+            width: '800px',
+            showCloseButton: true,
+            showConfirmButton: false
+        });
     },
 
     applyDragScrollToMath: function (container) {
@@ -860,7 +1103,11 @@ const app = {
         this.currentPaket.soal.forEach((_, i) => {
             let cls = '';
             const ans = this.answers[i];
-            const isAns = ans && ((Array.isArray(ans) && ans.length > 0) || (typeof ans === 'object' && Object.keys(ans).length > 0) || (typeof ans === 'string'));
+            const isAns = ans && (
+                (Array.isArray(ans) && ans.length > 0) || 
+                (typeof ans === 'object' && ((ans.images && ans.images.length > 0) || ans.imageUrl || Object.keys(ans).length > 0)) || 
+                (typeof ans === 'string' && ans.length > 0)
+            );
             if (i === this.currentIndex) cls += ' current';
             if (isAns) cls += ' answered';
             if (this.ragu[i]) cls += ' ragu';
@@ -964,6 +1211,21 @@ const app = {
                 }
 
                 if (isPerfect) status = "BENAR";
+            } else if (soal.tipe === 'esai') {
+                const imgList = (jwb && Array.isArray(jwb.images)) ? jwb.images : (jwb && jwb.imageUrl ? [{ url: jwb.imageUrl }] : []);
+                if (imgList.length > 0) {
+                    if (jwb.nilai_esai !== null && jwb.nilai_esai !== undefined) {
+                        let nVal = parseFloat(jwb.nilai_esai) || 0;
+                        if (isSistemPoin) totalPoinDiperoleh += nVal;
+                        if (nVal >= poinMaksSoalIni) status = "BENAR";
+                        else if (nVal > 0) status = "SEBAGIAN";
+                        else status = "SALAH";
+                    } else {
+                        status = "MENUNGGU_KOREKSI";
+                    }
+                } else {
+                    status = "KOSONG";
+                }
             }
 
             if (status === "BENAR") {
@@ -1322,6 +1584,23 @@ const app = {
                     }
                     if (lines.length > 0) jwbStr = lines.join('; ');
                     if (!anyAnswer) jwbStr = '<span style="color:#ef4444; font-style:italic;">Tidak dijawab</span>';
+                } else if (soal.tipe === 'esai') {
+                    let imgList = [];
+                    if (jwb && typeof jwb === 'object') {
+                        if (Array.isArray(jwb.images)) imgList = jwb.images;
+                        else if (jwb.imageUrl) imgList = [{ url: jwb.imageUrl }];
+                    }
+                    if (imgList.length > 0) {
+                        jwbStr = `<span style="color:#059669; font-weight:bold;"><i class="fa-solid fa-file-image"></i> ${imgList.length} Lembar Foto Diunggah</span>`;
+                        if (jwb.nilai_esai !== null && jwb.nilai_esai !== undefined) {
+                            jwbStr += `<br><span style="font-size:0.8rem; color:#64748b;">Nilai Esai: <b>${jwb.nilai_esai}</b> / ${soal.poin || 10}</span>`;
+                            if (jwb.catatan_guru) {
+                                jwbStr += `<br><span style="font-size:0.75rem; color:#475569; font-style:italic;">Catatan: "${jwb.catatan_guru}"</span>`;
+                            }
+                        }
+                    } else {
+                        jwbStr = '<span style="color:#ef4444; font-style:italic;">Tidak mengunggah lembar foto</span>';
+                    }
                 }
             } else if (soal.tipe === 'isian') {
                 // Handle the case where jwb is undefined but we still want to show all blanks as 'Kosong'
@@ -1333,8 +1612,8 @@ const app = {
                 if (lines.length > 0) jwbStr = lines.join('; ');
             }
 
-            let color = stat === 'BENAR' ? '#166534' : (stat === 'KOSONG' ? '#475569' : '#991b1b');
-            let bg = stat === 'BENAR' ? '#dcfce7' : (stat === 'KOSONG' ? '#f1f5f9' : '#fee2e2');
+            let color = stat === 'BENAR' ? '#166534' : (stat === 'KOSONG' ? '#475569' : (stat === 'MENUNGGU_KOREKSI' ? '#854d0e' : (stat === 'SEBAGIAN' ? '#0369a1' : '#991b1b')));
+            let bg = stat === 'BENAR' ? '#dcfce7' : (stat === 'KOSONG' ? '#f1f5f9' : (stat === 'MENUNGGU_KOREKSI' ? '#fef9c3' : (stat === 'SEBAGIAN' ? '#e0f2fe' : '#fee2e2')));
             let bobotSoal = soal.poin || 1;
 
             tHTML += `<tr>

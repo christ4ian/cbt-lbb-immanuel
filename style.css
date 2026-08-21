@@ -1544,3 +1544,48 @@ body.swal2-shown {
     padding-right: 0 !important;
     overflow: hidden !important; /* Biar background nggak ketarik */
 }
+
+/* ========================================= */
+/* CSS KHUSUS SOAL ESAI (UPLOAD LEMBAR KERJA)*/
+/* ========================================= */
+.esai-upload-zone {
+    background: #f8fafc;
+    border: 2px dashed #94a3b8;
+    border-radius: 16px;
+    padding: 30px 20px;
+    margin-top: 25px;
+    text-align: center;
+    transition: all 0.25s ease;
+}
+.esai-upload-zone:hover {
+    border-color: var(--primary);
+    background: #f0fdf4;
+}
+.esai-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+.esai-card {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.esai-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+@media (max-width: 600px) {
+    .esai-gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+    }
+}
