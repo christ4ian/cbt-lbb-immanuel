@@ -146,17 +146,25 @@ const app = {
         document.head.appendChild(styleFix);
     },
 
-    checkResume: function () {
+    checkResume: async function () {
         const saved = JSON.parse(localStorage.getItem('cbt_active_session'));
         if (saved && saved.sessionId) {
             this.sessionId = saved.sessionId;
             this.userData = saved.userData;
             this.sheetRowIndex = saved.sheetRowIndex;
 
-            const paket = PAKET_SOAL.find(p => p.id === saved.paketId);
-            if (paket) {
-                this.currentPaket = paket;
-                this.syncWithCloud(true);
+            try {
+                let soalSnap = await db.ref('published_soal/' + saved.paketId).once('value');
+                if (soalSnap.exists()) {
+                    this.currentPaket = soalSnap.val();
+                    this.currentPaket.id = soalSnap.key;
+                    this.syncWithCloud(true);
+                } else {
+                    localStorage.removeItem('cbt_active_session');
+                }
+            } catch (e) {
+                console.error("Gagal resume session:", e);
+                localStorage.removeItem('cbt_active_session');
             }
         }
     },
@@ -264,12 +272,21 @@ const app = {
 
         // --- CEK ADMIN ---
         if (email === ADMIN_EMAIL) {
-            this.currentPaket = PAKET_SOAL[idx];
+            Swal.fire({ title: 'Menyiapkan Sesi Admin...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const selectedMetadata = PAKET_SOAL[idx];
+            let soalSnap = await db.ref('published_soal/' + selectedMetadata.id).once('value');
+            if (soalSnap.exists()) {
+                this.currentPaket = soalSnap.val();
+                this.currentPaket.id = soalSnap.key;
+            } else {
+                this.currentPaket = { ...selectedMetadata, soal: [] };
+            }
             this.userData = {
                 nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL",
                 email: email, isAdmin: true, role: "Admin"
             };
             this.sessionId = "admin_" + this.currentPaket.id + "_" + Date.now();
+            Swal.close();
             this.gotoConfirmPage();
             return;
         }
@@ -504,14 +521,27 @@ const app = {
     },
 
     gotoConfirmPage: function () {
-        document.getElementById('info-mapel').innerText = this.currentPaket.mapel;
-        document.getElementById('info-waktu').innerText = this.currentPaket.waktu + " Menit";
-        document.getElementById('info-jml-soal').innerText = this.currentPaket.soal.length + " Butir";
+        const jmlSoal = (this.currentPaket && this.currentPaket.soal && Array.isArray(this.currentPaket.soal)) 
+            ? this.currentPaket.soal.length 
+            : (this.currentPaket?.jumlah_soal || 0);
+
+        const mapel = this.currentPaket?.mapel || "-";
+        const waktu = this.currentPaket?.waktu || this.currentPaket?.durasi_menit || 60;
+
+        const elMapel = document.getElementById('info-mapel');
+        const elWaktu = document.getElementById('info-waktu');
+        const elJml = document.getElementById('info-jml-soal');
+
+        if (elMapel) elMapel.innerText = mapel;
+        if (elWaktu) elWaktu.innerText = waktu + " Menit";
+        if (elJml) elJml.innerText = jmlSoal + " Butir";
 
         const petunjukList = document.getElementById('info-petunjuk-list');
         if (petunjukList) {
             petunjukList.innerHTML = "";
-            const daftarPetunjuk = this.currentPaket.petunjuk || ["Ikuti instruksi pengawas."];
+            const daftarPetunjuk = (this.currentPaket && this.currentPaket.petunjuk && this.currentPaket.petunjuk.length > 0) 
+                ? this.currentPaket.petunjuk 
+                : ["Ikuti instruksi pengawas."];
             daftarPetunjuk.forEach(teks => {
                 const li = document.createElement('li');
                 li.innerHTML = teks;
@@ -523,9 +553,9 @@ const app = {
         const inpKelas = document.getElementById('data-kelas');
         const inpSekolah = document.getElementById('data-sekolah');
 
-        if (inpNama) inpNama.value = this.userData.nama;
-        if (inpKelas) inpKelas.value = this.userData.kelas;
-        if (inpSekolah) inpSekolah.value = this.userData.sekolah;
+        if (inpNama) inpNama.value = this.userData?.nama || "-";
+        if (inpKelas) inpKelas.value = this.userData?.kelas || "-";
+        if (inpSekolah) inpSekolah.value = this.userData?.sekolah || "-";
         this.startSecurityProctor();
         this.switchView('view-data');
     },
@@ -1652,6 +1682,8 @@ const app = {
     },
     logout: function () { this.confirmSubmit(); }
 };
+
+window.app = app;
 
 function toggleSidebar() {
     const sb = document.getElementById('sidebar-list');
