@@ -133,17 +133,25 @@ body.swal2-shown {
 }
 
 .logo-circle {
-    width: 80px;
-    height: 80px;
+    width: 88px;
+    height: 88px;
     background: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 15px auto;
-    font-size: 32px;
-    color: var(--primary);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    padding: 3px;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+}
+
+.logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .login-header h2 {
@@ -1685,25 +1693,97 @@ body.swal2-shown {
     }
 }
 
-.btn-pwa-install {
-    background: #eff6ff !important;
-    color: #2563eb !important;
-    border: 1.5px dashed #93c5fd !important;
-    padding: 10px 16px !important;
-    border-radius: 12px !important;
-    font-size: 0.85rem !important;
-    font-weight: 700 !important;
-    cursor: pointer !important;
-    display: inline-flex !important;
+/* --- PWA MODERN INSTALL CARD --- */
+.pwa-install-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%) !important;
+    border: 1.5px solid #bfdbfe !important;
+    border-radius: 16px !important;
+    padding: 12px 14px !important;
+    margin-top: 16px !important;
+    display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    gap: 8px !important;
-    width: 100% !important;
-    transition: all 0.2s ease !important;
-    margin-top: 12px !important;
+    justify-content: space-between !important;
+    cursor: pointer !important;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
 }
-.btn-pwa-install:hover {
-    background: #dbeafe !important;
-    border-color: #2563eb !important;
-    transform: translateY(-1px) !important;
+.pwa-install-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), transparent);
+    pointer-events: none;
+}
+.pwa-install-card:hover {
+    transform: translateY(-2px) scale(1.01) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.22) !important;
+}
+.pwa-card-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+}
+.pwa-icon-wrapper {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+}
+.pwa-app-icon {
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border: 1.5px solid #ffffff;
+}
+.pwa-badge-pulse {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    animation: pwaPulse 1.8s infinite;
+}
+@keyframes pwaPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+.pwa-card-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1.2;
+}
+.pwa-card-subtitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-top: 3px;
+}
+.pwa-btn-action {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    transition: 0.2s ease;
+    flex-shrink: 0;
+}
+.pwa-install-card:hover .pwa-btn-action {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: scale(1.05);
 }

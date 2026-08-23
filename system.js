@@ -154,17 +154,28 @@ const app = {
     },
 
     initPWA: function () {
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.innerWidth <= 768);
         const banner = document.getElementById('pwa-install-banner');
-        if (banner && isMobile && !this.isPWA()) {
-            banner.style.display = 'block';
+        if (banner && !this.isPWA()) {
+            banner.style.display = 'flex';
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             window.deferredPWAEvent = e;
             if (banner && !this.isPWA()) {
-                banner.style.display = 'block';
+                banner.style.display = 'flex';
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            window.deferredPWAEvent = null;
+            if (banner) banner.style.display = 'none';
+            if (typeof Toast !== 'undefined') {
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Aplikasi Terpasang! 🎉',
+                    text: 'CBT siap digunakan dalam mode layar penuh mandiri.'
+                });
             }
         });
     },

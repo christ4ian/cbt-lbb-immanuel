@@ -52,7 +52,7 @@
         <div class="login-container">
             <div class="login-header">
                 <div class="logo-circle">
-                    <i class="fa-solid fa-graduation-cap"></i>
+                    <img src="assets/logo-immanuel.jpg" alt="Logo LBB Immanuel" class="logo-img">
                 </div>
                 <h2>LBB IMMANUEL</h2>
                 <p>Computer Based Test System</p>
@@ -78,10 +78,21 @@
                     LOGIN CBT <i class="fa-solid fa-arrow-right-to-bracket"></i>
                 </button>
 
-                <div id="pwa-install-banner" style="display:none;">
-                    <button type="button" class="btn-pwa-install" onclick="app.promptPWAInstall()">
-                        <i class="fa-solid fa-mobile-screen-button"></i> Pasang Aplikasi CBT di HP (Bebas Tab)
-                    </button>
+                <div id="pwa-install-banner" class="pwa-install-card" style="display:none;" onclick="app.promptPWAInstall()">
+                    <div class="pwa-card-content">
+                        <div class="pwa-icon-wrapper">
+                            <img src="assets/logo-immanuel.jpg" alt="Logo" class="pwa-app-icon">
+                            <span class="pwa-badge-pulse"></span>
+                        </div>
+                        <div class="pwa-text-wrapper">
+                            <div class="pwa-card-title">Install Aplikasi CBT</div>
+                            <div class="pwa-card-subtitle">Mode Layar Penuh & Bebas Tab</div>
+                        </div>
+                    </div>
+                    <div class="pwa-btn-action">
+                        <span>Install</span>
+                        <i class="fa-solid fa-download"></i>
+                    </div>
                 </div>
 
                 <div class="login-footer-text">
