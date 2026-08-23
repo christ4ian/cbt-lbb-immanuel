@@ -1,6 +1,7 @@
 # Folders excluded as requested
 /admin/
 /assets/
+!/assets/logo-immanuel.jpg
 /node/
 /node_modules/
 /register/
