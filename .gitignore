@@ -2,6 +2,7 @@
 /admin/
 /assets/
 !/assets/logo-immanuel.jpg
+!/assets/icon-pwa.svg
 /node/
 /node_modules/
 /register/

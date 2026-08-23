@@ -9,13 +9,13 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "./logo-immanuel.jpg",
+      "src": "./icon-pwa.svg",
       "sizes": "192x192 512x512",
-      "type": "image/jpeg",
-      "purpose": "any"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
-      "src": "./assets/logo-immanuel.jpg",
+      "src": "./logo-immanuel.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any"
