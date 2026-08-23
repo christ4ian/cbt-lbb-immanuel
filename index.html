@@ -31,12 +31,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         window.deferredPWAEvent = null;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true || window.location.search.includes('mode=pwa');
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             window.deferredPWAEvent = e;
             const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.innerWidth <= 768);
             const banner = document.getElementById('pwa-install-banner');
-            if (banner && isMobile) {
+            if (banner && isMobile && !isStandalone) {
                 banner.style.display = 'flex';
             }
         });

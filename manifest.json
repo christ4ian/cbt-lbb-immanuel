@@ -2,7 +2,7 @@
   "name": "CBT LBB Immanuel",
   "short_name": "CBT Immanuel",
   "description": "Sistem Ujian Online CBT LBB Immanuel - Computer Based Test",
-  "start_url": "./index.html",
+  "start_url": "./index.html?mode=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
@@ -12,7 +12,7 @@
       "src": "./logo-immanuel.jpg",
       "sizes": "192x192 512x512",
       "type": "image/jpeg",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "./assets/logo-immanuel.jpg",

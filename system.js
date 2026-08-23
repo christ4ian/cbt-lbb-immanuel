@@ -150,7 +150,8 @@ const app = {
     isPWA: function () {
         return window.matchMedia('(display-mode: standalone)').matches ||
                window.navigator.standalone === true ||
-               document.referrer.includes('android-app://');
+               document.referrer.includes('android-app://') ||
+               window.location.search.includes('mode=pwa');
     },
 
     initPWA: function () {
@@ -158,6 +159,8 @@ const app = {
         const banner = document.getElementById('pwa-install-banner');
         if (banner && isMobile && !this.isPWA()) {
             banner.style.display = 'flex';
+        } else if (banner && this.isPWA()) {
+            banner.style.display = 'none';
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -183,12 +186,8 @@ const app = {
 
     promptPWAInstall: function () {
         if (this.isPWA()) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Sudah Terpasang! 🎉',
-                text: 'Anda sudah menggunakan CBT dalam Mode Aplikasi Penuh (Standalone).',
-                confirmButtonColor: '#198754'
-            });
+            const banner = document.getElementById('pwa-install-banner');
+            if (banner) banner.style.display = 'none';
             return;
         }
 
@@ -197,10 +196,10 @@ const app = {
             window.deferredPWAEvent.prompt();
             window.deferredPWAEvent.userChoice.then((choice) => {
                 if (choice && choice.outcome === 'accepted') {
+                    window.deferredPWAEvent = null;
                     const banner = document.getElementById('pwa-install-banner');
                     if (banner) banner.style.display = 'none';
                 }
-                window.deferredPWAEvent = null;
             });
             return;
         }
