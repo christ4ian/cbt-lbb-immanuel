@@ -778,6 +778,14 @@ const app = {
         this.setFont(2);
         this.startSecurityProctor();
 
+        // Kunci Layar Otomatis: Anti-Sleep Layar (WakeLock) & Layar Penuh (Fullscreen)
+        if (navigator.wakeLock) {
+            navigator.wakeLock.request('screen').catch(() => {});
+        }
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+
         this.switchView('view-ujian');
     },
 
