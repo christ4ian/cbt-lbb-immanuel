@@ -1,31 +1,24 @@
 {
   "name": "CBT LBB Immanuel",
   "short_name": "CBT Immanuel",
-  "description": "Sistem Ujian Online CBT LBB Immanuel",
+  "description": "Sistem Ujian Online CBT LBB Immanuel - Computer Based Test",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#198754",
-  "orientation": "portrait",
+  "background_color": "#2563eb",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "logo-immanuel.jpg",
-      "sizes": "192x192",
+      "src": "./logo-immanuel.jpg",
+      "sizes": "192x192 512x512",
       "type": "image/jpeg",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "logo-immanuel.jpg",
+      "src": "./assets/logo-immanuel.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any"
-    },
-    {
-      "src": "logo-immanuel.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "maskable"
     }
   ]
 }

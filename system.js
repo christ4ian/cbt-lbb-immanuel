@@ -212,24 +212,24 @@ const app = {
                 html: `
                     <div style="text-align:left; font-size:0.92rem; line-height:1.6; color:#334155;">
                         <p style="margin-bottom:10px;">Jalankan CBT dalam <b>Mode Layar Penuh</b> (tanpa bilah Safari):</p>
-                        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+                        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;">
                             <div style="display:flex; gap:10px; align-items:flex-start;">
-                                <span style="background:#16a34a; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">1</span>
-                                <span>Ketuk tombol <b>Bagikan / Share</b> <i class="fa-solid fa-arrow-up-from-bracket" style="color:#16a34a;"></i> di bilah bawah Safari.</span>
+                                <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">1</span>
+                                <span>Ketuk tombol <b>Bagikan / Share</b> <i class="fa-solid fa-arrow-up-from-bracket" style="color:#2563eb;"></i> di bilah bawah Safari.</span>
                             </div>
                             <div style="display:flex; gap:10px; align-items:flex-start;">
-                                <span style="background:#16a34a; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">2</span>
+                                <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">2</span>
                                 <span>Gulir ke bawah dan pilih <b>"Tambahkan ke Layar Utama" (Add to Home Screen)</b> <i class="fa-solid fa-plus-square" style="color:#16a34a;"></i>.</span>
                             </div>
                             <div style="display:flex; gap:10px; align-items:flex-start;">
-                                <span style="background:#16a34a; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">3</span>
+                                <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">3</span>
                                 <span>Ketuk <b>"Tambah" (Add)</b> di pojok kanan atas. Buka CBT dari ikon layar utama!</span>
                             </div>
                         </div>
                     </div>
                 `,
                 confirmButtonText: 'Saya Mengerti 👍',
-                confirmButtonColor: '#198754'
+                confirmButtonColor: '#2563eb'
             });
             return;
         }
@@ -240,24 +240,24 @@ const app = {
             html: `
                 <div style="text-align:left; font-size:0.92rem; line-height:1.6; color:#334155;">
                     <p style="margin-bottom:10px;">Jalankan CBT dalam <b>Mode Layar Penuh</b>:</p>
-                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;">
                         <div style="display:flex; gap:10px; align-items:flex-start;">
-                            <span style="background:#16a34a; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">1</span>
+                            <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">1</span>
                             <span>Ketuk <b>Menu Browser</b> (ikon titik tiga <b>⋮</b> atau garis tiga di pojok kanan atas/bawah).</span>
                         </div>
                         <div style="display:flex; gap:10px; align-items:flex-start;">
-                            <span style="background:#16a34a; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">2</span>
+                            <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">2</span>
                             <span>Pilih <b>"Tambahkan ke Layar Utama" (Add to Home screen)</b> atau <b>"Instal Aplikasi"</b>.</span>
                         </div>
                         <div style="display:flex; gap:10px; align-items:flex-start;">
-                            <span style="background:#16a34a; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">3</span>
+                            <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">3</span>
                             <span>Buka aplikasi dari layar utama HP Anda untuk mulai ujian dengan aman.</span>
                         </div>
                     </div>
                 </div>
             `,
             confirmButtonText: 'Siap Laksanakan 👍',
-            confirmButtonColor: '#198754'
+            confirmButtonColor: '#2563eb'
         });
     },
 

@@ -1695,8 +1695,8 @@ body.swal2-shown {
 
 /* --- PWA MODERN INSTALL CARD (KHUSUS MOBILE ANDROID / IOS) --- */
 .pwa-install-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%) !important;
-    border: 1.5px solid #86efac !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%) !important;
+    border: 1.5px solid #bfdbfe !important;
     border-radius: 16px !important;
     padding: 12px 14px !important;
     margin-top: 16px !important;
@@ -1704,7 +1704,7 @@ body.swal2-shown {
     align-items: center !important;
     justify-content: space-between !important;
     cursor: pointer !important;
-    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     position: relative !important;
     overflow: hidden !important;
@@ -1715,13 +1715,13 @@ body.swal2-shown {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, rgba(22, 163, 74, 0.04), transparent);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), transparent);
     pointer-events: none;
 }
 .pwa-install-card:hover {
     transform: translateY(-2px) scale(1.01) !important;
-    border-color: #22c55e !important;
-    box-shadow: 0 10px 25px rgba(22, 163, 74, 0.22) !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.22) !important;
 }
 .pwa-card-content {
     display: flex;
@@ -1772,7 +1772,7 @@ body.swal2-shown {
     margin-top: 3px;
 }
 .pwa-btn-action {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
     padding: 8px 14px;
     border-radius: 10px;
@@ -1781,12 +1781,12 @@ body.swal2-shown {
     display: flex;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
     transition: 0.2s ease;
     flex-shrink: 0;
 }
 .pwa-install-card:hover .pwa-btn-action {
-    background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
     transform: scale(1.05);
 }
 
