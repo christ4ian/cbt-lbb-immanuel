@@ -281,6 +281,9 @@ const app = {
             } else {
                 this.currentPaket = { ...selectedMetadata, soal: [] };
             }
+            if (this.currentPaket && this.currentPaket.soal && typeof this.currentPaket.soal === 'object' && !Array.isArray(this.currentPaket.soal)) {
+                this.currentPaket.soal = Object.values(this.currentPaket.soal);
+            }
             this.userData = {
                 nama: "ADMIN MASTER", kelas: "Internal", sekolah: "IMMANUEL",
                 email: email, isAdmin: true, role: "Admin"
@@ -345,6 +348,9 @@ const app = {
                     if (soalSnap.exists()) {
                         this.currentPaket = soalSnap.val();
                         this.currentPaket.id = soalSnap.key;
+                        if (this.currentPaket && this.currentPaket.soal && typeof this.currentPaket.soal === 'object' && !Array.isArray(this.currentPaket.soal)) {
+                            this.currentPaket.soal = Object.values(this.currentPaket.soal);
+                        }
                     } else {
                         Swal.fire('Error', 'Soal belum dipublish oleh Admin.', 'error');
                         return;
@@ -521,9 +527,18 @@ const app = {
     },
 
     gotoConfirmPage: function () {
+        if (this.currentPaket) {
+            if (this.currentPaket.soal && typeof this.currentPaket.soal === 'object' && !Array.isArray(this.currentPaket.soal)) {
+                this.currentPaket.soal = Object.values(this.currentPaket.soal);
+            }
+            if (this.currentPaket.petunjuk && typeof this.currentPaket.petunjuk === 'object' && !Array.isArray(this.currentPaket.petunjuk)) {
+                this.currentPaket.petunjuk = Object.values(this.currentPaket.petunjuk);
+            }
+        }
+
         const jmlSoal = (this.currentPaket && this.currentPaket.soal && Array.isArray(this.currentPaket.soal)) 
             ? this.currentPaket.soal.length 
-            : (this.currentPaket?.jumlah_soal || 0);
+            : (this.currentPaket?.jumlah_soal || (this.currentPaket?.soal ? Object.keys(this.currentPaket.soal).length : 0));
 
         const mapel = this.currentPaket?.mapel || "-";
         const waktu = this.currentPaket?.waktu || this.currentPaket?.durasi_menit || 60;
@@ -539,9 +554,14 @@ const app = {
         const petunjukList = document.getElementById('info-petunjuk-list');
         if (petunjukList) {
             petunjukList.innerHTML = "";
-            const daftarPetunjuk = (this.currentPaket && this.currentPaket.petunjuk && this.currentPaket.petunjuk.length > 0) 
-                ? this.currentPaket.petunjuk 
-                : ["Ikuti instruksi pengawas."];
+            let daftarPetunjuk = ["Ikuti instruksi pengawas."];
+            if (this.currentPaket && this.currentPaket.petunjuk) {
+                if (Array.isArray(this.currentPaket.petunjuk) && this.currentPaket.petunjuk.length > 0) {
+                    daftarPetunjuk = this.currentPaket.petunjuk;
+                } else if (typeof this.currentPaket.petunjuk === 'string' && this.currentPaket.petunjuk.trim()) {
+                    daftarPetunjuk = [this.currentPaket.petunjuk];
+                }
+            }
             daftarPetunjuk.forEach(teks => {
                 const li = document.createElement('li');
                 li.innerHTML = teks;
