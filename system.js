@@ -778,14 +778,6 @@ const app = {
         this.setFont(2);
         this.startSecurityProctor();
 
-        // Kunci Layar Otomatis: Anti-Sleep Layar (WakeLock) & Layar Penuh (Fullscreen)
-        if (navigator.wakeLock) {
-            navigator.wakeLock.request('screen').catch(() => {});
-        }
-        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(() => {});
-        }
-
         this.switchView('view-ujian');
     },
 
@@ -2185,71 +2177,6 @@ document.addEventListener('paste', function (e) {
             e.preventDefault();
         }
     });
-
-    // Otomatis Kembali ke Layar Penuh dalam 3 Detik jika Terlepas saat Ujian
-    let fsRestoreInterval = null;
-    function handleFullscreenExit() {
-        const viewUjian = document.getElementById('view-ujian');
-        const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
-        const isFs = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-
-        // Abaikan jika siswa sedang membuka kamera/file picker untuk upload jawaban esai
-        if (typeof app !== 'undefined' && (app.isPickingFile || app.isUploadingFile)) {
-            return;
-        }
-
-        if (isLagiUjian && !isFs) {
-            if (fsRestoreInterval) clearInterval(fsRestoreInterval);
-            let timeLeft = 3;
-
-            Swal.fire({
-                title: 'Layar Penuh Terlepas ⚠️',
-                html: `
-                    <div style="font-size:0.95rem; color:#334155; line-height:1.6;">
-                        Ujian wajib berjalan dalam <b>Mode Layar Penuh</b>.<br>
-                        Mengembalikan ke layar penuh dalam <b style="color:#ef4444; font-size:1.15rem;"><span id="fs-countdown">3</span></b> detik...
-                    </div>
-                `,
-                icon: 'warning',
-                showConfirmButton: true,
-                confirmButtonText: 'Kembali Sekarang 🚀',
-                confirmButtonColor: '#2563eb',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    const span = document.getElementById('fs-countdown');
-                    fsRestoreInterval = setInterval(() => {
-                        timeLeft--;
-                        if (span) span.innerText = timeLeft;
-                        if (timeLeft <= 0) {
-                            clearInterval(fsRestoreInterval);
-                            fsRestoreInterval = null;
-                            Swal.close();
-                            if (document.documentElement.requestFullscreen) {
-                                document.documentElement.requestFullscreen().catch(() => {});
-                            } else if (document.documentElement.webkitRequestFullscreen) {
-                                document.documentElement.webkitRequestFullscreen();
-                            }
-                        }
-                    }, 1000);
-                },
-                willClose: () => {
-                    if (fsRestoreInterval) clearInterval(fsRestoreInterval);
-                }
-            }).then(() => {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => {});
-                } else if (document.documentElement.webkitRequestFullscreen) {
-                    document.documentElement.webkitRequestFullscreen();
-                }
-            });
-        }
-    }
-
-    document.addEventListener('fullscreenchange', handleFullscreenExit);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenExit);
-    document.addEventListener('mozfullscreenchange', handleFullscreenExit);
-    document.addEventListener('MSFullscreenChange', handleFullscreenExit);
 })();
 
 // --- PERBAIKAN UI KAMERA: ANTI OFF-SCREEN & MINIMIZE BERSIH ---
