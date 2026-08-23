@@ -136,6 +136,7 @@ const app = {
 
         this.loadDaftarPaket();
         this.checkResume();
+        this.initPWA();
 
         const styleFix = document.createElement('style');
         styleFix.innerHTML = `
@@ -144,6 +145,107 @@ const app = {
             .active-view { height: 100vh; height: 100dvh; overflow: hidden; }
         `;
         document.head.appendChild(styleFix);
+    },
+
+    isPWA: function () {
+        return window.matchMedia('(display-mode: standalone)').matches ||
+               window.navigator.standalone === true ||
+               document.referrer.includes('android-app://');
+    },
+
+    initPWA: function () {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner && isMobile && !this.isPWA()) {
+            banner.style.display = 'block';
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPWAEvent = e;
+            if (banner && !this.isPWA()) {
+                banner.style.display = 'block';
+            }
+        });
+    },
+
+    promptPWAInstall: function () {
+        if (this.isPWA()) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Sudah Terpasang! 🎉',
+                text: 'Anda sudah menggunakan CBT dalam Mode Aplikasi Penuh (Standalone).',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
+        }
+
+        if (window.deferredPWAEvent) {
+            window.deferredPWAEvent.prompt();
+            window.deferredPWAEvent.userChoice.then((choice) => {
+                if (choice.outcome === 'accepted') {
+                    const banner = document.getElementById('pwa-install-banner');
+                    if (banner) banner.style.display = 'none';
+                }
+                window.deferredPWAEvent = null;
+            });
+            return;
+        }
+
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+            Swal.fire({
+                title: 'Pasang di iPhone / iPad 🍏',
+                html: `
+                    <div style="text-align:left; font-size:0.92rem; line-height:1.6; color:#334155;">
+                        <p style="margin-bottom:10px;">Jalankan CBT dalam <b>Mode Aplikasi Penuh</b> (tanpa bilah Safari):</p>
+                        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+                            <div style="display:flex; gap:10px; align-items:flex-start;">
+                                <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">1</span>
+                                <span>Ketuk tombol <b>Bagikan / Share</b> <i class="fa-solid fa-arrow-up-from-bracket" style="color:#2563eb;"></i> di bagian bawah Safari.</span>
+                            </div>
+                            <div style="display:flex; gap:10px; align-items:flex-start;">
+                                <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">2</span>
+                                <span>Gulir ke bawah dan pilih <b>"Tambahkan ke Layar Utama" (Add to Home Screen)</b> <i class="fa-solid fa-plus-square" style="color:#16a34a;"></i>.</span>
+                            </div>
+                            <div style="display:flex; gap:10px; align-items:flex-start;">
+                                <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">3</span>
+                                <span>Ketuk <b>"Tambah" (Add)</b> di pojok kanan atas. Buka CBT dari ikon layar utama!</span>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                confirmButtonText: 'Saya Mengerti 👍',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
+        }
+
+        // Android Non-Chrome (Samsung Internet, Mi Browser, Firefox, Vivo, Oppo)
+        Swal.fire({
+            title: 'Pasang Aplikasi CBT 📱',
+            html: `
+                <div style="text-align:left; font-size:0.92rem; line-height:1.6; color:#334155;">
+                    <p style="margin-bottom:10px;">Jalankan CBT dalam <b>Mode Bebas Gangguan</b> (tanpa tombol browser & tab):</p>
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px;">
+                        <div style="display:flex; gap:10px; align-items:flex-start;">
+                            <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">1</span>
+                            <span>Ketuk <b>Menu Browser</b> (ikon titik tiga <b>⋮</b> atau garis tiga di pojok kanan atas/bawah).</span>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:flex-start;">
+                            <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">2</span>
+                            <span>Pilih <b>"Tambahkan ke Layar Utama" (Add to Home screen)</b> atau <b>"Instal Aplikasi"</b>.</span>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:flex-start;">
+                            <span style="background:#2563eb; color:white; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold; flex-shrink:0;">3</span>
+                            <span>Buka aplikasi dari layar utama HP Anda untuk mulai ujian dengan aman.</span>
+                        </div>
+                    </div>
+                </div>
+            `,
+            confirmButtonText: 'Siap Laksanakan 👍',
+            confirmButtonColor: '#2563eb'
+        });
     },
 
     checkResume: async function () {
@@ -846,7 +948,7 @@ const app = {
                 cardsHtml += `</div>`;
 
                 html += `
-                    <div class="esai-answer-container" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-top:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03);">
+                    <div class="esai-answer-container" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; margin-top:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03);" ondragover="app.handleEsaiDragOver(event)" ondragleave="app.handleEsaiDragLeave(event)" ondrop="app.handleEsaiDrop(event, ${index})">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:14px;">
                             <div>
                                 <span class="badge" style="background:#dcfce7; color:#15803d; font-weight:800; padding:8px 14px; border-radius:30px; font-size:0.88rem; display:inline-flex; align-items:center; gap:6px;">
@@ -854,7 +956,7 @@ const app = {
                                 </span>
                             </div>
                             <div style="display:flex; gap:8px;">
-                                <button type="button" class="esai-btn-select" onclick="document.getElementById('input-esai-add-${index}').click()" style="padding:8px 16px; font-size:0.85rem;">
+                                <button type="button" class="esai-btn-select" onclick="app.triggerEsaiUpload('input-esai-add-${index}')" style="padding:8px 16px; font-size:0.85rem;">
                                     <i class="fa-solid fa-plus"></i> Tambah Foto / PDF Lain
                                 </button>
                                 <input type="file" id="input-esai-add-${index}" accept="image/*,application/pdf" multiple style="display:none;" onchange="app.handleEsaiFileSelect(this, ${index})">
@@ -865,19 +967,19 @@ const app = {
                 `;
             } else {
                 html += `
-                    <div class="esai-upload-zone">
+                    <div class="esai-upload-zone" ondragover="app.handleEsaiDragOver(event)" ondragleave="app.handleEsaiDragLeave(event)" ondrop="app.handleEsaiDrop(event, ${index})">
                         <div class="esai-icon-bubble">
                             <i class="fa-solid fa-file-arrow-up"></i>
                         </div>
                         <h4 class="esai-title">Unggah Lembar Jawaban Tulisan Tangan</h4>
                         <p class="esai-desc">
-                            Tuliskan jawaban Anda di kertas lalu ambil foto menggunakan kamera HP atau unggah berkas dokumen PDF. (Bisa memilih lebih dari 1 foto sekaligus).
+                            Tuliskan jawaban Anda di kertas lalu ambil foto menggunakan kamera HP, unggah berkas foto/PDF, drag & drop berkas ke sini, atau tekan <b>Ctrl+V</b> (Paste).
                         </p>
                         <div class="esai-btn-group">
-                            <button type="button" class="esai-btn-select" onclick="document.getElementById('input-esai-${index}').click()">
+                            <button type="button" class="esai-btn-select" onclick="app.triggerEsaiUpload('input-esai-${index}')">
                                 <i class="fa-solid fa-folder-open"></i> Pilih Berkas Foto / PDF
                             </button>
-                            <button type="button" class="esai-btn-cam" onclick="document.getElementById('input-esai-cam-${index}').click()">
+                            <button type="button" class="esai-btn-cam" onclick="app.triggerEsaiUpload('input-esai-cam-${index}')">
                                 <i class="fa-solid fa-camera"></i> Buka Kamera Langsung
                             </button>
                         </div>
@@ -906,19 +1008,75 @@ const app = {
         this.updateNavButtons(index);
     },
 
+    isPickingFile: false,
+    isUploadingFile: false,
+    filePickTimer: null,
+
+    triggerEsaiUpload: function(inputId) {
+        this.isPickingFile = true;
+        if (this.filePickTimer) clearTimeout(this.filePickTimer);
+        // Berikan batas dispensasi waktu aman (3 menit) saat memilih berkas / kamera
+        this.filePickTimer = setTimeout(() => {
+            this.isPickingFile = false;
+        }, 180000);
+
+        const input = document.getElementById(inputId);
+        if (input) input.click();
+    },
+
+    handleEsaiDragOver: function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const zone = e.currentTarget;
+        if (zone) zone.classList.add('drag-over');
+    },
+
+    handleEsaiDragLeave: function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const zone = e.currentTarget;
+        if (zone) zone.classList.remove('drag-over');
+    },
+
+    handleEsaiDrop: function(e, index) {
+        e.preventDefault();
+        e.stopPropagation();
+        const zone = e.currentTarget;
+        if (zone) zone.classList.remove('drag-over');
+
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/') || f.type === 'application/pdf');
+            if (files.length > 0) {
+                this.uploadJawabanEsai(files, index);
+            } else {
+                Swal.fire('Format Tidak Didukung', 'Silakan pilih berkas foto (JPG, PNG, WebP) atau berkas PDF.', 'warning');
+            }
+        }
+    },
+
     handleEsaiFileSelect: async function(input, index) {
-        if (!input.files || input.files.length === 0) return;
+        if (!input.files || input.files.length === 0) {
+            setTimeout(() => { this.isPickingFile = false; }, 2000);
+            return;
+        }
         const files = Array.from(input.files);
         input.value = '';
-        await this.uploadJawabanEsai(files, index);
+        this.isUploadingFile = true;
+        try {
+            await this.uploadJawabanEsai(files, index);
+        } finally {
+            this.isUploadingFile = false;
+            setTimeout(() => { this.isPickingFile = false; }, 2000);
+        }
     },
 
     uploadJawabanEsai: async function(files, index) {
         if (!files || files.length === 0) return;
 
+        this.isUploadingFile = true;
         Swal.fire({
             title: `Mengunggah ${files.length} Berkas Jawaban...`,
-            html: `<div style="margin-top:10px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2.4rem; color:#2563eb;"></i><p style="margin-top:12px; font-size:0.9rem; color:#64748b;">Mengompresi & mengunggah lembar jawaban ke Cloudinary...</p></div>`,
+            html: `<div style="margin-top:10px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:2.4rem; color:#2563eb;"></i><p style="margin-top:12px; font-size:0.9rem; color:#64748b;">Mengompresi & mengunggah lembar jawaban ke server...</p></div>`,
             allowOutsideClick: false,
             showConfirmButton: false
         });
@@ -960,7 +1118,7 @@ const app = {
                         uploadedAt: Date.now()
                     });
                 } else {
-                    throw new Error(data.error?.message || 'Gagal mengunggah berkas ke Cloudinary.');
+                    throw new Error(data.error?.message || 'Gagal mengunggah berkas ke server.');
                 }
             }
 
@@ -993,8 +1151,11 @@ const app = {
                 showConfirmButton: false
             });
         } catch (err) {
-            console.error("Cloudinary Upload Error:", err);
-            Swal.fire('Gagal Upload', 'Terjadi kesalahan saat mengunggah: ' + err.message, 'error');
+            console.error("Upload Error:", err);
+            Swal.fire('Gagal Upload', 'Terjadi kesalahan saat mengunggah berkas: ' + (err.message || 'Koneksi bermasalah'), 'error');
+        } finally {
+            this.isUploadingFile = false;
+            setTimeout(() => { this.isPickingFile = false; }, 2000);
         }
     },
 
@@ -1855,16 +2016,151 @@ document.addEventListener('click', function (e) {
     }
 });
 
-// EVENT LISTENER ANTI-CHEAT TAB SWITCHING
+// EVENT LISTENER ANTI-CHEAT TAB SWITCHING & DISPENSASI UPLOAD FOTO
 document.addEventListener("visibilitychange", function () {
     const viewUjian = document.getElementById('view-ujian');
     const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
     if (document.visibilityState === 'hidden' && isLagiUjian) {
+        // Jika sedang memilih berkas (file picker), buka kamera HP, atau sedang proses upload lembar esai, abaikan pelanggaran
+        if (typeof app !== 'undefined' && (app.isPickingFile || app.isUploadingFile)) {
+            return;
+        }
+
         cheatCount++;
         if (typeof app !== 'undefined' && app.saveRealtime) app.saveRealtime();
-        Swal.fire({ title: 'Peringatan Sistem ⚠️', text: 'Anda terdeteksi berpindah tab atau keluar dari layar ujian. Aktivitas ini telah dicatat sebagai pelanggaran oleh sistem.', icon: 'warning', confirmButtonColor: '#d33', confirmButtonText: 'Saya Mengerti' });
+        Swal.fire({ 
+            title: 'Peringatan Sistem ⚠️', 
+            text: 'Anda terdeteksi berpindah tab atau keluar dari layar ujian. Aktivitas ini telah dicatat sebagai pelanggaran oleh sistem.', 
+            icon: 'warning', 
+            confirmButtonColor: '#d33', 
+            confirmButtonText: 'Saya Mengerti' 
+        });
     }
 });
+
+// Event listener saat siswa kembali fokus ke tab ujian
+window.addEventListener('focus', function () {
+    if (typeof app !== 'undefined' && app.isPickingFile && !app.isUploadingFile) {
+        // Berikan tenggang waktu 3 detik setelah kembali fokus sebelum mengaktifkan kembali anti-cheat
+        setTimeout(() => {
+            app.isPickingFile = false;
+        }, 3000);
+    }
+});
+
+// Event listener Clipboard Paste (Ctrl+V) untuk Lembar Esai
+document.addEventListener('paste', function (e) {
+    const viewUjian = document.getElementById('view-ujian');
+    if (!viewUjian || !viewUjian.classList.contains('active-view')) return;
+    if (typeof app === 'undefined' || !app.currentTryout || !app.currentTryout.soal) return;
+    
+    const curSoal = app.currentTryout.soal[app.currentIndex];
+    if (!curSoal || curSoal.tipe !== 'esai') return;
+
+    const items = (e.clipboardData || window.clipboardData)?.items;
+    if (!items) return;
+
+    const files = [];
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file') {
+            const f = items[i].getAsFile();
+            if (f && (f.type.startsWith('image/') || f.type === 'application/pdf')) {
+                files.push(f);
+            }
+        }
+    }
+
+    if (files.length > 0) {
+        e.preventDefault();
+        app.uploadJawabanEsai(files, app.currentIndex);
+    }
+});
+
+// =======================================================
+// SISTEM ANTI-BACK & PERLINDUNGAN TAB UJIAN (TANPA SEB)
+// =======================================================
+(function initNavigationProtection() {
+    function lockHistory() {
+        try {
+            history.pushState(null, null, window.location.href);
+        } catch (e) {}
+    }
+
+    // Panggil saat inisialisasi awal
+    lockHistory();
+    window.addEventListener('load', lockHistory);
+
+    // Kunci tombol Back browser, gesture HP, mouse back button
+    window.addEventListener('popstate', function (e) {
+        lockHistory();
+
+        const viewUjian = document.getElementById('view-ujian');
+        const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
+        if (!isLagiUjian) return;
+
+        // 1. Jika ada overlay gambar diperbesar (.zoomed) -> tutup overlay
+        const zoomedOverlay = document.querySelector('.zoomed');
+        if (zoomedOverlay) {
+            zoomedOverlay.remove();
+            return;
+        }
+
+        // 2. Jika ada SweetAlert2 (preview foto esai / preview PDF / popup info) -> tutup modal saja
+        if (typeof Swal !== 'undefined' && Swal.isVisible()) {
+            Swal.close();
+            return;
+        }
+
+        // 3. Jika drawer sidebar daftar soal di HP terbuka -> tutup sidebar
+        const sb = document.getElementById('sidebar-list');
+        const ov = document.getElementById('overlay');
+        if (sb && sb.classList.contains('active')) {
+            sb.classList.remove('active');
+            if (ov) ov.classList.remove('active');
+            return;
+        }
+
+        // 4. Jika tidak ada modal terbuka, tampilkan notifikasi ramah bahwa navigasi dikunci
+        if (typeof Toast !== 'undefined') {
+            Toast.fire({
+                icon: 'info',
+                title: 'Navigasi Terkunci 🔒',
+                text: 'Tombol kembali dinonaktifkan demi kelancaran ujian. Gunakan navigasi nomor soal pada layar.'
+            });
+        }
+    });
+
+    // Cegah Tab Ditutup / Refresh Tidak Sengaja (beforeunload Prompt)
+    window.addEventListener('beforeunload', function (e) {
+        const viewUjian = document.getElementById('view-ujian');
+        const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
+        if (isLagiUjian) {
+            e.preventDefault();
+            e.returnValue = ''; // Browser akan menampilkan konfirmasi "Tinggalkan situs?"
+            return '';
+        }
+    });
+
+    // Cegah Shortcut Keyboard Navigasi Mundur (Backspace di luar form & Alt + Panah Kiri)
+    document.addEventListener('keydown', function (e) {
+        const viewUjian = document.getElementById('view-ujian');
+        const isLagiUjian = viewUjian && viewUjian.classList.contains('active-view');
+        if (!isLagiUjian) return;
+
+        // Cegah Alt + Panah Kiri (Shortcut Browser Back)
+        if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'Left')) {
+            e.preventDefault();
+            return;
+        }
+
+        // Cegah tombol Backspace menavigasi mundur saat tidak sedang mengetik
+        const tag = e.target.tagName;
+        const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable;
+        if (e.key === 'Backspace' && !isInput) {
+            e.preventDefault();
+        }
+    });
+})();
 
 // --- PERBAIKAN UI KAMERA: ANTI OFF-SCREEN & MINIMIZE BERSIH ---
 app.startSecurityProctor = function () {

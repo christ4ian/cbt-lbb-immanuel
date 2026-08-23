@@ -9,6 +9,15 @@
     <meta http-equiv="Expires" content="0">
     <title>CBT LBB Immanuel</title>
 
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CBT Immanuel">
+    <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f393.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -24,6 +33,12 @@
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
             startup: { typeset: false }
         };
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration error:', err));
+            });
+        }
     </script>
     <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
@@ -62,6 +77,12 @@
                 <button class="btn-login" onclick="app.gotoData()">
                     LOGIN CBT <i class="fa-solid fa-arrow-right-to-bracket"></i>
                 </button>
+
+                <div id="pwa-install-banner" style="display:none;">
+                    <button type="button" class="btn-pwa-install" onclick="app.promptPWAInstall()">
+                        <i class="fa-solid fa-mobile-screen-button"></i> Pasang Aplikasi CBT di HP (Bebas Tab)
+                    </button>
+                </div>
 
                 <div class="login-footer-text">
                     &copy; 2026 LBB Immanuel. All rights reserved.
