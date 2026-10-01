@@ -75,7 +75,8 @@ function doPost(e) {
               "temperature": 0.0,
               "topK": 1,
               "topP": 0.1,
-              "maxOutputTokens": 100
+              "maxOutputTokens": 150,
+              "responseMimeType": "application/json"
             }
           };
 
@@ -283,7 +284,8 @@ function doPost(e) {
           "temperature": 0.1,
           "topK": 1,
           "topP": 0.1,
-          "maxOutputTokens": 1000
+          "maxOutputTokens": 1000,
+          "responseMimeType": "application/json"
         }
       };
 

@@ -1453,7 +1453,18 @@ const app = {
             if (!jwb) { detail.push("KOSONG"); return; }
 
             if (soal.tipe === 'pg') {
-                if (jwb === kunci) status = "BENAR";
+                if (jwb === kunci) {
+                    status = "BENAR";
+                } else if (kunci && !/^[A-E]$/i.test(kunci) && soal.opsi && Array.isArray(soal.opsi)) {
+                    // Toleransi jika kunci di DB tersimpan berupa teks opsi atau angka index
+                    const jwbIdx = jwb.charCodeAt(0) - 65;
+                    const optionVal = soal.opsi[jwbIdx];
+                    if (optionVal && String(optionVal).trim().toLowerCase() === String(kunci).trim().toLowerCase()) {
+                        status = "BENAR";
+                    } else if (String(kunci).trim() === String(jwbIdx)) {
+                        status = "BENAR";
+                    }
+                }
             } else if (soal.tipe === 'pgk') {
                 if (Array.isArray(jwb) && Array.isArray(kunci)) {
                     if (JSON.stringify([...jwb].sort()) === JSON.stringify([...kunci].sort())) status = "BENAR";
